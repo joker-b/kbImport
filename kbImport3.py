@@ -56,7 +56,7 @@ import unittest
 ##############################################################
 
 # if gTest is True, create directories, but don't actually copy files (for testing).....
-gTest = True
+gTest = False
 #if gForce is True, just copy always. Otherwise, don't overwrite existing archived files.
 gForce = False
 
@@ -140,12 +140,6 @@ def month_subdir(SrcFileStat,ArchDir):
 ## Recurse Throufgh Source Directories, and Archive #########
 #############################################################
 
-patAvchd = re.compile('AVCHD')
-patDotAvchd = re.compile('(.*).AVCHD')
-patAvchdFiles = re.compile('\.(MTS|CPI|TDT|TID|MPL|BDM)')
-patVidFiles = re.compile('\.(M4V|MP4|MOV|3GP)')
-patJPG = re.compile('(.*)\.JPG')
-patDNGsrc = re.compile('(.*)\.RW2') # might be more in the future....
 
   
 #############################################################
@@ -183,6 +177,12 @@ class Volumes(object):
   AVCHDTargets["TDT"] = os.path.join("AVCHD","ACVHDTN")
   AVCHDTargets["TID"] = os.path.join("AVCHD","ACVHDTN")
   AVCHDTargets["JPG"] = os.path.join("AVCHD","CANONTHM")
+  patAvchd = re.compile('AVCHD')
+  patDotAvchd = re.compile('(.*).AVCHD')
+  patAvchdFiles = re.compile('\.(MTS|CPI|TDT|TID|MPL|BDM)')
+  patVidFiles = re.compile('\.(M4V|MP4|MOV|3GP)')
+  patJPG = re.compile('(.*)\.JPG')
+  patDNGsrc = re.compile('(.*)\.RW2') # might be more in the future....
   #
   def __init__(self):
     self.startTime = time.clock()
@@ -411,18 +411,40 @@ class Volumes(object):
       print "Hey, image source '%s' is not a directory!" % (FromDir)
       return False
     return True
+  def avchd_src(self,FromDir):
+    if Volumes.patAvchd.search(FromDir):
+      return True
+    return False
+  def dest_avchd_dir_name(self,SrcFile,ArchDir):
+    """
+    AVCHD has a complex format, let's keep it intact so clips can be archived to blu-ray etc.
+    We will say that the dated directory is equivalent to the "PRIVATE" directory in the spec.
+    We don't handle the DCIM and MISC dirs.
+    """
+    privateDir = self.dest_dir_name(SrcFile,ArchDir)
+    if privateDir is None:
+      print "avchd error"
+      return privateDir
+    avchdDir = safe_mkdir(os.path.join(privateDir,"AVCHD"))
+    avchdtnDir = safe_mkdir(os.path.join(avchdDir,"AVCHDTN"))
+    bdmvDir = safe_mkdir(os.path.join(avchdDir,"BDMV"))
+    streamDir = safe_mkdir(os.path.join(bdmvDir,"STREAM"))
+    clipinfDir = safe_mkdir(os.path.join(bdmvDir,"CLIPINF"))
+    playlistDir = safe_mkdir(os.path.join(bdmvDir,"PLAYLIST"))
+    backupDir = safe_mkdir(os.path.join(bdmvDir,"BACKUP"))
+    canonthmDir = safe_mkdir(os.path.join(avchdDir,"CANONTHM"))
+    # should make sure it exists!
+    return privateDir
   def archive_pix(self,FromDir,PixArchDir,VidArchDir):
     "Archive images and video"
     # first make sure all inputs are valid
     if not self.verify_image_archive_dir(FromDir,PixArchDir,VidArchDir):
       return
     # now we can proceed
-    isAVCHDsrc = False
-    m = patAvchd.search(FromDir)
-    if m:
-      isAVCHDsrc = True
+    isAVCHDsrc = self.avchd_src(FromDir)
     files = os.listdir(FromDir)
     files.sort()
+    print "%d files in %s" % (len(files),FromDir)
     for kid in files:
       fullKidPath = os.path.join(FromDir,kid)
       if os.path.isdir(fullKidPath):
@@ -436,19 +458,17 @@ class Volumes(object):
         avchdType = "JPG"
         kUp = kid.upper()
         destName = kid
-        m = patAvchdFiles.search(kUp)
+        m = Volumes.patAvchdFiles.search(kUp)
         if (m):
           isAVCHD = True
           avchdType = m.group(1)
-        m = patVidFiles.search(kUp)
-        if (m):
-          isSimpleVideo = True
-        m = patDNGsrc.search(kUp)
+        isSimpleVideo = Volumes.patVidFiles.search(kUp) is not None
+        m = Volumes.patDNGsrc.search(kUp)
         if m:
           if Vols.hasDNGConv:
             isDNGible = True
             destName = "%s.DNG" % m.groups(0)[0]
-        m = patJPG.search(kUp)
+        m = Volumes.patJPG.search(kUp)
         if m:
           # keep an eye open for special thumbnail JPGs....
           if isAVCHDsrc:
@@ -472,31 +492,10 @@ class Volumes(object):
         else:
           destinationPath = self.dest_dir_name(fullKidPath,PixArchDir)
         if destinationPath:
-          self.archive_image(kid,fullKidPath,kidTargetPath,destinationPath,destName)
+          self.archive_image(kid,fullKidPath,destinationPath,destName,isDNGible)
         else:
           print "Unable to archive media to %s" % (destinationPath)
-    return
-  def dest_avchd_dir_name(self,SrcFile,ArchDir):
-    """
-    AVCHD has a complex format, let's keep it intact so clips can be archived to blu-ray etc.
-    We will say that the dated directory is equivalent to the "PRIVATE" directory in the spec.
-    We don't handle the DCIM and MISC dirs.
-    """
-    privateDir = self.dest_dir_name(SrcFile,ArchDir)
-    if privateDir is None:
-      print "avchd error"
-      return privateDir
-    avchdDir = safe_mkdir(os.path.join(privateDir,"AVCHD"))
-    avchdtnDir = safe_mkdir(os.path.join(avchdDir,"AVCHDTN"))
-    bdmvDir = safe_mkdir(os.path.join(avchdDir,"BDMV"))
-    streamDir = safe_mkdir(os.path.join(bdmvDir,"STREAM"))
-    clipinfDir = safe_mkdir(os.path.join(bdmvDir,"CLIPINF"))
-    playlistDir = safe_mkdir(os.path.join(bdmvDir,"PLAYLIST"))
-    backupDir = safe_mkdir(os.path.join(bdmvDir,"BACKUP"))
-    canonthmDir = safe_mkdir(os.path.join(avchdDir,"CANONTHM"))
-    # should make sure it exists!
-    return privateDir
-  def archive_image(self,SrcName,FullSrcPath,DestDir,DestName):
+  def archive_image(self,SrcName,FullSrcPath,DestDir,DestName,IsDNGible):
     FullDestPath = os.path.join(DestDir,DestName)
     s = os.stat(FullSrcPath)
     protected = gTest
@@ -504,33 +503,36 @@ class Volumes(object):
     #
     # wanted: better checking here
     #
-    if os.path.exists(destinationPath):
+    if os.path.exists(FullDestPath):
       if gForce:
         print "overwriting %s" % (FullDestPath) 
         self.nBytes += s.st_size
         self.nFiles += 1
       else:
         protected = True
-        m = patDotAvchd.search(destinationPath)
+        m = Volumes.patDotAvchd.search(FullDestPath)
         if m:
           destinationPath = m.group(1)
-          destinationPath = os.path.join(destinationPath,"...",SrcName)
+          FullDestPath = os.path.join(destinationPath,"...",SrcName)
         # print "%s already exists" % (destinationPath) 
     else:
       print "%s -> %s" % (SrcName,FullDestPath) 
       self.nBytes += s.st_size
       self.nFiles += 1
     if not protected:
-      if isDNGible:
+      if IsDNGible:
         self.dng_convert(destinationPath,destName,FullSrcPath)
       else:
-        self.safe_copy(FullSrcPath,destinationPath)
+        self.safe_copy(FullSrcPath,FullDestPath)
   #
   def safe_copy(self,FullSrcPath,DestPath):
     if gTest:
       print "Fake Copy %s -> %s" % (FullSrcPath,DestPath)
       return
-    shutil.copy2(FullSrcPath,DestPath)
+    try:
+      shutil.copy2(FullSrcPath,DestPath)
+    except:
+      print "Failed to copy!! %s -> %s" % (FullSrcPath,DestPath)
   #
   def dng_convert(self,DestPath,DestName,FullSrcPath):
     cmd = "\"%s\" -c -d \"%s\" -o %s \"%s\"" % (self.DNG,DestPath,DestName,FullSrcPath)
