@@ -60,12 +60,6 @@ gTest = False
 #if gForce is True, just copy always. Otherwise, don't overwrite existing archived files.
 gForce = False
 
-
-################
-
-
-# where AVCHD wants various types of files
-
 #########################################################################################
 ## FUNCTIONS START HERE #################################################################
 #########################################################################################
@@ -73,7 +67,7 @@ gForce = False
 def seek_named_dir(LookHere,DesiredName,Level=0,MaxLevels=6):
   "Look for a directory, which should have pix"
   if Level >= MaxLevels:
-    print "seek_named_dir('%s','%s',%d,%d): too deep" % (LookHere,DesiredName,Level,MaxLevels)
+    # print "seek_named_dir('%s','%s',%d,%d): too deep" % (LookHere,DesiredName,Level,MaxLevels)
     return None
   if not os.path.exists(LookHere):
     print 'seek_named_dir(%s) No such path' % (LookHere)
@@ -81,8 +75,8 @@ def seek_named_dir(LookHere,DesiredName,Level=0,MaxLevels=6):
   try:
     allSubs = os.listdir(LookHere)
   except:
-        print "seek_named_dir('%s','%s'): no luck" % (LookHere,DesiredName)
-        return None
+    print "seek_named_dir('%s','%s'): no luck" % (LookHere,DesiredName)
+    return None
   for subdir in allSubs:
     fullpath = os.path.join(LookHere,subdir)
     if subdir == DesiredName:
@@ -94,9 +88,6 @@ def seek_named_dir(LookHere,DesiredName,Level=0,MaxLevels=6):
       if sr is not None:
         return sr
   return None
-
-#####
-
 
 #####################################################
 ## Find or Create Archive Destination Directories ###
@@ -117,6 +108,8 @@ def safe_mkdir(Dir):
     # return None
   return Dir
 
+######
+
 def year_subdir(SrcFileStat,ArchDir):
   "Based on the source file's timestamp, seek (or create) an archive directory"
   # subdir = time.strftime("%Y",time.localtime(SrcFileStat.st_ctime))
@@ -124,6 +117,8 @@ def year_subdir(SrcFileStat,ArchDir):
   result = os.path.join(ArchDir,subdir)
   safe_mkdir(result)
   return result
+
+#########
 
 def month_subdir(SrcFileStat,ArchDir):
   "Based on the source file's timestamp, seek (or create) an archive directory"
@@ -133,39 +128,9 @@ def month_subdir(SrcFileStat,ArchDir):
   safe_mkdir(result)
   return result
 
-############
-
-
 #############################################################
-## Recurse Throufgh Source Directories, and Archive #########
 #############################################################
-
-
-  
 #############################################################
-
-
-def archive_dir_name(ArchDir,BaseName):
-  "pick the name of a good dated archive dir"
-  if not os.path.exists(ArchDir):
-    print "Hey, master '%s' is vapor!" % (ArchDir)
-    return None
-  if not os.path.isdir(ArchDir):
-    print "Hey, '%s' is not a directory!" % (ArchDir)
-    return None
-  arch = os.path.join(ArchDir,BaseName)
-  if not os.path.exists(arch):
-    return arch
-  counter = 0
-  while os.path.exists(arch):
-    bn = "%s_%d" % (BaseName,counter)
-    counter = counter + 1
-    if counter > 20:
-      return None
-    arch = os.path.join(ArchDir,bn)
-  return arch
-
-# #
 
 class Volumes(object):
   'object for import/archive environment'
@@ -219,7 +184,7 @@ class Volumes(object):
   def ready(self):
     if not self.find_archive_drive():
       return False
-    if not self.verify_archive_dest():
+    if not self.verify_archive_subdirs():
       return False
     self.find_src_media()
     if self.srcMedia is None:
@@ -254,7 +219,7 @@ class Volumes(object):
         return True
     print "Something is broken? No primary or local archive dirs!"
     return False
-  def verify_archive_dest(self):
+  def verify_archive_subdirs(self):
     for d in [self.pixDestDir, self.vidDestDir, self.audioDestDir]: # delay this test?
       if not os.path.exists(d):
         print "Something is broken? No archive dir %s" % (d)
@@ -270,53 +235,50 @@ class Volumes(object):
       print srcDisk
       if self.archiveDrive == srcDisk:
         continue
-      if os.path.exists(srcDisk):
-        self.srcMedia = srcDisk
-        avDir = seek_named_dir(srcDisk,"DCIM")
+      if not os.path.exists(srcDisk):
+        continue
+      self.srcMedia = srcDisk
+      avDir = seek_named_dir(srcDisk,"DCIM",0,2)
+      if avDir is not None:
+        self.imgDirs.append(avDir)
+        self.foundImages = True
+      avDir = seek_named_dir(srcDisk,".android_secure",0,2)
+      if avDir is not None:
+        self.isPhone = True
+        print "Android Phone Storage Identified"
+      else:
+        # not a phone, so look for AVCHD stuff
+        avDir = seek_named_dir(srcDisk,"PRIVATE")
         if avDir is not None:
           self.imgDirs.append(avDir)
           self.foundImages = True
-        avDir = seek_named_dir(srcDisk,".android_secure")
-        if avDir is not None:
-          self.isPhone = True
-          print "Android Phone Storage Identified"
         else:
-          # not a phone, so look for AVCHD stuff
-          avDir = seek_named_dir(srcDisk,"PRIVATE")
+          avDir = seek_named_dir(srcDisk,"AVCHD")
           if avDir is not None:
             self.imgDirs.append(avDir)
             self.foundImages = True
-          else:
-            avDir = seek_named_dir(srcDisk,"AVCHD")
-            if avDir is not None:
-              self.imgDirs.append(avDir)
-              self.foundImages = True
-        if self.foundImages or self.isPhone:
-            break
+      if self.foundImages or self.isPhone:
+          break
     if self.foundImages:
-      # PIX and VIDEO #########################################
-      # new hack to accomodate android phone that may have multiple dirs....
-      print "looking for extra image dirs on drive '%s'" % (self.srcMedia)
+      print "looking for extra Android image dirs on drive '%s'" % (self.srcMedia)
       for aTest in ["AndCam3D", "AndroPan", "CamScanner", "ReducePhotoSize", "retroCamera",
               "FxCamera", "PicSay", "magicdoodle", "magicdoodlelite", "penman", 
               "Video", "Vignette", "SketchBookMobile", "sketcher"]:
-        nDir = seek_named_dir(self.srcMedia,aTest)
+        nDir = seek_named_dir(self.srcMedia,aTest,0,4)
         if nDir is not None:
           self.imgDirs.append(nDir)
           self.isPhone = True
     return self.srcMedia
   def seek_dng_convertor(self):
     self.hasDNGConv = False
-    # DNGscript = None
     self.DNG = ""
     if os.environ.has_key('PROGRAMFILES'):
       self.DNG = os.path.join(os.environ['PROGRAMFILES'],"Adobe","Adobe DNG Converter.exe")
       if not os.path.exists(DNG):
-              self.DNG = os.path.join(os.environ['PROGRAMFILES(X86)'],"Adobe","Adobe DNG Converter.exe")
+        self.DNG = os.path.join(os.environ['PROGRAMFILES(X86)'],"Adobe","Adobe DNG Converter.exe")
       if os.path.exists(DNG):
-            print "%s exists" % (DNG)
-            self.hasDNGConv = True
-          # DNGscript = open("DNG.bat","w")
+        print "%s exists" % (DNG)
+        self.hasDNGConv = True
   def mkArchiveDir(self,Location):
     "possibly create a directory"
     if not self.createdDirs.has_key(Location):
