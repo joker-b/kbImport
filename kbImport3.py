@@ -41,6 +41,8 @@
 # http://www.photorant.com/
 """
 
+# TO-DO -- ignore list eg ['.dropbox.device']
+
 versionString = "kbImport - 21jan2014 - (c)2014 K Bjorke"
 
 import sys
@@ -75,7 +77,7 @@ def seek_named_dir(LookHere,DesiredName,Level=0,MaxLevels=6):
   try:
     allSubs = os.listdir(LookHere)
   except:
-    print "seek_named_dir('%s','%s'): no luck" % (LookHere,DesiredName)
+    print "seek_named_dir('%s','%s'):\n\tno luck, '%s'" % (LookHere,DesiredName,sys.exc_info()[0])
     return None
   for subdir in allSubs:
     fullpath = os.path.join(LookHere,subdir)
@@ -172,6 +174,8 @@ class Volumes(object):
     self.audioPrefix = "" # for edirol
     self.createdDirs = {}
     self.dirList = []
+    self.imgDirs = []
+    self.srcMedia = None
   #
   def archive(self):
     if self.ready():
@@ -186,16 +190,18 @@ class Volumes(object):
       return False
     if not self.verify_archive_subdirs():
       return False
-    self.find_src_media()
+    self.srcMedia = self.find_src_media()
     if self.srcMedia is None:
       print "WARNING: No original source media found"
       print "\tPlease connect a card, phone, etc."
       return False
-    self.seek_dng_convertor()
+    self.DNG = self.seek_dng_convertor()
     return True
   #
-  def find_archive_drive(self):
-    # look for Drobo first
+  # seek needed resources on disk
+  #
+  def find_primary_archive_drive(self):
+    "find prefered destination"
     for arch in self.PrimaryArchiveList:
       if os.path.exists(arch):
           self.archiveDrive = arch
@@ -205,8 +211,10 @@ class Volumes(object):
           self.vidDestDir = os.path.join(arch,"Vid")
           self.audioDestDir = os.path.join(arch,"Audio")
           return True
-    # nothing found?
     print "Primary archive disk unavailable"
+    return False
+  def find_local_archive_drive(self):
+    "find 'backup' destination"
     for arch in self.LocalArchiveList:
       if os.path.exists(arch):
         self.archiveDrive = arch
@@ -217,68 +225,98 @@ class Volumes(object):
         self.vidDestDir = os.path.join(arch,"LocalVid")
         sef.audioDestDir = os.path.join(arch,"LocalAudio")
         return True
-    print "Something is broken? No primary or local archive dirs!"
+    print "Unable to find a local archive location"
     return False
+  def find_archive_drive(self):
+    "find an archive destination"
+    if self.find_primary_archive_drive():
+      return True
+    return self.find_local_archive_drive()
   def verify_archive_subdirs(self):
-    for d in [self.pixDestDir, self.vidDestDir, self.audioDestDir]: # delay this test?
+    "double-check existence of the archive directories"
+    for d in [self.pixDestDir, self.vidDestDir, self.audioDestDir]: # TO-DO delay this test?
       if not os.path.exists(d):
         print "Something is broken? No archive dir %s" % (d)
         return False
     return True
   #
-  def find_src_media(self):
-    self.srcMedia = None
-    self.foundImages = False
-    self.isPhone = False
-    self.imgDirs = []
-    for srcDisk in self.RemovableMedia:
-      print srcDisk
-      if self.archiveDrive == srcDisk:
-        continue
-      if not os.path.exists(srcDisk):
-        continue
-      self.srcMedia = srcDisk
+  # Find Source Material
+  #
+  def find_DCIM(self,srcDisk):
       avDir = seek_named_dir(srcDisk,"DCIM",0,2)
       if avDir is not None:
         self.imgDirs.append(avDir)
         self.foundImages = True
+        return True
+      return False
+  def find_PRIVATE(self,srcDisk):
+      avDir = seek_named_dir(srcDisk,"PRIVATE")
+      if avDir is not None:
+        self.imgDirs.append(avDir)
+        self.foundImages = True
+        return True
+      return False
+  def find_AVCHD(self,srcDisk):
+      avDir = seek_named_dir(srcDisk,"AVCHD")
+      if avDir is not None:
+        self.imgDirs.append(avDir)
+        self.foundImages = True
+        return True
+      return False
+  def identify_phone(self,srcDisk):
       avDir = seek_named_dir(srcDisk,".android_secure",0,2)
       if avDir is not None:
-        self.isPhone = True
         print "Android Phone Storage Identified"
-      else:
-        # not a phone, so look for AVCHD stuff
-        avDir = seek_named_dir(srcDisk,"PRIVATE")
-        if avDir is not None:
-          self.imgDirs.append(avDir)
-          self.foundImages = True
-        else:
-          avDir = seek_named_dir(srcDisk,"AVCHD")
-          if avDir is not None:
-            self.imgDirs.append(avDir)
-            self.foundImages = True
-      if self.foundImages or self.isPhone:
+        return True
+      return False
+  def find_extra_android_image_dirs(self,srcMedia):
+    found = False
+    print "looking for extra Android image dirs on drive '%s'" % (srcMedia)
+    for aTest in ["AndCam3D", "AndroPan", "CamScanner", "ReducePhotoSize", "retroCamera",
+            "FxCamera", "PicSay", "magicdoodle", "magicdoodlelite", "penman", 
+            "Video", "Vignette", "SketchBookMobile", "sketcher"]:
+      nDir = seek_named_dir(srcMedia,aTest,0,4)
+      if nDir is not None:
+        self.imgDirs.append(nDir)
+        found = True
+    return found
+  def find_src_media(self):
+    srcMedia = None
+    self.foundImages = False
+    isPhone = False
+    for srcDisk in self.RemovableMedia:
+      print srcDisk
+      if (self.archiveDrive == srcDisk) or (not os.path.exists(srcDisk)):
+        continue
+      srcMedia = srcDisk
+      self.find_DCIM(srcDisk)
+      isPhone = self.identify_phone(srcDisk)
+      if not isPhone:
+        p = self.find_PRIVATE(srcDisk)
+        if not p:
+          self.find_AVCHD(srcDisk)
+      if self.foundImages or isPhone:
           break
     if self.foundImages:
-      print "looking for extra Android image dirs on drive '%s'" % (self.srcMedia)
-      for aTest in ["AndCam3D", "AndroPan", "CamScanner", "ReducePhotoSize", "retroCamera",
-              "FxCamera", "PicSay", "magicdoodle", "magicdoodlelite", "penman", 
-              "Video", "Vignette", "SketchBookMobile", "sketcher"]:
-        nDir = seek_named_dir(self.srcMedia,aTest,0,4)
-        if nDir is not None:
-          self.imgDirs.append(nDir)
-          self.isPhone = True
-    return self.srcMedia
+      isPhone |= self.find_extra_android_image_dirs(srcMedia)
+    return srcMedia
+  #
+  # Look for external tools
+  #
   def seek_dng_convertor(self):
-    self.hasDNGConv = False
-    self.DNG = ""
-    if os.environ.has_key('PROGRAMFILES'):
-      self.DNG = os.path.join(os.environ['PROGRAMFILES'],"Adobe","Adobe DNG Converter.exe")
-      if not os.path.exists(DNG):
-        self.DNG = os.path.join(os.environ['PROGRAMFILES(X86)'],"Adobe","Adobe DNG Converter.exe")
-      if os.path.exists(DNG):
-        print "%s exists" % (DNG)
-        self.hasDNGConv = True
+    "find a DNG convertor, if one is available"
+    convertor = None
+    if os.environ.has_key('PROGRAMFILES'): # windows
+      convertor = os.path.join(os.environ['PROGRAMFILES'],"Adobe","Adobe DNG Converter.exe")
+      if not os.path.exists(convertor):
+        convertor = os.path.join(os.environ['PROGRAMFILES(X86)'],"Adobe","Adobe DNG Converter.exe")
+      if not os.path.exists(convertor):
+        convertor = None
+    return convertor
+
+  #
+  # Archiving
+  #
   def mkArchiveDir(self,Location):
     "possibly create a directory"
     if not self.createdDirs.has_key(Location):
@@ -427,7 +465,7 @@ class Volumes(object):
         isSimpleVideo = Volumes.patVidFiles.search(kUp) is not None
         m = Volumes.patDNGsrc.search(kUp)
         if m:
-          if Vols.hasDNGConv:
+          if Vols.DNG:
             isDNGible = True
             destName = "%s.DNG" % m.groups(0)[0]
         m = Volumes.patJPG.search(kUp)
@@ -462,6 +500,8 @@ class Volumes(object):
     s = os.stat(FullSrcPath)
     protected = gTest
     destinationPath = DestDir
+    if SrcName == '.dropbox.device': # TO-DO -- be more sophisticated here
+      return
     #
     # wanted: better checking here
     #
@@ -494,7 +534,7 @@ class Volumes(object):
     try:
       shutil.copy2(FullSrcPath,DestPath)
     except:
-      print "Failed to copy!! %s -> %s" % (FullSrcPath,DestPath)
+      print "Failed to copy, '%s'!!\n\t%s\n\t%s" % (sys.exc_info()[0],FullSrcPath,DestPath)
   #
   def dng_convert(self,DestPath,DestName,FullSrcPath):
     cmd = "\"%s\" -c -d \"%s\" -o %s \"%s\"" % (self.DNG,DestPath,DestName,FullSrcPath)
@@ -534,6 +574,7 @@ class Volumes(object):
 
 class VolTests(unittest.TestCase):
   def setUp(self):
+    gTest = True # good idea?
     self.v = Volumes()
   #def test_hasRemoveable(self):
   #  self.assertTrue(len(Vols.RemovableMedia) > 0)
@@ -541,12 +582,19 @@ class VolTests(unittest.TestCase):
     self.assertTrue(len(self.v.PrimaryArchiveList) > 0)
   def test_hasRLocal(self):
     self.assertTrue(len(self.v.LocalArchiveList) > 0)
+  def test_archive_loc(self):
+    "obviously this test needs to be run on a machine with such a drive..."
+    self.assertTrue(self.v.find_archive_drive())
   #def test_soughtDNG(self):
   #  self.assertTrue(Vols.DNG is not None)
 
 if len(sys.argv) <= 1:
   print "Usage: python kbImport3.py JobName [Removeable] [ArchiveDir]"
-  print "No arguments: Running unittests"
+  print "Unit Test: python kbImport3.py test"
+  sys.exit()
+
+if sys.argv[1].__str__().lower() == 'test':
+  sys.argv = sys.argv[1:]
   unittest.main()
   sys.exit()
 
