@@ -170,12 +170,22 @@ class Volumes(object):
     self.JobName = None
     self.nBytes = 0L
     self.nFiles = 0L
+    self.nSkipped = 0L
     self.nConversions = 0
     self.audioPrefix = "" # for edirol
     self.createdDirs = {}
     self.dirList = []
     self.imgDirs = []
     self.srcMedia = None
+    #
+  def user_args(self,argv):
+    self.JobName = argv[1]
+    if len(argv) > 2: # TO-DO fix this windows-centric oddness
+      self.RemovableMedia = [ '%s:' % (argv[2]) ]
+      self.RemovableMedia[0] = re.sub('::',':',self.RemovableMedia[0])
+    if len(argv) > 3: # TO-DO fix this
+      self.PrimaryArchiveList = [argv[3]]
+      self.PrimaryArchiveList[0] = re.sub('::',self.PrimaryArchiveList[0])
   #
   def archive(self):
     if self.ready():
@@ -326,7 +336,11 @@ class Volumes(object):
         safe_mkdir(result)
   def dest_dir_name(self,SrcFile,ArchDir):
     "seek or create an archive directory based on the src file's origination date"
-    s = os.stat(SrcFile)
+    try:
+      s = os.stat(SrcFile)
+    except:
+      print 'Stat failure: %s' % (sys.exc_info()[0])
+      return None
     rootDir = year_subdir(s,ArchDir)
     rootDir = month_subdir(s,rootDir)
     timeFormat = "%Y_%m_%d"
@@ -340,10 +354,6 @@ class Volumes(object):
       print "path error: %s is not a directory!" % (finaldir)
       return None
     return finaldir
-  def announce(self):
-    print 'SOURCE MEDIA: "%s"' % (self.srcMedia)
-    print 'DESTINATION DRIVE: "%s"' % (self.archiveDrive)
-    print 'JOB NAME: "%s"' % (self.JobName)
   def archive_images_and_video(self):
     if not self.foundImages:
       return
@@ -419,21 +429,18 @@ class Volumes(object):
     """
     AVCHD has a complex format, let's keep it intact so clips can be archived to blu-ray etc.
     We will say that the dated directory is equivalent to the "PRIVATE" directory in the spec.
-    We don't handle the DCIM and MISC dirs.
+    We don't handle the DCIM and MISC sub-dirs.
     """
     privateDir = self.dest_dir_name(SrcFile,ArchDir)
     if privateDir is None:
       print "avchd error"
       return privateDir
     avchdDir = safe_mkdir(os.path.join(privateDir,"AVCHD"))
-    avchdtnDir = safe_mkdir(os.path.join(avchdDir,"AVCHDTN"))
+    for s in ["AVCHDTN","CANONTHM"]:
+      sd = safe_mkdir(os.path.join(avchdDir,s))
     bdmvDir = safe_mkdir(os.path.join(avchdDir,"BDMV"))
-    streamDir = safe_mkdir(os.path.join(bdmvDir,"STREAM"))
-    clipinfDir = safe_mkdir(os.path.join(bdmvDir,"CLIPINF"))
-    playlistDir = safe_mkdir(os.path.join(bdmvDir,"PLAYLIST"))
-    backupDir = safe_mkdir(os.path.join(bdmvDir,"BACKUP"))
-    canonthmDir = safe_mkdir(os.path.join(avchdDir,"CANONTHM"))
-    # should make sure it exists!
+    for s in ["STREAM","CLIPINF","PLAYLIST","BACKUP"]:
+      sd = safe_mkdir(os.path.join(bdmvDir,s))
     return privateDir
   def archive_pix(self,FromDir,PixArchDir,VidArchDir):
     "Archive images and video"
@@ -492,56 +499,64 @@ class Volumes(object):
         else:
           destinationPath = self.dest_dir_name(fullKidPath,PixArchDir)
         if destinationPath:
-          self.archive_image(kid,fullKidPath,destinationPath,destName,isDNGible)
+          if not self.archive_image(kid,fullKidPath,destinationPath,destName,isDNGible):
+            self.nSkipped += 1
         else:
           print "Unable to archive media to %s" % (destinationPath)
+
+  def incr(self,FullSrcPath):
+    try:
+      s = os.stat(FullSrcPath)
+    except:
+      print "archive_image() cannot stat source '%s'" % (FullSrcPath)
+      print "Err %s" % (sys.exc_info()[0])
+      return False
+    self.nBytes += s.st_size
+    self.nFiles += 1
+    return True
+
   def archive_image(self,SrcName,FullSrcPath,DestDir,DestName,IsDNGible):
+    if SrcName == '.dropbox.device': # TO-DO -- be more sophisticated here
+      return False
     FullDestPath = os.path.join(DestDir,DestName)
-    s = os.stat(FullSrcPath)
     protected = gTest
     destinationPath = DestDir
-    if SrcName == '.dropbox.device': # TO-DO -- be more sophisticated here
-      return
-    #
-    # wanted: better checking here
-    #
     if os.path.exists(FullDestPath):
       if gForce:
-        print "overwriting %s" % (FullDestPath) 
-        self.nBytes += s.st_size
-        self.nFiles += 1
+        print "overwriting %s" % (FullDestPath)
+        self.incr(FullSrcPath)
       else:
         protected = True
         m = Volumes.patDotAvchd.search(FullDestPath)
         if m:
           destinationPath = m.group(1)
           FullDestPath = os.path.join(destinationPath,"...",SrcName)
-        # print "%s already exists" % (destinationPath) 
     else:
       print "%s -> %s" % (SrcName,FullDestPath) 
-      self.nBytes += s.st_size
-      self.nFiles += 1
+      self.incr(FullSrcPath)
     if not protected:
       if IsDNGible:
-        self.dng_convert(destinationPath,destName,FullSrcPath)
+        return self.dng_convert(destinationPath,destName,FullSrcPath)
       else:
-        self.safe_copy(FullSrcPath,FullDestPath)
+        return self.safe_copy(FullSrcPath,FullDestPath)
+    return False
   #
   def safe_copy(self,FullSrcPath,DestPath):
     if gTest:
-      print "Fake Copy %s -> %s" % (FullSrcPath,DestPath)
-      return
+      return True # always "work"
     try:
       shutil.copy2(FullSrcPath,DestPath)
     except:
       print "Failed to copy, '%s'!!\n\t%s\n\t%s" % (sys.exc_info()[0],FullSrcPath,DestPath)
+      return False
+    return True
   #
   def dng_convert(self,DestPath,DestName,FullSrcPath):
     cmd = "\"%s\" -c -d \"%s\" -o %s \"%s\"" % (self.DNG,DestPath,DestName,FullSrcPath)
     # print cmd
     if gTest:
       print cmd
-      return
+      return True # pretend
     p = os.popen4(r'cmd /k')
     p[0].write('%s\r\n'%cmd)
     p[0].flush()
@@ -552,12 +567,22 @@ class Volumes(object):
     # DNGscript.write("%s\n"%(cmd))
     # ret = subprocess.call(cmd)
     # print "ret was %d" % (ret)
+    return True
+  #
+  # reporting
+  #
+  def announce(self):
+    print 'SOURCE MEDIA: "%s"' % (self.srcMedia)
+    print 'DESTINATION DRIVE: "%s"' % (self.archiveDrive)
+    print 'JOB NAME: "%s"' % (self.JobName)
   def report(self):
     if len(self.dirList) > 0:
       print "Created %d Directories:" % (len(self.dirList))
       for d in self.dirList:
         print d
     print "%d Files, Total MB: %d" % (self.nFiles,self.nBytes/(1024*1024))
+    if self.nSkipped:
+      print "Skipped %d files" % (self.nSkipped)
     endTime = time.clock()
     elapsed = endTime-self.startTime
     if elapsed > 100:
@@ -576,8 +601,6 @@ class VolTests(unittest.TestCase):
   def setUp(self):
     gTest = True # good idea?
     self.v = Volumes()
-  #def test_hasRemoveable(self):
-  #  self.assertTrue(len(Vols.RemovableMedia) > 0)
   def test_hasPrimary(self):
     self.assertTrue(len(self.v.PrimaryArchiveList) > 0)
   def test_hasRLocal(self):
@@ -585,8 +608,6 @@ class VolTests(unittest.TestCase):
   def test_archive_loc(self):
     "obviously this test needs to be run on a machine with such a drive..."
     self.assertTrue(self.v.find_archive_drive())
-  #def test_soughtDNG(self):
-  #  self.assertTrue(Vols.DNG is not None)
 
 if len(sys.argv) <= 1:
   print "Usage: python kbImport3.py JobName [Removeable] [ArchiveDir]"
@@ -599,15 +620,7 @@ if sys.argv[1].__str__().lower() == 'test':
   sys.exit()
 
 Vols = Volumes()
-
-Vols.JobName = sys.argv[1]
-if len(sys.argv) > 2: # TO-DO fix this
-  Vols.RemovableMedia = [ '%s:' % (sys.argv[2]) ]
-  Vols.RemovableMedia[0] = re.sub('::',':',Vols.RemovableMedia[0])
-if len(sys.argv) > 3: # TO-DO fix this
-  Vols.PrimaryArchiveList = [ sys.argv[3] ]
-  Vols.PrimaryArchiveList[0] = re.sub('::',':',Vols.PrimaryArchiveList[0])
-
+Vols.user_args(sys.argv)
 Vols.archive()
 
 # /disks/Removable/Flash\ Reader/EOS_DIGITAL/DCIM/100EOS5D/
