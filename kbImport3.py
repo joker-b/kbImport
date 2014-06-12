@@ -249,7 +249,7 @@ class Volumes(object):
         print "Using local drive %s instead" % (arch)
         self.pixDestDir = os.path.join(arch,"LocalPix")
         self.vidDestDir = os.path.join(arch,"LocalVid")
-        sef.audioDestDir = os.path.join(arch,"LocalAudio")
+        self.audioDestDir = os.path.join(arch,"LocalAudio")
         return True
     print "Unable to find a local archive location"
     return False
@@ -331,7 +331,7 @@ class Volumes(object):
     isPhone = False
     for srcDisk in self.RemovableMedia:
       print srcDisk
-      if (self.archiveDrive == srcDisk) or (not os.path.exists(srcDisk)):
+      if (self.archiveDrive == srcDisk) or (not os.path.exists(srcDisk)) or os.path.islink(srcDisk):
         continue
       srcMedia = srcDisk
       self.find_DCIM(srcDisk)
