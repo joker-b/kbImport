@@ -532,8 +532,9 @@ class Volumes(object):
           destinationPath = m.group(1)
           FullDestPath = os.path.join(destinationPath,"...",SrcName)
     else:
-      print "%s -> %s" % (SrcName,FullDestPath) 
-      self.incr(FullSrcPath)
+	    reportPath = '..' + FullDestPath[len(self.pixDestDir):]
+	    print "%s -> %s" % (SrcName,reportPath)
+	    self.incr(FullSrcPath)
     if not protected:
       if IsDNGible:
         return self.dng_convert(destinationPath,destName,FullSrcPath)
