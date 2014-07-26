@@ -42,8 +42,9 @@
 """
 
 # TO-DO -- ignore list eg ['.dropbox.device']
+# TO-DO - itemized manifest @ end ("# of pix to dir xxxx" etc)
 
-versionString = "kbImport - 21jan2014 - (c)2014 K Bjorke"
+versionString = "kbImport - 26jul2014 - (c)2014 K Bjorke"
 
 import sys
 import os
@@ -96,13 +97,16 @@ def seek_named_dir(LookHere,DesiredName,Level=0,MaxLevels=6):
 #####################################################
 
 
-def safe_mkdir(Dir):
+def safe_mkdir(Dir,ReportName=None):
   "check for existence, create as needed"
+  report = Dir
+  if ReportName:
+  	report = ReportName
   if not os.path.exists(Dir):
     if gTest:
-      print "Need to create dir %s **" % (Dir)
+      print "Need to create dir %s **" % (report)
     else:
-      print "** Creating dir %s **" % (Dir)
+      print "** Creating dir %s **" % (report)
       os.mkdir(Dir)
   elif not os.path.isdir(Dir):
     print "path error: %s is not a directory!" % (finaldir)
@@ -112,22 +116,24 @@ def safe_mkdir(Dir):
 
 ######
 
-def year_subdir(SrcFileStat,ArchDir):
+def year_subdir(SrcFileStat,ArchDir,ReportName=""):
   "Based on the source file's timestamp, seek (or create) an archive directory"
   # subdir = time.strftime("%Y",time.localtime(SrcFileStat.st_ctime))
   subdir = time.strftime("%Y",time.localtime(SrcFileStat.st_mtime))
   result = os.path.join(ArchDir,subdir)
-  safe_mkdir(result)
+  report = ReportName+"/"+subdir
+  safe_mkdir(result,report)
   return result
 
 #########
 
-def month_subdir(SrcFileStat,ArchDir):
+def month_subdir(SrcFileStat,ArchDir,ReportName=""):
   "Based on the source file's timestamp, seek (or create) an archive directory"
   # subdir = time.strftime("%Y-%m-%b",time.localtime(SrcFileStat.st_ctime))
   subdir = time.strftime("%Y-%m-%b",time.localtime(SrcFileStat.st_mtime))
   result = os.path.join(ArchDir,subdir)
-  safe_mkdir(result)
+  report = ReportName+"/"+subdir
+  safe_mkdir(result,report)
   return result
 
 #############################################################
@@ -334,7 +340,7 @@ class Volumes(object):
         self.createdDirs[Location] = 1
         self.dirList.append(Location)
         safe_mkdir(result)
-  def dest_dir_name(self,SrcFile,ArchDir):
+  def dest_dir_name(self,SrcFile,ArchDir,ReportName=""):
     "seek or create an archive directory based on the src file's origination date"
     try:
       s = os.stat(SrcFile)
@@ -349,7 +355,8 @@ class Volumes(object):
       subdir = "%s_%s" % (subdir,self.JobName)
     finaldir = os.path.join(rootDir,subdir)
     # should make sure it exists!
-    safe_mkdir(finaldir)
+    report = ReportName+"/"+subdir
+    safe_mkdir(finaldir,report)
     if not os.path.isdir(finaldir):
       print "path error: %s is not a directory!" % (finaldir)
       return None
@@ -435,12 +442,12 @@ class Volumes(object):
     if privateDir is None:
       print "avchd error"
       return privateDir
-    avchdDir = safe_mkdir(os.path.join(privateDir,"AVCHD"))
+    avchdDir = safe_mkdir(os.path.join(privateDir,"AVCHD"),"AVCHD")
     for s in ["AVCHDTN","CANONTHM"]:
-      sd = safe_mkdir(os.path.join(avchdDir,s))
-    bdmvDir = safe_mkdir(os.path.join(avchdDir,"BDMV"))
+      sd = safe_mkdir(os.path.join(avchdDir,s),"AVCHD/%s"%(s)
+    bdmvDir = safe_mkdir(os.path.join(avchdDir,"BDMV"),"BDMV")
     for s in ["STREAM","CLIPINF","PLAYLIST","BACKUP"]:
-      sd = safe_mkdir(os.path.join(bdmvDir,s))
+      sd = safe_mkdir(os.path.join(bdmvDir,s),"BDMV/%s"%(s))
     return privateDir
   def archive_pix(self,FromDir,PixArchDir,VidArchDir):
     "Archive images and video"
