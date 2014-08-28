@@ -61,6 +61,6 @@ drobolize
 Because kbImport is meant to be useful even on small laptops when travelling (I often have used it on an Asus EE-PC with an
 external HD), it will first look for the "master" archive (for me, a drobo disk stack) and if it can't find it, it will
 seek a sensible local-system location for media storgage. Then later, when the master archive is available the temporary
-local archive can be merged into the master using <b>drobolize.py</b> -- be sure to double-ceck the expected locations
+local archive can be merged into the master using <b>drobolize.py</b> -- be sure to double-check the expected locations
 in this script, because like kbImport it expects *my* drive locations -- yours may vary.
 

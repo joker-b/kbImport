@@ -170,7 +170,7 @@ class Volumes(object):
       self.PrimaryArchiveList = []
       self.LocalArchiveList = []
     else:
-      self.RemovableMedia = self.available_source_vols(['I:', 'H:', 'K:','J:','G:', 'F:'])
+      self.RemovableMedia = self.available_source_vols(['J:', 'I:', 'H:', 'K:','G:', 'F:'])
       self.PrimaryArchiveList = ['R:', 'G:', 'G:']
       self.LocalArchiveList = ['D:']
     self.JobName = None
