@@ -156,12 +156,12 @@ class Volumes(object):
   patVidFiles = re.compile('\.(M4V|MP4|MOV|3GP)')
   patJPG = re.compile('(.*)\.JPG')
   patDNGsrc = re.compile('(.*)\.RW2') # might be more in the future....
+  largestSource = 100 * 1024*1024*1024 # in GB - hack to not scan hard drives as source media
   #
   def __init__(self):
     self.startTime = time.clock()
     if os.name == 'posix': # mac?
-      vols = '/Volumes'
-      self.RemovableMedia = [os.path.join(vols,a) for a in os.listdir(vols) if os.path.isdir(os.path.join(vols,a)) and a != 'Macintosh HD']
+      self.RemovableMedia = self.available_source_vols([os.path.join('/Volumes',a) for a in os.listdir('/Volumes')])
       self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
       self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
     elif os.name != "nt":
@@ -170,7 +170,7 @@ class Volumes(object):
       self.PrimaryArchiveList = []
       self.LocalArchiveList = []
     else:
-      self.RemovableMedia = ['I:', 'H:', 'K:','J:','G:', 'F:']
+      self.RemovableMedia = self.available_source_vols(['I:', 'H:', 'K:','J:','G:', 'F:'])
       self.PrimaryArchiveList = ['R:', 'G:', 'G:']
       self.LocalArchiveList = ['D:']
     self.JobName = None
@@ -258,6 +258,25 @@ class Volumes(object):
   #
   # Find Source Material
   #
+
+  def available_source_vols(self,Vols=[]):
+      return [a for a in Vols if self.acceptable_source_vol(a)]
+  def acceptable_source_vol(self,Path):
+    if not os.path.exists(Path):
+      return False
+    if not os.path.isdir(Path):
+      print 'Caution: "%s" is not a directory' %(Path)
+      return False
+    if Path == '/Volumes/Macintosh HD' or \
+      Path == '/Volumes/MobileBackups' or \
+      Path == '/Volumes/My Passport for Mac':
+      return False
+    s = os.path.getsize(Path) # TO-DO: this is not how you get volume size!
+    if os.path.getsize(Path) > Volumes.largestSource:
+      print 'Oversized source: "%s"' %(Path)
+      return False
+    return True
+
   def find_DCIM(self,srcDisk):
       avDir = seek_named_dir(srcDisk,"DCIM",0,2)
       if avDir is not None:
@@ -444,7 +463,7 @@ class Volumes(object):
       return privateDir
     avchdDir = safe_mkdir(os.path.join(privateDir,"AVCHD"),"AVCHD")
     for s in ["AVCHDTN","CANONTHM"]:
-      sd = safe_mkdir(os.path.join(avchdDir,s),"AVCHD/%s"%(s)
+      sd = safe_mkdir(os.path.join(avchdDir,s),"AVCHD/%s"%(s))
     bdmvDir = safe_mkdir(os.path.join(avchdDir,"BDMV"),"BDMV")
     for s in ["STREAM","CLIPINF","PLAYLIST","BACKUP"]:
       sd = safe_mkdir(os.path.join(bdmvDir,s),"BDMV/%s"%(s))
