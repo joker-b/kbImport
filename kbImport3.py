@@ -52,6 +52,7 @@ import shutil
 import time
 import re
 import subprocess
+import argparse
 import unittest
 
 ##############################################################
@@ -183,15 +184,24 @@ class Volumes(object):
     self.dirList = []
     self.imgDirs = []
     self.srcMedia = None
+    self.unify = False
+    self.unified_archive_dir = None
+    self.prefix = None
     #
-  def user_args(self,argv):
-    self.JobName = argv[1]
-    if len(argv) > 2: # TO-DO fix this windows-centric oddness
-      self.RemovableMedia = [ '%s:' % (argv[2]) ]
+  def user_args(self,pargs):
+    self.JobName = pargs.jobname
+    if pargs.source is not None: # TO-DO fix this windows-centric oddness
+      self.RemovableMedia = [ '%s:' % (pargs.source) ]
       self.RemovableMedia[0] = re.sub('::',':',self.RemovableMedia[0])
-    if len(argv) > 3: # TO-DO fix this
-      self.PrimaryArchiveList = [argv[3]]
+    if pargs.archive is not None: # TO-DO fix this
+      self.PrimaryArchiveList = pargs.archive
       self.PrimaryArchiveList[0] = re.sub('::',self.PrimaryArchiveList[0])
+    if pargs.unify is not None:
+    	self.unify = True
+    if pargs.prefix is not None:
+    	print "can't yet add prefix"
+    	self.prefix = "%s_"%(pargs.prefix)
+
   #
   def archive(self):
     if self.ready():
@@ -359,8 +369,33 @@ class Volumes(object):
         self.createdDirs[Location] = 1
         self.dirList.append(Location)
         safe_mkdir(result)
+  def unified_dir_name(self,ArchDir,ReportName=""):
+  	if self.unified_archive_dir is not None:
+  		return self.unified_archive_dir
+  	now = time.localtime()
+  	ysubdir = time.strftime("%Y",now)
+  	yresult = os.path.join(ArchDir,ysubdir)
+  	report = ReportName+"/"+ysubdir
+  	safe_mkdir(yresult,report)
+	msubdir = time.strftime("%Y-%m-%b",now)
+	mresult = os.path.join(ArchDir,subdir)
+	report = report+"/"+msubdir
+	safe_mkdir(mresult,report)
+	subdir = time.strftime("%Y_%m_%d",now)
+	if self.JobName is not None:
+		subdir = "%s_%s" % (subdir,self.JobName)
+	finaldir = os.path.join(mresult,subdir)
+	report = report+"/"+subdir
+	safe_mkdir(finaldir,report)
+	if not os.path.isdir(finaldir):
+		print "path error: %s is not a directory!" % (finaldir)
+		return None
+	return finaldir
+
   def dest_dir_name(self,SrcFile,ArchDir,ReportName=""):
     "seek or create an archive directory based on the src file's origination date"
+    if self.unify:
+    	return self.unified_dir_name(ArchDir,ReportName)
     try:
       s = os.stat(SrcFile)
     except:
@@ -622,7 +657,7 @@ class Volumes(object):
     if self.nConversions > 0:
       print "Including %d DNG conversions" % (self.nConversions)
 
-
+# UNIT TESTS ##############################
 
 class VolTests(unittest.TestCase):
   def setUp(self):
@@ -636,18 +671,28 @@ class VolTests(unittest.TestCase):
     "obviously this test needs to be run on a machine with such a drive..."
     self.assertTrue(self.v.find_archive_drive())
 
-if len(sys.argv) <= 1:
-  print "Usage: python kbImport3.py JobName [Removeable] [ArchiveDir]"
-  print "Unit Test: python kbImport3.py test"
-  sys.exit()
+# MAIN EXECUTION BITS ##############
 
-if sys.argv[1].__str__().lower() == 'test':
-  sys.argv = sys.argv[1:]
-  unittest.main()
-  sys.exit()
+if len(sys.argv)>1 and sys.argv[1]=='test': # this is hokey placement but argparse trashes unittest
+	print "Running unit tests..."
+	unittest.main()
+	sys.exit()
+
+parser = argparse.ArgumentParser(description='Import/Archive Pictures, Video, & Audio from removeable media')
+parser.add_argument('jobname',help='appended to date directory names: jobname "test" to run unit tests')
+# parser.add_argument('-t','--test',help='Run unit tests',nargs='?',const=1)
+parser.add_argument('-u','--unify',help='Unify imports to a single directory (indexed TODAY)')
+parser.add_argument('-p','--prefix',help='set imported file prefix, e.g. "bjorke"')
+parser.add_argument('-s','--source',help='Specify source removeable volume (otherwise will guess)')
+parser.add_argument('-a','--archive',help='specify source archive directory (otherwise will use std names)')
+pargs = parser.parse_args()
+print pargs
+
+#print pargs.jobname
+# exit()
 
 Vols = Volumes()
-Vols.user_args(sys.argv)
+Vols.user_args(pargs)
 Vols.archive()
 
 # /disks/Removable/Flash\ Reader/EOS_DIGITAL/DCIM/100EOS5D/
