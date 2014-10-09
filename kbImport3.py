@@ -598,7 +598,7 @@ class Volumes(object):
 	    self.incr(FullSrcPath)
     if not protected:
       if IsDNGible:
-        return self.dng_convert(destinationPath,destName,FullSrcPath)
+        return self.dng_convert(destinationPath,DestName,FullSrcPath)
       else:
         return self.safe_copy(FullSrcPath,FullDestPath)
     return False
