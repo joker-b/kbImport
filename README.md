@@ -2,7 +2,7 @@ kbImport
 ========
 
 Media-import pictures, audio files, and video from a variety of different cameras and devices, including AVCD and various
-RAW formats... even scanners.
+RAW formats... even scanners. Just put in the SD card and run kbImport.
 
 Used on varying computers at different times: Mac, Linux, Windows. This is a personal script that I have used and
 grown over several years of continuous use.
@@ -44,6 +44,8 @@ The [JobName] is optional but helpful. Imported files will be laid-out onto the 
                P1090545.MOV
                AVCHD
 </pre>
+
+<b>MetaData:</b> kbImport just moves files around, it doesn't assign metadata. For pictures, I use the 'AllMine' script within Photoshop, which can be found at https://github.com/joker-b/PhotoshopScripts
 
 <b>Variations:</b> In the case of the Pix directory, the "rw2s" subdirectory is optional -- it was created by
 kbImport when convrting .RW2 format files to .DNG. If DNG wasn't applied, then the .RW2 files would be in the primary
