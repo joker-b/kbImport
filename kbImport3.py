@@ -151,12 +151,12 @@ class Volumes(object):
   AVCHDTargets["TDT"] = os.path.join("AVCHD","ACVHDTN")
   AVCHDTargets["TID"] = os.path.join("AVCHD","ACVHDTN")
   AVCHDTargets["JPG"] = os.path.join("AVCHD","CANONTHM")
-  patAvchd = re.compile('AVCHD')
-  patDotAvchd = re.compile('(.*).AVCHD')
-  patAvchdFiles = re.compile('\.(MTS|CPI|TDT|TID|MPL|BDM)')
-  patVidFiles = re.compile('\.(M4V|MP4|MOV|3GP)')
-  patJPG = re.compile('(.*)\.JPG')
-  patDNGsrc = re.compile('(.*)\.RW2') # might be more in the future....
+  regexAvchd = re.compile('AVCHD')
+  regexDotAvchd = re.compile('(.*).AVCHD')
+  regexAvchdFiles = re.compile('\.(MTS|CPI|TDT|TID|MPL|BDM)')
+  regexVidFiles = re.compile('\.(M4V|MP4|MOV|3GP)')
+  regexJPG = re.compile('(.*)\.JPG')
+  regexDNGsrc = re.compile('(.*)\.RW2') # might be more in the future....
   largestSource = 100 * 1024*1024*1024 # in GB - hack to not scan hard drives as source media
   #
   def __init__(self):
@@ -171,6 +171,7 @@ class Volumes(object):
       self.PrimaryArchiveList = []
       self.LocalArchiveList = []
     else:
+      # Defaults for Windows
       self.RemovableMedia = self.available_source_vols(['J:', 'I:', 'H:', 'K:','G:', 'F:'])
       self.PrimaryArchiveList = ['R:', 'G:', 'G:']
       self.LocalArchiveList = ['D:']
@@ -415,6 +416,7 @@ class Volumes(object):
       print "path error: %s is not a directory!" % (finaldir)
       return None
     return finaldir
+
   def archive_images_and_video(self):
     if not self.foundImages:
       return
@@ -423,6 +425,7 @@ class Volumes(object):
     for srcDir in self.imgDirs:
       print "Archiving Images from '%s'\n\tto '%s'" % (srcDir,self.pixDestDir)
       self.archive_pix(srcDir,self.pixDestDir,self.vidDestDir)
+
   def archive_audio(self):
     print "Archiving Audio from '%s'\n\tto '%s'" % (self.srcMedia,self.audioDestDir)
     # self.archive_audio_tracks(srcMedia,audioDestDir) ## HACKKKK
@@ -483,7 +486,7 @@ class Volumes(object):
       return False
     return True
   def avchd_src(self,FromDir):
-    if Volumes.patAvchd.search(FromDir):
+    if Volumes.regexAvchd.search(FromDir):
       return True
     return False
   def dest_avchd_dir_name(self,SrcFile,ArchDir):
@@ -503,6 +506,7 @@ class Volumes(object):
     for s in ["STREAM","CLIPINF","PLAYLIST","BACKUP"]:
       sd = safe_mkdir(os.path.join(bdmvDir,s),"BDMV/%s"%(s))
     return privateDir
+
   def archive_pix(self,FromDir,PixArchDir,VidArchDir):
     "Archive images and video"
     # first make sure all inputs are valid
@@ -526,17 +530,17 @@ class Volumes(object):
         avchdType = "JPG"
         kUp = kid.upper()
         destName = kid
-        m = Volumes.patAvchdFiles.search(kUp)
+        m = Volumes.regexAvchdFiles.search(kUp)
         if (m):
           isAVCHD = True
           avchdType = m.group(1)
-        isSimpleVideo = Volumes.patVidFiles.search(kUp) is not None
-        m = Volumes.patDNGsrc.search(kUp)
+        isSimpleVideo = Volumes.regexVidFiles.search(kUp) is not None
+        m = Volumes.regexDNGsrc.search(kUp)
         if m:
           if Vols.DNG:
             isDNGible = True
             destName = "%s.DNG" % m.groups(0)[0]
-        m = Volumes.patJPG.search(kUp)
+        m = Volumes.regexJPG.search(kUp)
         if m:
           # keep an eye open for special thumbnail JPGs....
           if isAVCHDsrc:
@@ -569,7 +573,7 @@ class Volumes(object):
     try:
       s = os.stat(FullSrcPath)
     except:
-      print "archive_image() cannot stat source '%s'" % (FullSrcPath)
+      print "incr() cannot stat source '%s'" % (FullSrcPath)
       print "Err %s" % (sys.exc_info()[0])
       return False
     self.nBytes += s.st_size
@@ -577,6 +581,8 @@ class Volumes(object):
     return True
 
   def archive_image(self,SrcName,FullSrcPath,DestDir,DestName,IsDNGible):
+    "Archive Single Image File"
+    # TO-DO -- Apply fancier naming to DestName
     if SrcName == '.dropbox.device': # TO-DO -- be more sophisticated here
       return False
     FullDestPath = os.path.join(DestDir,DestName)
@@ -588,7 +594,7 @@ class Volumes(object):
         self.incr(FullSrcPath)
       else:
         protected = True
-        m = Volumes.patDotAvchd.search(FullDestPath)
+        m = Volumes.regexDotAvchd.search(FullDestPath)
         if m:
           destinationPath = m.group(1)
           FullDestPath = os.path.join(destinationPath,"...",SrcName)
