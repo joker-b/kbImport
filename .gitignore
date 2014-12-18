@@ -2,6 +2,8 @@
 
 # C extensions
 *.so
+*.sublime-workspace
+*.sublime-project
 
 # Packages
 *.egg
