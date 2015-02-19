@@ -38,13 +38,13 @@
 #       tweak this for still cameras and audio as needed.
 #
 # Kevin Bjorke
-# http://www.photorant.com/
+# http://www.botzilla.com/
 """
 
 # TO-DO -- ignore list eg ['.dropbox.device']
 # TO-DO - itemized manifest @ end ("# of pix to dir xxxx" etc)
 
-versionString = "kbImport - 26jul2014 - (c)2014 K Bjorke"
+versionString = "kbImport - 19feb2015 - (c)2015 K Bjorke"
 
 import sys
 import os
@@ -53,23 +53,24 @@ import time
 import re
 import subprocess
 import argparse
-import unittest
 
-##############################################################
-##### global variables and settings ##########################
-##############################################################
+################################################
+##### global variable ##########################
+################################################
 
 # if gTest is True, create directories, but don't actually copy files (for testing).....
 gTest = False
-#if gForce is True, just copy always. Otherwise, don't overwrite existing archived files.
-gForce = False
 
 #########################################################################################
 ## FUNCTIONS START HERE #################################################################
 #########################################################################################
 
 def seek_named_dir(LookHere,DesiredName,Level=0,MaxLevels=6):
-  "Look for a directory, which should have pix"
+  """
+  Recursively look in 'LookHere' for a directory of the 'DesiredName'.
+  Return full path or None.
+  Don't dig more than MaxLevels deep.
+  """
   if Level >= MaxLevels:
     # print "seek_named_dir('%s','%s',%d,%d): too deep" % (LookHere,DesiredName,Level,MaxLevels)
     return None
@@ -82,13 +83,12 @@ def seek_named_dir(LookHere,DesiredName,Level=0,MaxLevels=6):
     print "seek_named_dir('%s','%s'):\n\tno luck, '%s'" % (LookHere,DesiredName,sys.exc_info()[0])
     return None
   for subdir in allSubs:
-    fullpath = os.path.join(LookHere,subdir)
     if subdir == DesiredName:
-      return fullpath
+      return os.path.join(LookHere,subdir) # got it
   for subdir in os.listdir(LookHere):
     fullpath = os.path.join(LookHere,subdir)
     if os.path.isdir(fullpath):
-      sr = seek_named_dir(fullpath,DesiredName,Level+1,MaxLevels)
+      sr = seek_named_dir(fullpath,DesiredName,Level+1,MaxLevels) # recurse
       if sr is not None:
         return sr
   return None
@@ -97,18 +97,24 @@ def seek_named_dir(LookHere,DesiredName,Level=0,MaxLevels=6):
 ## Find or Create Archive Destination Directories ###
 #####################################################
 
-
-def safe_mkdir(Dir,ReportName=None):
-  "check for existence, create as needed"
-  report = Dir
-  if ReportName:
-  	report = ReportName
+def safe_mkdir(Dir,ReportName=None,TestMe=False):
+  """
+  check for existence, create as needed.
+  'ReportName' is a print-pretty version.
+  Return directory name.
+  When testing is True, still return name of the (non-existent) directory!
+  """
+  report = ReportName or Dir
+  testing = gTest or TestMe
   if not os.path.exists(Dir):
-    if gTest:
+    if testing:
       print "Need to create dir %s **" % (report)
     else:
       print "** Creating dir %s **" % (report)
       os.mkdir(Dir)
+      if not os.path.exists(Dir):
+        print 'mkdir "%s" failed'
+        return None
   elif not os.path.isdir(Dir):
     print "path error: %s is not a directory!" % (finaldir)
     return None
@@ -117,24 +123,24 @@ def safe_mkdir(Dir,ReportName=None):
 
 ######
 
-def year_subdir(SrcFileStat,ArchDir,ReportName=""):
+def year_subdir(SrcFileStat,ArchDir,ReportName="",TestMe=False):
   "Based on the source file's timestamp, seek (or create) an archive directory"
   # subdir = time.strftime("%Y",time.localtime(SrcFileStat.st_ctime))
   subdir = time.strftime("%Y",time.localtime(SrcFileStat.st_mtime))
   result = os.path.join(ArchDir,subdir)
   report = ReportName+"/"+subdir
-  safe_mkdir(result,report)
+  safe_mkdir(result,report,TestMe)
   return result
 
 #########
 
-def month_subdir(SrcFileStat,ArchDir,ReportName=""):
+def month_subdir(SrcFileStat,ArchDir,ReportName="",TestMe=False):
   "Based on the source file's timestamp, seek (or create) an archive directory"
   # subdir = time.strftime("%Y-%m-%b",time.localtime(SrcFileStat.st_ctime))
   subdir = time.strftime("%Y-%m-%b",time.localtime(SrcFileStat.st_mtime))
   result = os.path.join(ArchDir,subdir)
   report = ReportName+"/"+subdir
-  safe_mkdir(result,report)
+  safe_mkdir(result,report,TestMe)
   return result
 
 #############################################################
@@ -157,7 +163,9 @@ class Volumes(object):
   regexVidFiles = re.compile('\.(M4V|MP4|MOV|3GP)')
   regexJPG = re.compile('(.*)\.JPG')
   regexDNGsrc = re.compile('(.*)\.RW2') # might be more in the future....
-  largestSource = 100 * 1024*1024*1024 # in GB - hack to not scan hard drives as source media
+  largestSource = 70 * 1024*1024*1024 # in GB - hack to not scan hard drives as source media
+  #
+  forceCopies = False
   #
   def __init__(self):
     self.startTime = time.clock()
@@ -205,14 +213,17 @@ class Volumes(object):
 
   #
   def archive(self):
+    "Main dealio right here"
     if self.ready():
       print versionString
       self.announce()
       self.archive_images_and_video()
       self.archive_audio()
       self.report()
+    print "Sorry, archive() not ready"
   #
   def ready(self):
+    "Do we have all media in place?"
     if not self.find_archive_drive():
       return False
     if not self.verify_archive_subdirs():
@@ -371,27 +382,27 @@ class Volumes(object):
         self.dirList.append(Location)
         safe_mkdir(result)
   def unified_dir_name(self,ArchDir,ReportName=""):
-  	if self.unified_archive_dir is not None:
-  		return self.unified_archive_dir
-  	now = time.localtime()
-  	ysubdir = time.strftime("%Y",now)
-  	yresult = os.path.join(ArchDir,ysubdir)
-  	report = ReportName+"/"+ysubdir
-  	safe_mkdir(yresult,report)
-	msubdir = time.strftime("%Y-%m-%b",now)
-	mresult = os.path.join(ArchDir,subdir)
-	report = report+"/"+msubdir
-	safe_mkdir(mresult,report)
-	subdir = time.strftime("%Y_%m_%d",now)
-	if self.JobName is not None:
-		subdir = "%s_%s" % (subdir,self.JobName)
-	finaldir = os.path.join(mresult,subdir)
-	report = report+"/"+subdir
-	safe_mkdir(finaldir,report)
-	if not os.path.isdir(finaldir):
-		print "path error: %s is not a directory!" % (finaldir)
-		return None
-	return finaldir
+    if self.unified_archive_dir is not None:
+    	return self.unified_archive_dir
+    now = time.localtime()
+    ysubdir = time.strftime("%Y",now)
+    yresult = os.path.join(ArchDir,ysubdir)
+    report = ReportName+"/"+ysubdir
+    safe_mkdir(yresult,report)
+    msubdir = time.strftime("%Y-%m-%b",now)
+    mresult = os.path.join(ArchDir,subdir)
+    report = report+"/"+msubdir
+    safe_mkdir(mresult,report)
+    subdir = time.strftime("%Y_%m_%d",now)
+    if self.JobName is not None:
+    	subdir = "%s_%s" % (subdir,self.JobName)
+    finaldir = os.path.join(mresult,subdir)
+    report = report+"/"+subdir
+    safe_mkdir(finaldir,report)
+    if not os.path.isdir(finaldir):
+    	print "path error: %s is not a directory!" % (finaldir)
+    	return None
+    return finaldir
 
   def dest_dir_name(self,SrcFile,ArchDir,ReportName=""):
     "seek or create an archive directory based on the src file's origination date"
@@ -418,7 +429,9 @@ class Volumes(object):
     return finaldir
 
   def archive_images_and_video(self):
+    "Top image archive method"
     if not self.foundImages:
+      print "No images"
       return
     print "Found These valid image source directories:"
     print "  %s" % (", ".join(self.imgDirs))
@@ -433,7 +446,7 @@ class Volumes(object):
     "Archive audio tracks"
     # first validate our inputs
     if self.audioPrefix != "":
-      print "NEED     Filenames %sXXXX.MP3 etc" % (self.audioPrefix)
+      print "NEED Filenames %sXXXX.MP3 etc" % (self.audioPrefix)
     if not os.path.exists(ArchDir):
       print "Hey, destination archive '%s' is vapor!" % (ArchDir)
       return
@@ -507,20 +520,26 @@ class Volumes(object):
       sd = safe_mkdir(os.path.join(bdmvDir,s),"BDMV/%s"%(s))
     return privateDir
 
+  def dest_name(self,OrigName):
+    if self.prefix:
+      return "%s%s" % (self.prefix,OrigName)
+    return OrigName
+
   def archive_pix(self,FromDir,PixArchDir,VidArchDir):
-    "Archive images and video"
+    "Archive images and video - recursively if needed"
     # first make sure all inputs are valid
     if not self.verify_image_archive_dir(FromDir,PixArchDir,VidArchDir):
+      print "Cannot verify image archive directory"
       return
     # now we can proceed
     isAVCHDsrc = self.avchd_src(FromDir)
     files = os.listdir(FromDir)
     files.sort()
-    print "%d files in %s" % (len(files),FromDir)
+    print "Archivng %d files in %s" % (len(files),FromDir)
     for kid in files:
       fullKidPath = os.path.join(FromDir,kid)
       if os.path.isdir(fullKidPath):
-        self.archive_pix(fullKidPath,PixArchDir,VidArchDir)
+        self.archive_pix(fullKidPath,PixArchDir,VidArchDir) # recurse
       else:
         # if .MOV or .M4V or .MP4 or .3GP it's a vid
         # if JPG, check to see if there's a matching vid
@@ -529,7 +548,7 @@ class Volumes(object):
         isAVCHD = False
         avchdType = "JPG"
         kUp = kid.upper()
-        destName = kid
+        destName = self.dest_name(kid) # renaming allowed here
         m = Volumes.regexAvchdFiles.search(kUp)
         if (m):
           isAVCHD = True
@@ -539,17 +558,18 @@ class Volumes(object):
         if m:
           if Vols.DNG:
             isDNGible = True
-            destName = "%s.DNG" % m.groups(0)[0]
+            destName = "%s.DNG" % self.dest_name(m.groups(0)[0]) # renaming allowed here
         m = Volumes.regexJPG.search(kUp)
         if m:
           # keep an eye open for special thumbnail JPGs....
           if isAVCHDsrc:
             isAVCHD = True
             avchdType = "JPG"
+            destName = kid # renaming NOT allowed for AVCHD thumbnails
           else:
             root = m.groups(0)[0]
             for suf in ['M4V', 'MOV', 'MP4', '3GP']:
-              vidName = "%s.%s" % (root,suf)
+              vidName = "%s.%s" % (root,suf) # renaming not allowed here
               if files.__contains__(vidName):
                 # print "List contains both %s and %s" % (kid,vidName)
                 isSimpleVideo = True # send the thumbnail to the video directory too
@@ -561,7 +581,7 @@ class Volumes(object):
             destinationPath = os.path.join(avchdPath,Volumes.AVCHDTargets[avchdType])
         elif isSimpleVideo:
           destinationPath = self.dest_dir_name(fullKidPath,VidArchDir)
-        else:
+        else: # still phot
           destinationPath = self.dest_dir_name(fullKidPath,PixArchDir)
         if destinationPath:
           if not self.archive_image(kid,fullKidPath,destinationPath,destName,isDNGible):
@@ -581,7 +601,7 @@ class Volumes(object):
     return True
 
   def archive_image(self,SrcName,FullSrcPath,DestDir,DestName,IsDNGible):
-    "Archive Single Image File"
+    "Archive a Single Image File"
     # TO-DO -- Apply fancier naming to DestName
     if SrcName == '.dropbox.device': # TO-DO -- be more sophisticated here
       return False
@@ -589,7 +609,7 @@ class Volumes(object):
     protected = gTest
     destinationPath = DestDir
     if os.path.exists(FullDestPath):
-      if gForce:
+      if self.forceCopies:
         print "overwriting %s" % (FullDestPath)
         self.incr(FullSrcPath)
       else:
@@ -610,6 +630,7 @@ class Volumes(object):
     return False
   #
   def safe_copy(self,FullSrcPath,DestPath):
+    "Copy file, unless we are testing"
     if gTest:
       return True # always "work"
     try:
@@ -663,43 +684,24 @@ class Volumes(object):
     if self.nConversions > 0:
       print "Including %d DNG conversions" % (self.nConversions)
 
-# UNIT TESTS ##############################
-
-class VolTests(unittest.TestCase):
-  def setUp(self):
-    gTest = True # good idea?
-    self.v = Volumes()
-  def test_hasPrimary(self):
-    self.assertTrue(len(self.v.PrimaryArchiveList) > 0)
-  def test_hasRLocal(self):
-    self.assertTrue(len(self.v.LocalArchiveList) > 0)
-  def test_archive_loc(self):
-    "obviously this test needs to be run on a machine with such a drive..."
-    self.assertTrue(self.v.find_archive_drive())
-
 # MAIN EXECUTION BITS ##############
 
-if len(sys.argv)>1 and sys.argv[1]=='test': # this is hokey placement but argparse trashes unittest
-	print "Running unit tests..."
-	unittest.main()
-	sys.exit()
+if __name__ == '__main__':
+  parser = argparse.ArgumentParser(description='Import/Archive Pictures, Video, & Audio from removeable media')
+  parser.add_argument('jobname',help='appended to date directory names')
+  parser.add_argument('-u','--unify',help='Unify imports to a single directory (indexed TODAY)')
+  parser.add_argument('-p','--prefix',help='set imported file prefix, e.g. "bjorke"')
+  parser.add_argument('-s','--source',help='Specify source removeable volume (otherwise will guess)')
+  parser.add_argument('-a','--archive',help='specify source archive directory (otherwise will use std names)')
+  pargs = parser.parse_args()
+  print pargs
 
-parser = argparse.ArgumentParser(description='Import/Archive Pictures, Video, & Audio from removeable media')
-parser.add_argument('jobname',help='appended to date directory names: jobname "test" to run unit tests')
-# parser.add_argument('-t','--test',help='Run unit tests',nargs='?',const=1)
-parser.add_argument('-u','--unify',help='Unify imports to a single directory (indexed TODAY)')
-parser.add_argument('-p','--prefix',help='set imported file prefix, e.g. "bjorke"')
-parser.add_argument('-s','--source',help='Specify source removeable volume (otherwise will guess)')
-parser.add_argument('-a','--archive',help='specify source archive directory (otherwise will use std names)')
-pargs = parser.parse_args()
-print pargs
+  #print pargs.jobname
+  # exit()
 
-#print pargs.jobname
-# exit()
-
-Vols = Volumes()
-Vols.user_args(pargs)
-Vols.archive()
+  Vols = Volumes()
+  Vols.user_args(pargs)
+  Vols.archive()
 
 # /disks/Removable/Flash\ Reader/EOS_DIGITAL/DCIM/100EOS5D/
 # /disks/Removable/MK1237GSX/DOORKNOB/Pix/
