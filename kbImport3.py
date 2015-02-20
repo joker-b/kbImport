@@ -689,8 +689,8 @@ class Volumes(object):
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Import/Archive Pictures, Video, & Audio from removeable media')
   parser.add_argument('jobname',help='appended to date directory names')
-  parser.add_argument('-u','--unify',help='Unify imports to a single directory (indexed TODAY)')
-  parser.add_argument('-p','--prefix',help='set imported file prefix, e.g. "bjorke"')
+  parser.add_argument('-u','--unify',help='Unify imports to a single directory (indexed TODAY)',action="store_true")
+  parser.add_argument('-p','--prefix',help='include jobname in filename as prefix',action="store_true")
   parser.add_argument('-s','--source',help='Specify source removeable volume (otherwise will guess)')
   parser.add_argument('-a','--archive',help='specify source archive directory (otherwise will use std names)')
   pargs = parser.parse_args()
