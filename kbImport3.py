@@ -206,11 +206,9 @@ class Volumes(object):
       self.PrimaryArchiveList = pargs.archive
       self.PrimaryArchiveList[0] = re.sub('::',self.PrimaryArchiveList[0])
     if pargs.unify is not None:
-    	self.unify = True
+      self.unify = True
     if pargs.prefix is not None:
-    	print "can't yet add prefix"
-    	self.prefix = "%s_"%(pargs.prefix)
-
+      self.prefix = True
   #
   def archive(self):
     "Main dealio right here"
@@ -390,7 +388,7 @@ class Volumes(object):
     report = ReportName+"/"+ysubdir
     safe_mkdir(yresult,report)
     msubdir = time.strftime("%Y-%m-%b",now)
-    mresult = os.path.join(ArchDir,subdir)
+    mresult = os.path.join(ArchDir,msubdir)
     report = report+"/"+msubdir
     safe_mkdir(mresult,report)
     subdir = time.strftime("%Y_%m_%d",now)
@@ -522,7 +520,7 @@ class Volumes(object):
 
   def dest_name(self,OrigName):
     if self.prefix:
-      return "%s%s" % (self.prefix,OrigName)
+      return "%s_%s" % (self.JobName,OrigName)
     return OrigName
 
   def archive_pix(self,FromDir,PixArchDir,VidArchDir):
