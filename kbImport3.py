@@ -115,10 +115,12 @@ def safe_mkdir(Dir,ReportName=None,TestMe=False):
       if not os.path.exists(Dir):
         print 'mkdir "%s" failed'
         return None
+      return Dir
   elif not os.path.isdir(Dir):
     print "path error: %s is not a directory!" % (finaldir)
     return None
     # return None
+  # print 'Found exisiting dir "%s"' % (Dir)
   return Dir
 
 ######
@@ -128,7 +130,7 @@ def year_subdir(SrcFileStat,ArchDir,ReportName="",TestMe=False):
   # subdir = time.strftime("%Y",time.localtime(SrcFileStat.st_ctime))
   subdir = time.strftime("%Y",time.localtime(SrcFileStat.st_mtime))
   result = os.path.join(ArchDir,subdir)
-  report = ReportName+"/"+subdir
+  report = ReportName+os.path.sep+subdir
   safe_mkdir(result,report,TestMe)
   return result
 
@@ -139,7 +141,7 @@ def month_subdir(SrcFileStat,ArchDir,ReportName="",TestMe=False):
   # subdir = time.strftime("%Y-%m-%b",time.localtime(SrcFileStat.st_ctime))
   subdir = time.strftime("%Y-%m-%b",time.localtime(SrcFileStat.st_mtime))
   result = os.path.join(ArchDir,subdir)
-  report = ReportName+"/"+subdir
+  report = ReportName+os.path.sep+subdir
   safe_mkdir(result,report,TestMe)
   return result
 
@@ -208,7 +210,12 @@ class Volumes(object):
     if pargs.unify is not None:
       self.unify = True
     if pargs.prefix is not None:
-      self.prefix = True
+      self.prefix = "%s_" % (pargs.prefix)
+    if pargs.jobpref is not None:
+      if self.prefix is None:
+        self.prefix = "%s_" % (self.JobName)
+      else:
+        self.prefix = "%s%s_" % (self.prefix,self.JobName)
   #
   def archive(self):
     "Main dealio right here"
@@ -218,7 +225,8 @@ class Volumes(object):
       self.archive_images_and_video()
       self.archive_audio()
       self.report()
-    print "Sorry, archive() not ready"
+    else:
+      print "Sorry, archive() not ready"
   #
   def ready(self):
     "Do we have all media in place?"
@@ -385,17 +393,17 @@ class Volumes(object):
     now = time.localtime()
     ysubdir = time.strftime("%Y",now)
     yresult = os.path.join(ArchDir,ysubdir)
-    report = ReportName+"/"+ysubdir
+    report = ReportName+os.path.sep+ysubdir
     safe_mkdir(yresult,report)
     msubdir = time.strftime("%Y-%m-%b",now)
-    mresult = os.path.join(ArchDir,msubdir)
-    report = report+"/"+msubdir
+    mresult = os.path.join(yresult,msubdir)
+    report = report+os.path.sep+msubdir
     safe_mkdir(mresult,report)
     subdir = time.strftime("%Y_%m_%d",now)
     if self.JobName is not None:
     	subdir = "%s_%s" % (subdir,self.JobName)
     finaldir = os.path.join(mresult,subdir)
-    report = report+"/"+subdir
+    report = report+os.path.sep+subdir
     safe_mkdir(finaldir,report)
     if not os.path.isdir(finaldir):
     	print "path error: %s is not a directory!" % (finaldir)
@@ -403,7 +411,10 @@ class Volumes(object):
     return finaldir
 
   def dest_dir_name(self,SrcFile,ArchDir,ReportName=""):
-    "seek or create an archive directory based on the src file's origination date"
+    """
+    Seek or create an archive directory based on the src file's origination date,
+    unless 'unify' is active, in which case base it on today's date.
+    """
     if self.unify:
     	return self.unified_dir_name(ArchDir,ReportName)
     try:
@@ -419,7 +430,7 @@ class Volumes(object):
       subdir = "%s_%s" % (subdir,self.JobName)
     finaldir = os.path.join(rootDir,subdir)
     # should make sure it exists!
-    report = ReportName+"/"+subdir
+    report = ReportName+os.path.sep+subdir
     safe_mkdir(finaldir,report)
     if not os.path.isdir(finaldir):
       print "path error: %s is not a directory!" % (finaldir)
@@ -512,15 +523,15 @@ class Volumes(object):
       return privateDir
     avchdDir = safe_mkdir(os.path.join(privateDir,"AVCHD"),"AVCHD")
     for s in ["AVCHDTN","CANONTHM"]:
-      sd = safe_mkdir(os.path.join(avchdDir,s),"AVCHD/%s"%(s))
+      sd = safe_mkdir(os.path.join(avchdDir,s),"AVCHD%s%s"%(os.path.sep,s))
     bdmvDir = safe_mkdir(os.path.join(avchdDir,"BDMV"),"BDMV")
     for s in ["STREAM","CLIPINF","PLAYLIST","BACKUP"]:
-      sd = safe_mkdir(os.path.join(bdmvDir,s),"BDMV/%s"%(s))
+      sd = safe_mkdir(os.path.join(bdmvDir,s),"BDMV%s%s"%(os.path.sep,s))
     return privateDir
 
   def dest_name(self,OrigName):
     if self.prefix:
-      return "%s_%s" % (self.JobName,OrigName)
+      return "%s%s" % (self.prefix,OrigName)
     return OrigName
 
   def archive_pix(self,FromDir,PixArchDir,VidArchDir):
@@ -688,7 +699,8 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Import/Archive Pictures, Video, & Audio from removeable media')
   parser.add_argument('jobname',help='appended to date directory names')
   parser.add_argument('-u','--unify',help='Unify imports to a single directory (indexed TODAY)',action="store_true")
-  parser.add_argument('-p','--prefix',help='include jobname in filename as prefix',action="store_true")
+  parser.add_argument('-p','--prefix',help='include string in filename as prefix')
+  parser.add_argument('-j','--jobpref',help='toggle to include jobname in prefix',action="store_true")
   parser.add_argument('-s','--source',help='Specify source removeable volume (otherwise will guess)')
   parser.add_argument('-a','--archive',help='specify source archive directory (otherwise will use std names)')
   pargs = parser.parse_args()
