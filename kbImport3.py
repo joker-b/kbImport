@@ -54,6 +54,12 @@ import re
 import subprocess
 import argparse
 
+win32ok = True
+try:
+  import win32file
+except:
+  win32ok = False
+
 ################################################
 ##### global variable ##########################
 ################################################
@@ -173,6 +179,7 @@ class Volumes(object):
     self.startTime = time.clock()
     if os.name == 'posix': # mac?
       self.RemovableMedia = self.available_source_vols([os.path.join('/Volumes',a) for a in os.listdir('/Volumes')])
+      # call 'diskutil info' on each and see if protocol is USB?
       self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
       self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
     elif os.name != "nt":
@@ -183,6 +190,8 @@ class Volumes(object):
     else:
       # Defaults for Windows
       self.RemovableMedia = self.available_source_vols(['J:', 'I:', 'H:', 'K:','G:', 'F:'])
+      if win32ok:
+        self.RemovableMedia = [d for d in self.RemovableMedia if win32file.GetDriveType(d)==win32file.DRIVE_REMOVABLE]
       self.PrimaryArchiveList = ['R:', 'G:', 'G:']
       self.LocalArchiveList = ['D:']
     self.JobName = None
