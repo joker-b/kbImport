@@ -192,7 +192,7 @@ class Volumes(object):
       self.RemovableMedia = self.available_source_vols(['J:', 'I:', 'H:', 'K:','G:', 'F:'])
       if win32ok:
         self.RemovableMedia = [d for d in self.RemovableMedia if win32file.GetDriveType(d)==win32file.DRIVE_REMOVABLE]
-      self.PrimaryArchiveList = ['R:', 'G:', 'G:']
+      self.PrimaryArchiveList = ['R:', 'I:', 'G:']
       self.LocalArchiveList = ['D:']
     self.JobName = None
     self.nBytes = 0L
