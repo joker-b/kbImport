@@ -217,7 +217,7 @@ class Volumes(object):
       self.PrimaryArchiveList = pargs.archive
       self.PrimaryArchiveList[0] = re.sub('::',self.PrimaryArchiveList[0])
     if pargs.unify is not None:
-      self.unify = True
+      self.unify = pargs.unify
     if pargs.prefix is not None:
       self.prefix = "%s_" % (pargs.prefix)
     if pargs.jobpref is not None:
