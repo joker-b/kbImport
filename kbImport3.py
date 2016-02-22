@@ -44,10 +44,11 @@
 # TO-DO -- ignore list eg ['.dropbox.device']
 # TO-DO - itemized manifest @ end ("# of pix to dir xxxx" etc)
 
-versionString = "kbImport - 19feb2015 - (c)2015 K Bjorke"
+versionString = "kbImport - 21feb2016 - (c)2016 K Bjorke"
 
 import sys
 import os
+import platform
 import shutil
 import time
 import re
@@ -178,11 +179,20 @@ class Volumes(object):
   def __init__(self):
     self.startTime = time.clock()
     if os.name == 'posix': # mac?
-      self.RemovableMedia = self.available_source_vols([os.path.join('/Volumes',a) for a in os.listdir('/Volumes')])
-      # call 'diskutil info' on each and see if protocol is USB?
-      self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
-      self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
+      if platform.uname()[0] == 'Linux':
+        self.host = 'linux'
+	mk = '/media/kevin'
+	pxd = 'pix15'
+	self.RemovableMedia = self.available_source_vols([os.path.join(mk,a) for a in os.listdir(mk) if a != pxd and (len(a)<=8)])
+	self.PrimaryArchiveList = [os.path.join(mk,pxd)]
+	self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
+      else: # mac
+        self.host = 'mac'
+	self.RemovableMedia = self.available_source_vols([os.path.join('/Volumes',a) for a in os.listdir('/Volumes')])
+	self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
+	self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
     elif os.name != "nt":
+      self.host = 'windows'
       print "Sorry no code for OS '%s' yet!" % (os.name)
       self.RemovableMedia = []
       self.PrimaryArchiveList = []
@@ -246,7 +256,7 @@ class Volumes(object):
     self.srcMedia = self.find_src_media()
     if self.srcMedia is None:
       print "WARNING: No original source media found"
-      print "\tPlease connect a card, phone, etc."
+      print "\tPlease connect a card, phone, etc. to %s" % (self.host)
       return False
     self.DNG = self.seek_dng_convertor()
     return True
@@ -724,5 +734,7 @@ if __name__ == '__main__':
 
 # /disks/Removable/Flash\ Reader/EOS_DIGITAL/DCIM/100EOS5D/
 # /disks/Removable/MK1237GSX/DOORKNOB/Pix/
+
+# on linux seek /media/kevin/pix15
 
 
