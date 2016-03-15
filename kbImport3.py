@@ -181,29 +181,30 @@ class Volumes(object):
     if os.name == 'posix': # mac?
       if platform.uname()[0] == 'Linux':
         self.host = 'linux'
-	mk = '/media/kevin'
-	pxd = 'pix15'
-	self.RemovableMedia = self.available_source_vols([os.path.join(mk,a) for a in os.listdir(mk) if a != pxd and (len(a)<=8)])
-	self.PrimaryArchiveList = [os.path.join(mk,pxd)]
-	self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
+        mk = '/media/kevin'
+        pxd = 'pix15'
+        self.PrimaryArchiveList = [os.path.join(mk,pxd)]
+        self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
+        self.RemovableMedia = self.available_source_vols([os.path.join(mk,a) for a in os.listdir(mk) if a != pxd and (len(a)<=8)])
       else: # mac
         self.host = 'mac'
-	self.RemovableMedia = self.available_source_vols([os.path.join('/Volumes',a) for a in os.listdir('/Volumes')])
-	self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
-	self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
+        #self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
+        self.PrimaryArchiveList = [os.path.join('Volumes','BJORKEBYTES')]
+        self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
+        self.RemovableMedia = self.available_source_vols([os.path.join('/Volumes',a) for a in os.listdir('/Volumes')])
     elif os.name != "nt":
       self.host = 'windows'
       print "Sorry no code for OS '%s' yet!" % (os.name)
-      self.RemovableMedia = []
       self.PrimaryArchiveList = []
       self.LocalArchiveList = []
+      self.RemovableMedia = []
     else:
       # Defaults for Windows
+      self.PrimaryArchiveList = ['R:', 'I:', 'G:']
+      self.LocalArchiveList = ['D:']
       self.RemovableMedia = self.available_source_vols(['J:', 'I:', 'H:', 'K:','G:', 'F:'])
       if win32ok:
         self.RemovableMedia = [d for d in self.RemovableMedia if win32file.GetDriveType(d)==win32file.DRIVE_REMOVABLE]
-      self.PrimaryArchiveList = ['R:', 'I:', 'G:']
-      self.LocalArchiveList = ['D:']
     self.JobName = None
     self.nBytes = 0L
     self.nFiles = 0L
@@ -408,7 +409,7 @@ class Volumes(object):
         safe_mkdir(result)
   def unified_dir_name(self,ArchDir,ReportName=""):
     if self.unified_archive_dir is not None:
-    	return self.unified_archive_dir
+            return self.unified_archive_dir
     now = time.localtime()
     ysubdir = time.strftime("%Y",now)
     yresult = os.path.join(ArchDir,ysubdir)
@@ -420,13 +421,13 @@ class Volumes(object):
     safe_mkdir(mresult,report)
     subdir = time.strftime("%Y_%m_%d",now)
     if self.JobName is not None:
-    	subdir = "%s_%s" % (subdir,self.JobName)
+            subdir = "%s_%s" % (subdir,self.JobName)
     finaldir = os.path.join(mresult,subdir)
     report = report+os.path.sep+subdir
     safe_mkdir(finaldir,report)
     if not os.path.isdir(finaldir):
-    	print "path error: %s is not a directory!" % (finaldir)
-    	return None
+            print "path error: %s is not a directory!" % (finaldir)
+            return None
     return finaldir
 
   def dest_dir_name(self,SrcFile,ArchDir,ReportName=""):
@@ -435,7 +436,7 @@ class Volumes(object):
     unless 'unify' is active, in which case base it on today's date.
     """
     if self.unify:
-    	return self.unified_dir_name(ArchDir,ReportName)
+            return self.unified_dir_name(ArchDir,ReportName)
     try:
       s = os.stat(SrcFile)
     except:
@@ -647,9 +648,9 @@ class Volumes(object):
           destinationPath = m.group(1)
           FullDestPath = os.path.join(destinationPath,"...",SrcName)
     else:
-	    reportPath = '..' + FullDestPath[len(self.pixDestDir):]
-	    print "%s -> %s" % (SrcName,reportPath)
-	    self.incr(FullSrcPath)
+            reportPath = '..' + FullDestPath[len(self.pixDestDir):]
+            print "%s -> %s" % (SrcName,reportPath)
+            self.incr(FullSrcPath)
     if not protected:
       if IsDNGible:
         return self.dng_convert(destinationPath,DestName,FullSrcPath)
