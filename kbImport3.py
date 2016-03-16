@@ -12,7 +12,7 @@
 #       The External disk should have a directory called "Pix" to archive images.
 #       The External disk should have a directory called "Vid" to archive video.
 #       The External disk should have a directory called "Audio" to archive sounds.
-#       (Under windows, if there is no external they will be on "D:" and called "LocalPix" etc)
+#       (Under windows, if there is no external they will be on "D:" and called "Pix" etc)
 #
 #       (windows) python kyImport.py [JobName] [srcDriveLetter] [destDriveLetter]
 #       (linux) sudo python kbImport.py [JobName]
@@ -275,7 +275,7 @@ class Volumes(object):
           self.vidDestDir = os.path.join(arch,"Vid")
           self.audioDestDir = os.path.join(arch,"Audio")
           return True
-    print "Primary archive disk unavailable"
+    print "Primary archive disk unavailable (%d)" % (len(self.PrimaryArchiveList))
     return False
   def find_local_archive_drive(self):
     "find 'backup' destination"
@@ -285,11 +285,12 @@ class Volumes(object):
         if arch[-1] == ':':
           arch = arch+os.path.sep
         print "Using local drive %s instead" % (arch)
-        self.pixDestDir = os.path.join(arch,"LocalPix")
-        self.vidDestDir = os.path.join(arch,"LocalVid")
-        self.audioDestDir = os.path.join(arch,"LocalAudio")
+        self.pixDestDir = os.path.join(arch,"Pix")
+        self.vidDestDir = os.path.join(arch,"Vid")
+        self.audioDestDir = os.path.join(arch,"Audio")
         return True
-    print "Unable to find a local archive location"
+    print "Unable to find a local archive location (%d)" % (len(self.LocalArchiveList))
+    print "\n".join(self.LocalArchiveList)
     return False
   def find_archive_drive(self):
     "find an archive destination"
@@ -316,8 +317,10 @@ class Volumes(object):
       print 'Caution: "%s" is not a directory' %(Path)
       return False
     if Path == '/Volumes/Macintosh HD' or \
-      Path == '/Volumes/MobileBackups' or \
-      Path == '/Volumes/My Passport for Mac':
+        Path == '/Volumes/MobileBackups' or \
+        Path == '/Volumes/My Passport for Mac' or \
+        Path in self.PrimaryArchiveList or \
+        Path in self.LocalArchiveList :
       return False
     s = os.path.getsize(Path) # TO-DO: this is not how you get volume size!
     if os.path.getsize(Path) > Volumes.largestSource:
