@@ -189,7 +189,7 @@ class Volumes(object):
       else: # mac
         self.host = 'mac'
         #self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
-        self.PrimaryArchiveList = [os.path.join('Volumes','BJORKEBYTES')]
+        self.PrimaryArchiveList = [os.path.join(os.path.sep+'Volumes','pix15'), os.path.join(os.path.sep+'Volumes','BJORKEBYTES')]
         self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
         self.RemovableMedia = self.available_source_vols([os.path.join('/Volumes',a) for a in os.listdir('/Volumes')])
     elif os.name != "nt":
@@ -276,6 +276,7 @@ class Volumes(object):
           self.audioDestDir = os.path.join(arch,"Audio")
           return True
     print "Primary archive disk unavailable (%d)" % (len(self.PrimaryArchiveList))
+    print "\n".join(self.PrimaryArchiveList)
     return False
   def find_local_archive_drive(self):
     "find 'backup' destination"
