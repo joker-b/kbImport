@@ -158,13 +158,12 @@ def month_subdir(SrcFileStat,ArchDir,ReportName="",TestMe=False):
 
 class Volumes(object):
   'object for import/archive environment'
-  AVCHDTargets = {}
-  AVCHDTargets["MTS"] = os.path.join("AVCHD","BDMV","STREAM")
-  AVCHDTargets["CPI"] = os.path.join("AVCHD","BDMV","CLIPINF")
-  AVCHDTargets["MPL"] = os.path.join("AVCHD","BDMV","PLAYLIST")
-  AVCHDTargets["BDM"] = os.path.join("AVCHD","BDMV")
-  AVCHDTargets["TDT"] = os.path.join("AVCHD","ACVHDTN")
-  AVCHDTargets["TID"] = os.path.join("AVCHD","ACVHDTN")
+  AVCHDTargets = {"MTS": os.path.join("AVCHD","BDMV","STREAM"),
+                  "CPI": os.path.join("AVCHD","BDMV","CLIPINF"),
+                  "MPL": os.path.join("AVCHD","BDMV","PLAYLIST"),
+                  "BDM": os.path.join("AVCHD","BDMV"),
+                  "TDT": os.path.join("AVCHD","ACVHDTN"),
+                  "TID": os.path.join("AVCHD","ACVHDTN")}
   AVCHDTargets["JPG"] = os.path.join("AVCHD","CANONTHM")
   regexAvchd = re.compile('AVCHD')
   regexDotAvchd = re.compile('(.*).AVCHD')
@@ -205,6 +204,7 @@ class Volumes(object):
   #
   def __init__(self):
     self.startTime = time.clock()
+    pxd = ['pix15', 'T3', 'Sept2013']
     if os.name == 'posix': # mac?
       if platform.uname()[0] == 'Linux':
         self.init_drives_linux()
