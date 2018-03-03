@@ -156,6 +156,34 @@ def month_subdir(SrcFileStat,ArchDir,ReportName="",TestMe=False):
 #############################################################
 #############################################################
 
+class ImportImage(object):
+  srcName = ''
+  srcFolder = ''
+  srcDate = ''
+  destName = ''
+  destFolder = ''
+  destDate = ''
+  def __init__(self,SrcName,SrcFolder=None):
+    self.srcName = SrcName
+    if SrcFolder is not None:
+      self.srcFolder = SrcFolder
+  def seek_matching_neighbor(self):
+    """
+    Check directories who may have the same destination date for files that might be the same file
+    so that redundant copies are not made
+    """
+    # 1 : find dest parent directory
+    # 2 : extract date of this directory
+    # 3 : identify othe rfolders with the same date (or quit)
+    # 4 : exract name of this image
+    # 5 : for matching directories, sekk filenames containing that name
+    # 6: return any matches (or none)
+
+
+#############################################################
+#############################################################
+#############################################################
+
 class Volumes(object):
   'object for import/archive environment'
   AVCHDTargets = {"MTS": os.path.join("AVCHD","BDMV","STREAM"),
@@ -176,9 +204,12 @@ class Volumes(object):
   forceCopies = False
 
   def init_drives_linux(self):
+    """
+    TODO: modify for Raspberry
+    """
     self.host = 'linux'
     mk = '/media/kevin'
-    pxd = 'pix15'
+    pxd = 'pix18'
     self.PrimaryArchiveList = [os.path.join(mk,pxd)]
     self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
@@ -186,7 +217,12 @@ class Volumes(object):
   def init_drives_mac(self):
     self.host = 'mac'
     #self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
-    self.PrimaryArchiveList = [os.path.join(os.path.sep+'Volumes','pix15'), os.path.join(os.path.sep+'Volumes','BJORKEBYTES')]
+    self.PrimaryArchiveList = [os.path.join(os.path.sep+'Volumes','pix18'),
+                               os.path.join(os.path.sep+'Volumes','pix15'),
+                               os.path.join(os.path.sep+'Volumes','CameraWork'),
+                               os.path.join(os.path.sep+'Volumes','Liq'),
+                               os.path.join(os.path.sep+'Volumes','Pix17'),
+                               os.path.join(os.path.sep+'Volumes','BJORKEBYTES')]
     self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
     self.ForbiddenSources = [ '/Volumes/Macintosh HD', '/Volumes/MobileBackups', '/Volumes/My Passport for Mac']
     self.ForbiddenSources = self.ForbiddenSources + self.PrimaryArchiveList + self.LocalArchiveList
@@ -204,7 +240,7 @@ class Volumes(object):
   #
   def __init__(self):
     self.startTime = time.clock()
-    pxd = ['pix15', 'T3', 'Sept2013']
+    pxd = ['pix18', 'pix15', 'T3', 'Sept2013']
     if os.name == 'posix': # mac?
       if platform.uname()[0] == 'Linux':
         self.init_drives_linux()
@@ -230,7 +266,7 @@ class Volumes(object):
     self.prefix = None
     #
   def user_args(self,pargs):
-    "set state according to 'pargs'"
+    "set state according to object 'pargs'"
     self.JobName = pargs.jobname
     if pargs.source is not None:
       if self.host == 'windows':
