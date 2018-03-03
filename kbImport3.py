@@ -178,7 +178,7 @@ class Volumes(object):
   def init_drives_linux(self):
     self.host = 'linux'
     mk = '/media/kevin'
-    pxd = 'pix15'
+    pxd = 'pix18'
     self.PrimaryArchiveList = [os.path.join(mk,pxd)]
     self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
@@ -186,7 +186,7 @@ class Volumes(object):
   def init_drives_mac(self):
     self.host = 'mac'
     #self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
-    self.PrimaryArchiveList = [os.path.join(os.path.sep+'Volumes','pix15'), os.path.join(os.path.sep+'Volumes','BJORKEBYTES')]
+    self.PrimaryArchiveList = [os.path.join(os.path.sep+'Volumes','pix18'), os.path.join(os.path.sep+'Volumes','pix15'), os.path.join(os.path.sep+'Volumes','BJORKEBYTES')]
     self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
     self.ForbiddenSources = [ '/Volumes/Macintosh HD', '/Volumes/MobileBackups', '/Volumes/My Passport for Mac']
     self.ForbiddenSources = self.ForbiddenSources + self.PrimaryArchiveList + self.LocalArchiveList
@@ -204,7 +204,7 @@ class Volumes(object):
   #
   def __init__(self):
     self.startTime = time.clock()
-    pxd = ['pix15', 'T3', 'Sept2013']
+    pxd = ['pix18', 'pix15', 'T3', 'Sept2013']
     if os.name == 'posix': # mac?
       if platform.uname()[0] == 'Linux':
         self.init_drives_linux()
