@@ -209,7 +209,9 @@ class Volumes(object):
     """
     self.host = 'linux'
     mk = '/media/kevin'
-    pxd = 'pix18'
+    # pxd = 'pix18'
+    # pxd = 'BjorkeSSD'   # TODO(kevin): this is so bad
+    pxd = 'pix20'
     self.PrimaryArchiveList = [os.path.join(mk,pxd)]
     self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
@@ -218,7 +220,10 @@ class Volumes(object):
     self.host = 'mac'
     #self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
     self.PrimaryArchiveList = [os.path.join(os.path.sep+'Volumes','pix18'),
+                               os.path.join(os.path.sep+'Volumes','pix20'),
                                os.path.join(os.path.sep+'Volumes','pix15'),
+                               os.path.join(os.path.sep+'Volumes',
+                                       'BjorkeSSD'+os.path.sep+'kbImport'),
                                os.path.join(os.path.sep+'Volumes','CameraWork'),
                                os.path.join(os.path.sep+'Volumes','Liq'),
                                os.path.join(os.path.sep+'Volumes','Pix17'),
@@ -240,7 +245,7 @@ class Volumes(object):
   #
   def __init__(self):
     self.startTime = time.clock()
-    pxd = ['pix18', 'pix15', 'T3', 'Sept2013']
+    pxd = ['pix18', 'pix20', 'pix15', 'BjorkeSSD'+os.path.sep+'kbImport', 'T3', 'Sept2013']
     if os.name == 'posix': # mac?
       if platform.uname()[0] == 'Linux':
         self.init_drives_linux()
@@ -329,6 +334,7 @@ class Volumes(object):
           return True
     print "Primary archive disk unavailable (%d)" % (len(self.PrimaryArchiveList))
     print "\n".join(self.PrimaryArchiveList)
+    sys.exit() # TODO(kevin): fix this
     return False
 
   def find_local_archive_drive(self):
