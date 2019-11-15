@@ -481,7 +481,7 @@ class Volumes(object):
     monthPath = os.path.join(yearPath,monthStr)
     archivePath = archivePath+os.path.sep+monthStr
     safe_mkdir(monthPath,archivePath)
-    dateStr = time.strftime("%Y_%m_{}",now)
+    dateStr = time.strftime("%Y_%m_%d",now)
     if self.JobName is not None:
             dateStr = "{}_{}".format(dateStr,self.JobName)
     unifiedDir = os.path.join(monthPath,dateStr)
