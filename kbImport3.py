@@ -226,7 +226,10 @@ class Volumes(object):
                                 ['pix20', 'pix18', 'pix15', os.path.join('BjorkeSSD','kbImport'),
                                   'CameraWork','Liq','Pix17','BJORKEBYTES'] ]
     self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
-    self.ForbiddenSources = [ '/Volumes/Macintosh HD', '/Volumes/MobileBackups', '/Volumes/My Passport for Mac']
+    self.ForbiddenSources = [ '/Volumes/Macintosh HD',
+                              '/Volumes/MobileBackups',
+                              '/Volumes/Recovery',
+                              '/Volumes/My Passport for Mac']
     self.ForbiddenSources = self.ForbiddenSources + self.PrimaryArchiveList + self.LocalArchiveList
     self.RemovableMedia = self.available_source_vols([os.path.join('/Volumes',a) for a in os.listdir('/Volumes')])
 
@@ -293,15 +296,15 @@ class Volumes(object):
   def archive(self):
     "Main dealio right here"
     print(versionString)
-    if not self.ready():
-      print("Sorry, archive() not ready")
+    if not self.media_are_ready():
+      print("Sorry, no '{}' source media found, please connect to {}".format(self.JobName,self.host))
       sys.exit()
     self.announce()
     self.archive_images_and_video()
     self.archive_audio()
     self.report()
 
-  def ready(self):
+  def media_are_ready(self):
     "Do we have all media in place?"
     if not self.find_archive_drive():
       return False
@@ -309,8 +312,6 @@ class Volumes(object):
       return False
     self.srcMedia = self.find_src_media()
     if self.srcMedia is None:
-      print("WARNING: No original source media found")
-      print("\tPlease connect a card, phone, etc. to {}".format(self.host))
       return False
     self.DNG = self.seek_dng_convertor()
     return True
@@ -330,7 +331,7 @@ class Volumes(object):
           self.audioDestDir = os.path.join(arch,"Audio")
           return True
     print("Primary archive disk unavailable ({})".format(len(self.PrimaryArchiveList)))
-    print("\n".join(self.PrimaryArchiveList))
+    print("\t\" + \n\t".join(self.PrimaryArchiveList))
     sys.exit() # TODO(kevin): fix this
     return False
 
@@ -788,8 +789,18 @@ if __name__ == '__main__':
   parser.add_argument('-j','--jobpref',help='toggle to include jobname in prefix',action="store_true")
   parser.add_argument('-s','--source',help='Specify source removeable volume (otherwise will guess)')
   parser.add_argument('-a','--archive',help='specify source archive directory (otherwise will use std names)')
-  pargs = parser.parse_args()
-  print(pargs)
+  try:
+    pargs = parser.parse_args()
+  except:
+    # testing
+    pargs = argparse.Namespace()
+    pargs.jobname = 'test'
+    pargs.prefix = 'T_'
+    pargs.jobpref = None
+    pargs.source = None
+    pargs.archive = None
+    pargs.unify = False
+  #print(pargs)
 
   #print(pargs.jobname)
   # exit()
