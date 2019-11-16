@@ -506,7 +506,7 @@ class Volumes(object):
       return None
     yearDir = year_subdir(s,ArchDir)
     monthDir = month_subdir(s,yearDir)
-    timeFormat = "%Y_%m_{}"
+    timeFormat = "%Y_%m_%d"
     dateDir = time.strftime(timeFormat,time.localtime(s.st_mtime))
     if self.JobName is not None:
       dateDir = "{}_{}".format(dateDir,self.JobName)
