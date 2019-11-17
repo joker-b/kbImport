@@ -8,20 +8,20 @@
 #       OKAY TO REDISTRIBUTE AS LONG AS THIS NOTICE IS RETAINED IN FULL.
 #
 # Usage:
-#       Plug in a card, camera, audio recorder, or Android phone, and (optinally) an external disk.
+#       Plug in a card, camera, or audio recorder, and (optinally) an external disk.
 #       The External disk should have a directory called "Pix" to archive images.
 #       The External disk should have a directory called "Vid" to archive video.
 #       The External disk should have a directory called "Audio" to archive sounds.
 #       (Under windows, if there is no external they will be on "D:" and called "Pix" etc)
 #
-#       (windows) python kyImport.py [JobName] [srcDriveLetter] [destDriveLetter]
-#       (linux) sudo python kbImport.py [JobName]
+#       (windows) python kyImport.py [jobname] [srcDriveLetter] [destDriveLetter]
+#       (linux) sudo python kbImport.py [jobname]
 #
 # Converts some files types (RW2) to DNG if the DNG converter is available
 #
 # Individual archive folders with names based on the FILE date will 
-#    be created within those archive directories. The optional [JobName] maybe be
-#       appended to the date, e.g. for JobName "NightSkate":
+#    be created within those archive directories. The optional [jobname] maybe be
+#       appended to the date, e.g. for jobname "NightSkate":
 #           R:\Vid\2009\2009-09-Sep\2009_09_27_NightSkate\AVCHD\BDMV\STREAM\02332.MTS
 #
 # Types recognized include Canon and Panasonic picture formats, AVCHD and QT and AVI files,
@@ -109,10 +109,10 @@ def seek_named_dir(LookHere, DesiredName, Level=0, MaxLevels=6):
 class StorageHierarchy(object):
   createdDirs = []
 
-  def __init__(self, Testing=False, Unified=False, JobName=None, UniDir=None):
+  def __init__(self, Testing=False, Unified=False, jobname=None, UniDir=None):
     self.test = Testing
     self.unify = Unified
-    self.jobname = JobName
+    self.jobname = jobname
     self.unified_archive_dir = UniDir # TODO: is this ever actually set?
     self.testLog = {}
 
@@ -184,8 +184,8 @@ class StorageHierarchy(object):
     archivePath = archivePath+os.path.sep+monthStr
     safe_mkdir(monthPath, archivePath, TestMe=self.test, Prefix='  ')
     dateStr = time.strftime("%Y_%m_%d",now)
-    if self.JobName is not None:
-      dateStr = "{}_{}".format(dateStr,self.JobName)
+    if self.jobname is not None:
+      dateStr = "{}_{}".format(dateStr,self.jobname)
     unifiedDir = os.path.join(monthPath,dateStr)
     archivePath = archivePath+os.path.sep+dateStr
     safe_mkdir(unifiedDir, archivePath, TestMe=self.test, Prefix='    ')
@@ -224,6 +224,11 @@ class StorageHierarchy(object):
 #############################################################
 #############################################################
 
+
+#############################################################
+#############################################################
+#############################################################
+
 class ArchiveImg(object):
   srcName = ''
   srcPath = '' # full path
@@ -238,9 +243,7 @@ class ArchiveImg(object):
 
   def archive(self, Force=False, PixDestDir='none'):
     "Archive a Single Image File"
-    # TO-DO -- Apply fancier naming to self.destName
-    if self.srcName == '.dropbox.device': # TO-DO -- be more sophisticated here
-      return False
+    # TODO -- Apply fancier naming to self.destName
     FullDestPath = os.path.join(self.destPath, self.destName)
     protected = False
     if os.path.exists(FullDestPath):
@@ -254,7 +257,8 @@ class ArchiveImg(object):
         if m:
           FullDestPath = os.path.join(m.group(1), "...", self.srcName)
     else:
-      reportPath = '..' + FullDestPath[len(PixDestDir):]
+      # reportPath = '..' + FullDestPath[len(PixDestDir):]
+      reportPath = os.path.join('...',os.path.split(self.destPath)[-1], self.destName)
       print("{} -> {}".format(self.srcName, reportPath))
       self.incr(self.srcPath)
     if not protected:
@@ -306,31 +310,136 @@ class ArchiveImg(object):
 #############################################################
 #############################################################
 
-class ImportImage(object):
-  srcName = ''
-  srcFolder = ''
-  srcDate = ''
-  destName = ''
-  destFolder = ''
-  destDate = ''
-  def __init__(self,SrcName,SrcFolder=None):
-    self.srcName = SrcName
-    if SrcFolder is not None:
-      self.srcFolder = SrcFolder
+class Drives(object):
+  PrimaryArchiveList = []
+  LocalArchiveList = []
+  ForbiddenSources = []
+  RemovableMedia = []
 
-  def seek_matching_neighbor(self):
-    """
-    Check directories who may have the same destination date for files that might be the same file
-    so that redundant copies are not made
-    """
-    # 1 : find dest parent directory
-    # 2 : extract date of this directory
-    # 3 : identify othe rfolders with the same date (or quit)
-    # 4 : exract name of this image
-    # 5 : for matching directories, sekk filenames containing that name
-    # 6: return any matches (or none)
-    print('TODO(kevin): seek_matching_neighbor()')
+  def __init__(self):
+    if os.name == 'posix': # mac?
+      if platform.uname()[0] == 'Linux':
+        self.init_drives_linux()
+      else: # mac
+        self.init_drives_mac()
+    elif os.name == "nt":
+      self.init_drives_windows()
+    else:
+      print("Sorry no initialization for OS '{}' yet!".format(os.name))
+      sys.exit()
 
+  def init_drives_linux(self):
+    """
+    TODO: modify for Raspberry
+    """
+    self.host = 'linux'
+    mk = '/media/kevin'
+    # pxd = 'pix18'
+    # pxd = 'BjorkeSSD'   # TODO(kevin): this is so bad
+    pxd = 'pix20'
+    self.PrimaryArchiveList = [os.path.join(mk,pxd)]
+    self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
+    self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
+    self.RemovableMedia = self.available_source_vols([os.path.join(mk,a) for a in os.listdir(mk) if a != pxd and (len(a)<=8)])
+
+  def init_drives_mac(self):
+    self.host = 'mac'
+    #self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
+    Vols = os.path.sep+'Volumes'
+    self.PrimaryArchiveList = [os.path.join(Vols,D) for D in
+                                ['pix20', 'pix18', 'pix15',
+                                  os.path.join('BjorkeSSD','kbImport'),
+                                  'CameraWork','Liq','Pix17','BJORKEBYTES',
+                                  'T3', 'Sept2013'] ]
+    self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
+    self.ForbiddenSources = [os.path.join(Vols,D) for D in
+                                [ 'Macintosh HD',
+                                  'MobileBackups',
+                                  'Recovery',
+                                  'My Passport for Mac'] ]
+    self.ForbiddenSources = self.ForbiddenSources + self.PrimaryArchiveList + self.LocalArchiveList
+    self.RemovableMedia = self.available_source_vols([os.path.join('/Volumes',a) for a in os.listdir('/Volumes')])
+
+  def init_drives_windows(self):
+    # Defaults for Windows
+    self.host = 'windows'
+    self.PrimaryArchiveList = ['R:', 'I:', 'G:']
+    self.LocalArchiveList = ['D:']
+    self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
+    self.RemovableMedia = self.available_source_vols(['J:', 'I:', 'H:', 'K:','G:', 'F:'])
+    if win32ok:
+      self.RemovableMedia = [d for d in self.RemovableMedia if win32file.GetDriveType(d)==win32file.DRIVE_REMOVABLE]
+
+  def available_source_vols(self,Vols=[]):
+      return [a for a in Vols if self.acceptable_source_vol(a)]
+
+  def acceptable_source_vol(self,Path):
+    if not os.path.exists(Path):
+      return False
+    if not os.path.isdir(Path):
+      print('Error: Proposed source "{}" is not a directory'.format(Path))
+      return False
+    if Path in self.ForbiddenSources:
+      return False
+    s = os.path.getsize(Path) # TO-DO: this is not how you get volume size!
+    if os.path.getsize(Path) > Volumes.largestSource:
+      print('Oversized source: "{}"'.format(Path))
+      return False
+    return True
+
+  def assign_removable(self, SourceName):
+      if self.host == 'windows':
+        self.RemovableMedia = [ '{}:'.format(SourceName) ]
+        self.RemovableMedia[0] = re.sub('::',':',self.RemovableMedia[0])
+      else:
+        self.RemovableMedia = [ SourceName ]
+
+  def find_archive_drive(self):
+    "find an archive destination"
+    if self.find_primary_archive_drive():
+      return True
+    return self.find_local_archive_drive()
+
+  def find_primary_archive_drive(self):
+    "find prefered destination"
+    for arch in self.PrimaryArchiveList:
+      if os.path.exists(arch):
+          self.archiveDrive = arch
+          if arch[-1] == ':':       # windows
+            arch = arch+os.path.sep
+          self.pixDestDir = os.path.join(arch,"Pix")
+          self.vidDestDir = os.path.join(arch,"Vid")
+          self.audioDestDir = os.path.join(arch,"Audio")
+          return True
+    if gVerbose:
+      print("Primary archive disk unavailable, from these {} options:".format(len(self.PrimaryArchiveList)))
+      print("  " + "\n  ".join(self.PrimaryArchiveList))
+    return False
+
+  def find_local_archive_drive(self):
+    "find 'backup' destination"
+    for arch in self.LocalArchiveList:
+      if os.path.exists(arch):
+        self.archiveDrive = arch
+        if arch[-1] == ':':
+          arch = arch+os.path.sep
+        if gVerbose:
+          print("Using local archive {}".format(arch))
+        self.pixDestDir = os.path.join(arch,"Pix")
+        self.vidDestDir = os.path.join(arch,"Vid")
+        self.audioDestDir = os.path.join(arch,"Audio")
+        return True
+    print("Unable to find a local archive, out of these {} possibilities:".format((len(self.LocalArchiveList))))
+    print("  " + "\n  ".join(self.LocalArchiveList))
+    return False
+
+  def verify_archive_locations(self):
+    "double-check existence of the archive directories"
+    for d in [self.pixDestDir, self.vidDestDir, self.audioDestDir]:
+      if not os.path.exists(d):
+        print("Error, cannot verify archive {}".format(d))
+        return False
+    return True
 
 #############################################################
 #############################################################
@@ -356,58 +465,10 @@ class Volumes(object):
   forceCopies = False
   images = [] # array of ArchiveImg
 
-  def init_drives_linux(self):
-    """
-    TODO: modify for Raspberry
-    """
-    self.host = 'linux'
-    mk = '/media/kevin'
-    # pxd = 'pix18'
-    # pxd = 'BjorkeSSD'   # TODO(kevin): this is so bad
-    pxd = 'pix20'
-    self.PrimaryArchiveList = [os.path.join(mk,pxd)]
-    self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
-    self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
-    self.RemovableMedia = self.available_source_vols([os.path.join(mk,a) for a in os.listdir(mk) if a != pxd and (len(a)<=8)])
-
-  def init_drives_mac(self):
-    self.host = 'mac'
-    #self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
-    self.PrimaryArchiveList = [os.path.join(os.path.sep+'Volumes',D) for D in
-                                ['pix20', 'pix18', 'pix15', os.path.join('BjorkeSSD','kbImport'),
-                                  'CameraWork','Liq','Pix17','BJORKEBYTES'] ]
-    self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
-    self.ForbiddenSources = [ '/Volumes/Macintosh HD',
-                              '/Volumes/MobileBackups',
-                              '/Volumes/Recovery',
-                              '/Volumes/My Passport for Mac']
-    self.ForbiddenSources = self.ForbiddenSources + self.PrimaryArchiveList + self.LocalArchiveList
-    self.RemovableMedia = self.available_source_vols([os.path.join('/Volumes',a) for a in os.listdir('/Volumes')])
-
-  def init_drives_windows(self):
-    # Defaults for Windows
-    self.host = 'windows'
-    self.PrimaryArchiveList = ['R:', 'I:', 'G:']
-    self.LocalArchiveList = ['D:']
-    self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
-    self.RemovableMedia = self.available_source_vols(['J:', 'I:', 'H:', 'K:','G:', 'F:'])
-    if win32ok:
-      self.RemovableMedia = [d for d in self.RemovableMedia if win32file.GetDriveType(d)==win32file.DRIVE_REMOVABLE]
-
-  def __init__(self):
+  def __init__(self, pargs=None):
     self.startTime = time.clock()
-    pxd = ['pix18', 'pix20', 'pix15', 'BjorkeSSD'+os.path.sep+'kbImport', 'T3', 'Sept2013']
-    if os.name == 'posix': # mac?
-      if platform.uname()[0] == 'Linux':
-        self.init_drives_linux()
-      else: # mac
-        self.init_drives_mac()
-    elif os.name == "nt":
-      self.init_drives_windows()
-    else:
-      print("Sorry no code for OS '{}' yet!".format(os.name))
-      sys.exit()
-    self.JobName = None
+    self.drives = Drives()
+    self.jobname = None
     self.nBytes = 0L
     self.nFiles = 0L
     self.nSkipped = 0L
@@ -421,16 +482,14 @@ class Volumes(object):
     self.test = False
     self.verbose = False
     self.prefix = None
+    if pargs is not None:
+      self.user_args(pargs)
 
   def user_args(self, pargs):
     "set state according to object 'pargs'"
-    self.JobName = pargs.jobname
+    self.jobname = pargs.jobname
     if pargs.source is not None:
-      if self.host == 'windows':
-        self.RemovableMedia = [ '{}:'.format(pargs.source) ]
-        self.RemovableMedia[0] = re.sub('::',':',self.RemovableMedia[0])
-      else:
-        self.RemovableMedia = [ pargs.source ]
+      self.drive.assign_removable(pargs.source)
     if pargs.archive is not None:
       self.PrimaryArchiveList = pargs.archive
       if self.host == 'windows':
@@ -443,14 +502,14 @@ class Volumes(object):
       self.prefix = "{}_".format(pargs.prefix)
     if pargs.jobpref is not None:
       if self.prefix is None:
-        self.prefix = "{}_".format(self.JobName)
+        self.prefix = "{}_".format(self.jobname)
       else:
-        self.prefix = "{}{}_".format(self.prefix,self.JobName)
+        self.prefix = "{}{}_".format(self.prefix,self.jobname)
     # unique to storage
     if pargs.unify is not None:
       self.storage.unify = pargs.unify
     # wrapup
-    self.storage.jobname = self.JobName
+    self.storage.jobname = self.jobname
     self.storage.prefix = self.prefix
     self.storage.test = self.test
     gTest = self.test
@@ -460,7 +519,7 @@ class Volumes(object):
     "Main dealio right here"
     print(versionString)
     if not self.media_are_ready():
-      print("Sorry, no '{}' source media found, please connect to {}".format(self.JobName,self.host))
+      print("No '{}' media found, please connect it to this {}".format(self.jobname, self.drives.host))
       sys.exit()
     self.announce()
     self.archive_images_and_video()
@@ -468,159 +527,54 @@ class Volumes(object):
     self.report()
 
   def media_are_ready(self):
-    "Do we have all media in place?"
-    if not self.find_archive_drive():
+    "Do we have all media in place? Find sources, destination, and optional converter"
+    if not self.drives.find_archive_drive():
       return False
-    if not self.verify_archive_locations():
+    if not self.drives.verify_archive_locations():
       return False
-    self.srcMedia = self.find_src_media()
-    if self.srcMedia is None:
+    self.srcMedia = self.find_src_image_media()
+    self.foundImages = self.srcMedia is not None
+    if not self.foundImages:
       return False
-    self.DNG = self.seek_dng_convertor()
-    return True
-
-  #
-  # seek needed resources on disk
-  #
-  def find_primary_archive_drive(self):
-    "find prefered destination"
-    for arch in self.PrimaryArchiveList:
-      if os.path.exists(arch):
-          self.archiveDrive = arch
-          if arch[-1] == ':':       # windows
-            arch = arch+os.path.sep
-          self.pixDestDir = os.path.join(arch,"Pix")
-          self.vidDestDir = os.path.join(arch,"Vid")
-          self.audioDestDir = os.path.join(arch,"Audio")
-          return True
-    if self.verbose:
-      print("Primary archive disk unavailable ({})".format(len(self.PrimaryArchiveList)))
-      print("\t" + "\n\t".join(self.PrimaryArchiveList))
-    return False
-
-  def find_local_archive_drive(self):
-    "find 'backup' destination"
-    for arch in self.LocalArchiveList:
-      if os.path.exists(arch):
-        self.archiveDrive = arch
-        if arch[-1] == ':':
-          arch = arch+os.path.sep
-        if self.verbose:
-          print("Using local archive {}".format(arch))
-        self.pixDestDir = os.path.join(arch,"Pix")
-        self.vidDestDir = os.path.join(arch,"Vid")
-        self.audioDestDir = os.path.join(arch,"Audio")
-        return True
-    print("Unable to find a local archive (out of {} possible)".format((len(self.LocalArchiveList))))
-    print("\n".join(self.LocalArchiveList))
-    return False
-
-  def find_archive_drive(self):
-    "find an archive destination"
-    if self.find_primary_archive_drive():
-      return True
-    return self.find_local_archive_drive()
-
-  def verify_archive_locations(self):
-    "double-check existence of the archive directories"
-    for d in [self.pixDestDir, self.vidDestDir, self.audioDestDir]:
-      if not os.path.exists(d):
-        print("Error, cannot verify archive {}".format(d))
-        return False
+    self.DNG = self.seek_dng_converter()
     return True
 
   #
   # Find Source Material
   #
-  def available_source_vols(self,Vols=[]):
-      return [a for a in Vols if self.acceptable_source_vol(a)]
 
-  def acceptable_source_vol(self,Path):
-    if not os.path.exists(Path):
-      return False
-    if not os.path.isdir(Path):
-      print('Error: Proposed source "{}" is not a directory'.format(Path))
-      return False
-    if Path in self.ForbiddenSources:
-      return False
-    s = os.path.getsize(Path) # TO-DO: this is not how you get volume size!
-    if os.path.getsize(Path) > Volumes.largestSource:
-      print('Oversized source: "{}"'.format(Path))
-      return False
-    return True
-
-  def find_DCIM(self,srcDisk):
-      avDir = seek_named_dir(srcDisk,"DCIM",0,2)
-      if avDir is not None:
-        self.imgDirs.append(avDir)
-        self.foundImages = True
-        return True
-      return False
-  def find_PRIVATE(self,srcDisk):
-      avDir = seek_named_dir(srcDisk,"PRIVATE")
-      if avDir is not None:
-        self.imgDirs.append(avDir)
-        self.foundImages = True
-        return True
-      return False
-  def find_AVCHD(self,srcDisk):
-      avDir = seek_named_dir(srcDisk,"AVCHD")
-      if avDir is not None:
-        self.imgDirs.append(avDir)
-        self.foundImages = True
-        return True
-      return False
-  def identify_phone(self,srcDisk):
-      avDir = seek_named_dir(srcDisk,".android_secure",0,2)
-      if avDir is not None:
-        print("Android Phone Storage Identified")
-        return True
-      return False
-  def find_extra_android_image_dirs(self,srcMedia):
-    found = False
-    print("looking for extra Android image dirs on drive '{}'".format(srcMedia))
-    for aTest in ["AndCam3D", "AndroPan", "CamScanner", "ReducePhotoSize", "retroCamera",
-            "FxCamera", "PicSay", "magicdoodle", "magicdoodlelite", "penman", 
-            "Video", "Vignette", "SketchBookMobile", "sketcher"]:
-      nDir = seek_named_dir(srcMedia,aTest,0,4)
-      if nDir is not None:
-        self.imgDirs.append(nDir)
-        found = True
-    return found
-  def find_src_media(self):
-    srcMedia = None
-    self.foundImages = False
-    isPhone = False
-    for srcDisk in self.RemovableMedia:
-      print(srcDisk)
-      if (self.archiveDrive == srcDisk) or (not os.path.exists(srcDisk)) or os.path.islink(srcDisk):
+  def find_src_image_media(self):
+    for srcDevice in self.drives.RemovableMedia:
+      if gVerbose:
+        print("  Checking {} for source media".format(srcDevice))
+      if (self.drives.archiveDrive == srcDevice) or (not os.path.exists(srcDevice)) or os.path.islink(srcDevice):
         continue
-      srcMedia = srcDisk
-      self.find_DCIM(srcDisk)
-      isPhone = self.identify_phone(srcDisk)
-      if not isPhone:
-        p = self.find_PRIVATE(srcDisk)
-        if not p:
-          self.find_AVCHD(srcDisk)
-      if self.foundImages or isPhone:
-          break
-    if self.foundImages:
-      isPhone |= self.find_extra_android_image_dirs(srcMedia)
-    return srcMedia
+      avDir = seek_named_dir(srcDevice, "DCIM", 0, 2)
+      if avDir is not None:
+        self.imgDirs.append(avDir)
+      # we may have images AND video on the device
+      avDir = seek_named_dir(srcDevice, "PRIVATE")
+      if avDir is None:
+        avDir = seek_named_dir(srcDevice, "AVCHD")
+      if avDir is not None:
+        self.imgDirs.append(avDir)
+      if len(self.imgDirs) > 0:
+          return srcDevice
+    return None
 
   #
   # Look for external tools
   #
-  def seek_dng_convertor(self):
-    "find a DNG convertor, if one is available"
-    convertor = None
+  def seek_dng_converter(self):
+    "find a DNG converter, if one is available"
+    converter = None
     if os.environ.has_key('PROGRAMFILES'): # windows
-      convertor = os.path.join(os.environ['PROGRAMFILES'],"Adobe","Adobe DNG Converter.exe")
-      if not os.path.exists(convertor):
-        convertor = os.path.join(os.environ['PROGRAMFILES(X86)'],"Adobe","Adobe DNG Converter.exe")
-      if not os.path.exists(convertor):
-        convertor = None
-    return convertor
+      converter = os.path.join(os.environ['PROGRAMFILES'],"Adobe","Adobe DNG Converter.exe")
+      if not os.path.exists(converter):
+        converter = os.path.join(os.environ['PROGRAMFILES(X86)'],"Adobe","Adobe DNG Converter.exe")
+      if not os.path.exists(converter):
+        converter = None
+    return converter
 
   #
   # Archiving
@@ -638,14 +592,17 @@ class Volumes(object):
     if not self.foundImages:
       print("No images to archive")
       return
-    print("Found These valid image source directories:")
-    print("  {}".format(", ".join(self.imgDirs)))
+    if gVerbose:
+      print("Found These valid image source directories:")
+      print("  {}".format(", ".join(self.imgDirs)))
     for srcDir in self.imgDirs:
-      print("Archiving Images from '{}'\n\tto '{}'".format(srcDir,self.pixDestDir))
-      self.archive_pix(srcDir, self.pixDestDir, self.vidDestDir)
+      print("Archiving Images from '{}'\n\tto '{}'".format(srcDir, self.drives.pixDestDir))
+      self.identify_archive_pix(srcDir, self.drives.pixDestDir, self.drives.vidDestDir)
+      self.archive_found_image_data()
 
   def archive_audio(self):
-    print("Archiving Audio from '{}'\n\tto '{}'".format(self.srcMedia,self.audioDestDir))
+    'TODO fix this method'
+    # print("Archiving Audio from '{}'\n\tto '{}'".format(self.srcMedia, self.audioDestDir))
     # self.archive_audio_tracks(srcMedia,audioDestDir) ## HACKKKK
   def archive_audio_tracks(self, FromDir, ArchDir):
     "Archive audio tracks"
@@ -733,7 +690,7 @@ class Volumes(object):
       return "{}{}".format(self.prefix, OrigName)
     return OrigName
 
-  def archive_pix(self, FromDir, PixArchDir, VidArchDir):
+  def identify_archive_pix(self, FromDir, PixArchDir, VidArchDir):
     "Archive images and video - recursively if needed"
     # first make sure all inputs are valid
     if not self.verify_image_archive_dir(FromDir, PixArchDir, VidArchDir):
@@ -743,16 +700,17 @@ class Volumes(object):
     localItemCount = 0
     isAVCHDsrc = self.avchd_src(FromDir)
     #files = os.listdir(FromDir)
-    files = [f for f in os.listdir(FromDir) if not ( Volumes.regexDotFiles.match(f) or os.path.isdir(f) )]
+    files = [f for f in os.listdir(FromDir) if not Volumes.regexDotFiles.match(f) ]
     files.sort()
-    if len(files) > 0:
-      print("Archiving {} files in {}".format(len(files),FromDir))
+    filesOnly = [f for f in files if not os.path.isdir(os.path.join(FromDir,f)) ]
+    if len(filesOnly) > 0:
+      print("Archiving {} files in {}".format(len(filesOnly),FromDir))
     for kid in files:
       if Volumes.regexDotFiles.match(kid):
         continue
       fullKidPath = os.path.join(FromDir,kid)
       if os.path.isdir(fullKidPath):
-        self.archive_pix(fullKidPath, PixArchDir, VidArchDir)   # recurse
+        self.identify_archive_pix(fullKidPath, PixArchDir, VidArchDir)   # recurse
       else:
         # if .MOV or .M4V or .MP4 or .3GP it's a vid
         # if JPG, check to see if there's a matching vid
@@ -806,9 +764,11 @@ class Volumes(object):
           print("Unable to archive media to {}".format(destinationPath))
     if localItemCount > 0:
       print("Found {} items in {}".format(localItemCount, FromDir))
+
+  def archive_found_image_data(self):
     if not self.test:
       for pic in self.images:
-        if pic.archive(Force=self.forceCopies, PixDestDir=self.pixDestDir):
+        if pic.archive(Force=self.forceCopies, PixDestDir=self.drives.pixDestDir):
           self.nFiles += 1
           self.nBytes += pic.nBytes
         else:
@@ -819,11 +779,11 @@ class Volumes(object):
   #
   def announce(self):
     print('SOURCE MEDIA: "{}"'.format(self.srcMedia))
-    print('DESTINATION DRIVE: "{}"'.format(self.archiveDrive))
-    print('JOB NAME: "{}"'.format(self.JobName))
+    print('DESTINATION DRIVE: "{}"'.format(self.drives.archiveDrive))
+    print('JOB NAME: "{}"'.format(self.jobname))
 
   def report(self):
-    self.storage.print_report(self.pixDestDir)
+    self.storage.print_report(self.drives.pixDestDir)
     if len(self.dirList) > 0:
       print("Created {} Extra Directories:".format(len(self.dirList)))
       print('\n'.join(self.dirList))
@@ -836,11 +796,12 @@ class Volumes(object):
       print("{} minutes".format(elapsed/60))
     else:
       print("{} seconds".format(elapsed))
-    throughput = self.nBytes/elapsed
-    throughput /= (1024*1024)
-    print("Estimated performance: %g Mb/sec".format(elapsed))
-    if self.nConversions > 0:
-      print("Including {} DNG conversions".format(self.nConversions))
+    if self.nBytes > 0L:
+      throughput = self.nBytes/elapsed
+      throughput /= (1024*1024)
+      print("Estimated performance: {} Mb/sec".format(throughput/elapsed))
+      if self.nConversions > 0:
+        print("Including {} DNG conversions".format(self.nConversions))
 
 # MAIN EXECUTION BITS ##############
 
@@ -875,8 +836,7 @@ if __name__ == '__main__':
   else:
     pargs = fake_arguments()
 
-  Vols = Volumes()
-  Vols.user_args(pargs)
+  Vols = Volumes(pargs)
   Vols.archive()
 
 # /disks/Removable/Flash\ Reader/EOS_DIGITAL/DCIM/100EOS5D/
