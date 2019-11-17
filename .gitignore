@@ -5,6 +5,9 @@
 *.sublime-workspace
 *.sublime-project
 
+# Misc Logs
+sample*log.txt
+
 # Packages
 *.egg
 *.egg-info
