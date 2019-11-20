@@ -862,6 +862,7 @@ class Volumes(object):
     print("{} Files, Total MB: {}".format(self.nFiles, self.nBytes/(1024*1024)))
     if self.nSkipped:
       print("Skipped {} files".format(self.nSkipped))
+      print("  with {} doppelgangs".format(len(ArchiveImg.doppelFiles)))
     endTime = time.clock()
     elapsed = endTime-self.startTime
     if elapsed > 100:
