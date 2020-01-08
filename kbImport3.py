@@ -47,6 +47,8 @@
 versionString = "kbImport - 12nov2019 - (c)2019 K Bjorke"
 
 import sys
+if sys.version_info > (3,):
+  long = int
 import os
 import platform
 import shutil
@@ -239,7 +241,7 @@ class ArchiveImg(object):
   def __init__(self, Name, Path):
     self.srcName = Name
     self.srcPath = Path
-    self.nBytes = 0L
+    self.nBytes = long(0)
 
   def archive(self, Force=False, PixDestDir='none'):
     "Archive a Single Image File"
@@ -332,8 +334,9 @@ class Drives(object):
     """
     TODO: modify for Raspberry
     """
+    # mk = '/media/kevin'
+    mk = '/mnt'
     self.host = 'linux'
-    mk = '/media/kevin'
     # pxd = 'pix18'
     # pxd = 'BjorkeSSD'   # TODO(kevin): this is so bad
     pxd = 'pix20'
@@ -363,10 +366,10 @@ class Drives(object):
   def init_drives_windows(self):
     # Defaults for Windows
     self.host = 'windows'
-    self.PrimaryArchiveList = ['R:', 'I:', 'G:']
+    self.PrimaryArchiveList = ['F:', 'R:', 'I:', 'G:']
     self.LocalArchiveList = ['D:']
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
-    self.RemovableMedia = self.available_source_vols(['J:', 'I:', 'H:', 'K:','G:', 'F:'])
+    self.RemovableMedia = self.available_source_vols(['J:', 'I:', 'H:', 'K:','G:'])
     if win32ok:
       self.RemovableMedia = [d for d in self.RemovableMedia if win32file.GetDriveType(d)==win32file.DRIVE_REMOVABLE]
 
@@ -466,12 +469,12 @@ class Volumes(object):
   images = [] # array of ArchiveImg
 
   def __init__(self, pargs=None):
-    self.startTime = time.clock()
+    self.startTime =  time.process_time() if sys.version_info > (3,3)  else time.clock()
     self.drives = Drives()
     self.jobname = None
-    self.nBytes = 0L
-    self.nFiles = 0L
-    self.nSkipped = 0L
+    self.nBytes = long(0)
+    self.nFiles = long(0)
+    self.nSkipped = long(0)
     self.nConversions = 0
     self.audioPrefix = "" # for edirol
     self.createdDirs = {}
@@ -519,7 +522,7 @@ class Volumes(object):
     "Main dealio right here"
     print(versionString)
     if not self.media_are_ready():
-      print("No '{}' media found, please connect it to this {}".format(self.jobname, self.drives.host))
+      print("No '{}' media found, please connect it to this {} computer".format(self.jobname, self.drives.host))
       sys.exit()
     self.announce()
     self.archive_images_and_video()
@@ -790,13 +793,14 @@ class Volumes(object):
     print("{} Files, Total MB: {}".format(self.nFiles, self.nBytes/(1024*1024)))
     if self.nSkipped:
       print("Skipped {} files".format(self.nSkipped))
-    endTime = time.clock()
+    endTime = time.process_time() if sys.version_info > (3,3)  else time.clock()
+
     elapsed = endTime-self.startTime
     if elapsed > 100:
       print("{} minutes".format(elapsed/60))
     else:
       print("{} seconds".format(elapsed))
-    if self.nBytes > 0L:
+    if self.nBytes > long(0):
       throughput = self.nBytes/elapsed
       throughput /= (1024*1024)
       print("Estimated performance: {} Mb/sec".format(throughput/elapsed))
