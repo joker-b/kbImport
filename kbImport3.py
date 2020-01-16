@@ -459,22 +459,35 @@ class Drives(object):
       return
     self.RemovableMedia = backupLocations + self.RemovableMedia
 
+  def pretty(self, Path):
+    if not win32ok:
+      return Path
+    try:
+      name = win32api.GetVolumeInformation(Path)
+      return '"{}" ({})'.format(name[0],Path)
+    except:
+      pass # print("Can't get volume info for '{}'".format(Path))
+    return Path
+
   def acceptable_source_vol(self,Path):
+    printable = self.pretty(Path)
     if not os.path.exists(Path):
       if gVerbose:
-        print("{} doesn't exist"%(Path))
+        print("{} doesn't exist"%(printable))
       return False
     if not os.path.isdir(Path):
-      print('Error: Proposed source "{}" is not a directory'.format(Path))
+      print('Error: Proposed source "{}" is not a directory'.format(printable))
       return False
     if Path in self.ForbiddenSources:
       if gVerbose:
-        print("{} forbidden as a source"%(Path))
+        print("{} forbidden as a source"%(printable))
       return False
     s = os.path.getsize(Path) # TODO: this is not how you get volume size!
-    if os.path.getsize(Path) > Volumes.largestSource:
-      print('Oversized source: "{}"'.format(Path))
+    if s > Volumes.largestSource:
+      print('Oversized source: "{}"'.format(printable))
       return False
+    if gVerbose:
+      print("Found source {}".format(printable))
     return True
 
   def assign_removable(self, SourceName):
@@ -646,7 +659,7 @@ class Volumes(object):
       return None
     for srcDevice in self.drives.RemovableMedia:
       if gVerbose:
-        print("  Checking {} for source media".format(srcDevice))
+        print("  Checking {} for source media".format(self.drives.pretty(srcDevice)))
       if (self.drives.archiveDrive == srcDevice) or (not os.path.exists(srcDevice)) or os.path.islink(srcDevice):
         continue
       avDir = seek_named_dir(srcDevice, "DCIM", 0, 2)
@@ -807,7 +820,7 @@ class Volumes(object):
     files.sort()
     filesOnly = [f for f in files if not os.path.isdir(os.path.join(FromDir,f)) ]
     if gVerbose and len(filesOnly) > 0:
-      print("Archiving {} files in\n    {}".format(len(filesOnly),FromDir))
+      print("Archiving {} files from\n    {}".format(len(filesOnly),FromDir))
     for kid in files:
       if Volumes.regexDotFiles.match(kid):
         continue
@@ -879,8 +892,8 @@ class Volumes(object):
   # reporting
   #
   def announce(self):
-    print('SOURCE MEDIA: "{}"'.format('\n\t'.join(self.srcMedia)))
-    print('DESTINATION DRIVE: "{}"'.format(self.drives.archiveDrive))
+    print('SOURCE MEDIA:      {}'.format('\n\t'.join([self.drives.pretty(d) for d in self.srcMedia])))
+    print('DESTINATION DRIVE: {}'.format(self.drives.pretty(self.drives.archiveDrive)))
     print('JOB NAME: "{}"'.format(self.jobname))
 
   def report(self):
