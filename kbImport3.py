@@ -41,10 +41,14 @@
 # http://www.botzilla.com/
 """
 
-# TO-DO -- ignore list eg ['.dropbox.device']
-# TO-DO - itemized manifest @ end ("# of pix to dir xxxx" etc)
+# TODO -- ignore list eg ['.dropbox.device']
+# TODO - itemized manifest @ end ("# of pix to dir xxxx" etc)
 
-versionString = "kbImport - 12nov2019 - (c)2019 K Bjorke"
+# TODO - handle new device: WD WiFi Hard rive archiving onto different hard drive
+# TODO - frames for animaition: renumber (RAF/JPG will require a map), then also write a text file showing the map
+# TODO handle inter-HD uploads in general? (this used to the be domain of "drobolize")
+
+versionString = "kbImport - 15jan2020 - (c)2004-2020 K Bjorke"
 
 import sys
 if sys.version_info > (3,):
@@ -67,7 +71,7 @@ except:
 ##### global variable ##########################
 ################################################
 
-# if gTest is True, create directories, but don't actually copy files (for testing).....
+# if gTest is True, don't actually copy files (for testing).....
 gTest = False
 gVerbose = False
 
@@ -112,18 +116,18 @@ class StorageHierarchy(object):
   createdDirs = []
 
   def __init__(self, Testing=False, Unified=False, jobname=None, UniDir=None):
-    self.test = Testing
     self.unify = Unified
     self.jobname = jobname
     self.unified_archive_dir = UniDir # TODO: is this ever actually set?
     self.testLog = {}
 
   def print_report(self, TopDir='.'):
-    if len(self.createdDirs) > 0:
+    allDirs = self.createdDirs + ArchiveImg.createdDirs
+    if len(allDirs) > 0:
       print("Created directories within {}:".format(TopDir))
-      print(' ' + '\n '.join(self.createdDirs))
+      print(' ' + '\n '.join(allDirs))
 
-  def safe_mkdir(self, Dir, PrettierName=None, TestMe=False, Prefix=''):
+  def safe_mkdir(self, Dir, PrettierName=None, Prefix=''):
     """
     check for existence, create as needed.
     'PrettierName' is a print-pretty version.
@@ -131,9 +135,8 @@ class StorageHierarchy(object):
     When testing is True, still return name of the (non-existent) directory!
     """
     report = PrettierName or Dir
-    testing = TestMe
     if not os.path.exists(Dir):
-      if testing:
+      if gTest:
         gr = self.testLog.get(report)
         if not gr:
           print("Need to create dir {} **".format(report))
@@ -153,24 +156,24 @@ class StorageHierarchy(object):
 
   ######
 
-  def year_subdir(self, SrcFileStat, ArchDir, ReportName="", TestMe=False):
+  def year_subdir(self, SrcFileStat, ArchDir, ReportName=""):
     "Based on the source file's timestamp, seek (or create) an archive directory"
     # subdir = time.strftime("%Y",time.localtime(SrcFileStat.st_ctime))
     subdir = time.strftime("%Y",time.localtime(SrcFileStat.st_mtime))
     result = os.path.join(ArchDir,subdir)
     report = ReportName + os.path.sep + subdir
-    self.safe_mkdir(result, report, TestMe=TestMe)
+    self.safe_mkdir(result, report)
     return result
 
   #########
 
-  def month_subdir(self, SrcFileStat, ArchDir, ReportName="", TestMe=False):
+  def month_subdir(self, SrcFileStat, ArchDir, ReportName=""):
     "Based on the source file's timestamp, seek (or create) an archive directory"
     # subdir = time.strftime("%Y-%m-%b",time.localtime(SrcFileStat.st_ctime))
     subdir = time.strftime("%Y-%m-%b",time.localtime(SrcFileStat.st_mtime))
     result = os.path.join(ArchDir,subdir)
     report = ReportName + os.path.sep + subdir
-    self.safe_mkdir(result, report, TestMe=TestMe, Prefix='  ')
+    self.safe_mkdir(result, report, Prefix='  ')
     return result
 
   def unified_dir_name(self, ArchDir, ReportName=""):
@@ -181,18 +184,18 @@ class StorageHierarchy(object):
     yearStr = time.strftime("%Y",now)
     yearPath = os.path.join(ArchDir,yearStr)
     archivePath = ReportName+os.path.sep+yearStr
-    safe_mkdir(yearPath, archivePath, TestMe=self.test)
+    safe_mkdir(yearPath, archivePath)
     monthStr = time.strftime("%Y-%m-%b",now)
     monthPath = os.path.join(yearPath,monthStr)
     archivePath = archivePath+os.path.sep+monthStr
-    safe_mkdir(monthPath, archivePath, TestMe=self.test, Prefix='  ')
+    safe_mkdir(monthPath, archivePath, Prefix='  ')
     dateStr = time.strftime("%Y_%m_%d",now)
     if self.jobname is not None:
       dateStr = "{}_{}".format(dateStr,self.jobname)
     unifiedDir = os.path.join(monthPath,dateStr)
     archivePath = archivePath+os.path.sep+dateStr
-    safe_mkdir(unifiedDir, archivePath, TestMe=self.test, Prefix='    ')
-    if not ( os.path.isdir(unifiedDir) or self.test ):
+    safe_mkdir(unifiedDir, archivePath, Prefix='    ')
+    if not ( os.path.isdir(unifiedDir) or gTest ):
       print("path error: {} is not a directory!".format(unifiedDir))
       return None
     return unifiedDir
@@ -209,18 +212,18 @@ class StorageHierarchy(object):
     except:
       print('Stat failure: "{}"'.format(sys.exc_info()[0]))
       return None
-    yearDir = self.year_subdir(s, ArchDir, TestMe=self.test)
-    monthDir = self.month_subdir(s, yearDir, TestMe=self.test)
+    yearDir = self.year_subdir(s, ArchDir)
+    monthDir = self.month_subdir(s, yearDir)
     timeFormat = "%Y_%m_%d"
     dateDir = time.strftime(timeFormat, time.localtime(s.st_mtime))
     if self.jobname is not None:
       dateDir = "{}_{}".format(dateDir, self.jobname)
     destDir = os.path.join(monthDir, dateDir)
     reportStr = ReportName + os.path.sep + dateDir
-    self.safe_mkdir(destDir, reportStr, TestMe=self.test, Prefix='   ')
-    if not ( os.path.isdir(destDir) or self.test ):
-      print("Destination path error: '{}' is not a directory!".format(destDir))
-      return None
+    # self.safe_mkdir(destDir, reportStr, Prefix='   ') # only make it if needed!
+    #if not ( os.path.isdir(destDir) or gTest ):
+    #  print("Destination path error: '{}' is not a directory!".format(destDir))
+    #  return None
     return destDir
 
 #############################################################
@@ -229,7 +232,7 @@ class StorageHierarchy(object):
 
 
 #############################################################
-#############################################################
+### A SINGLE IMAGE ##########################################
 #############################################################
 
 class ArchiveImg(object):
@@ -238,18 +241,73 @@ class ArchiveImg(object):
   destName = ''
   destPath = ''
   makeDNG = False
+  doppelFiles = {}
+  doppelPaths = {}
+  createdDirs = []
+  testLog = {}
   regexDotAvchd = re.compile('(.*).AVCHD')
+  regexPic = re.compile('([A-Z_][A-Z_][A-Z_][A-Z_]\d\d\d\d)\.(JPG|RAF|RW2|RAW|DNG)')
+
   def __init__(self, Name, Path):
     self.srcName = Name
     self.srcPath = Path
     self.nBytes = long(0)
+
+  def doppelganger(self):
+    "figure out if there is a copy of this file in a neighboring archive"
+    if ArchiveImg.doppelFiles.has_key(self.srcName):
+      return True
+    (monthPath,dayFolder) = os.path.split(self.destPath)
+    dayStr = dayFolder[:10]
+    if gVerbose:
+      print("doppelhuntng in {}".format(monthPath))
+    for d in os.listdir(monthPath):
+      if ArchiveImg.doppelPaths.has_key(d):
+        # already checked
+        continue
+      if d[:10] != dayStr:
+        # only review days we care about
+        continue
+      ArchiveImg.doppelPaths[d] = 1
+      for f in os.listdir(os.path.join(monthPath,d)):
+        m = ArchiveImg.regexPic.search(f)
+        if m:
+          theMatch = m.group(0)
+          ArchiveImg.doppelFiles[theMatch] = 1
+    if ArchiveImg.doppelFiles.has_key(self.srcName):
+      return True
+    return False # for now
+
+  def dest_mkdir(self, Prefix='   '):
+    """
+    check for existence, create as needed.
+    Return directory name.
+    When testing is True, still return name of the (non-existent) directory!
+    """
+    if not os.path.exists(self.destPath):
+      if gTest:
+        if not ArchiveImg.testLog.has_key(self.destPath):
+          print("Need to create dir {} **".format(self.destPath))
+          ArchiveImg.testLog[self.destPath] = 1
+      else:
+        print("** Creating dir {} **".format(self.destPath))
+        os.mkdir(self.destPath)
+        if not os.path.exists(self.destPath):
+          print('mkdir "{}" failed')
+          return None
+        ArchiveImg.createdDirs.append(Prefix+os.path.split(self.destPath)[1])
+        return self.destPath
+    elif not os.path.isdir(self.destPath):
+      print("Path error: {} is not a directory!".format(finaldir))
+      return None
+    return self.destPath
 
   def archive(self, Force=False, PixDestDir='none'):
     "Archive a Single Image File"
     # TODO -- Apply fancier naming to self.destName
     FullDestPath = os.path.join(self.destPath, self.destName)
     protected = False
-    if os.path.exists(FullDestPath):
+    if os.path.exists(FullDestPath) or self.doppelganger():
       if Force:
         if gVerbose:
           print("Overwriting {}".format(FullDestPath))
@@ -265,9 +323,10 @@ class ArchiveImg(object):
       print("{} -> {}".format(self.srcName, reportPath))
       self.incr(self.srcPath)
     if not protected:
-      if self.makeDNG:
+     self.dest_mkdir()
+     if self.makeDNG:
         return self.dng_convert(self.destPath)
-      else:
+     else:
         return self.safe_copy(FullDestPath)
     return False
 
@@ -286,7 +345,7 @@ class ArchiveImg(object):
     # TODO: get command from Volumes instance
     cmd = "\"{}\" -c -d \"{}\" -o {} \"{}\"".format(self.DNG, self.destPath, self.destName, self.srcPath)
     # print(cmd)
-    if self.test:
+    if gTest:
       print(cmd)
       return True # pretend
     p = os.popen4(r'cmd /k')
@@ -310,7 +369,7 @@ class ArchiveImg(object):
     return True
 
 #############################################################
-#############################################################
+### SOURCE DEVICES ##########################################
 #############################################################
 
 class Drives(object):
@@ -363,6 +422,7 @@ class Drives(object):
                                   'My Passport for Mac'] ]
     self.ForbiddenSources = self.ForbiddenSources + self.PrimaryArchiveList + self.LocalArchiveList
     self.RemovableMedia = self.available_source_vols([os.path.join('/Volumes',a) for a in os.listdir('/Volumes')])
+    self.seekWDBackups()
 
   def init_drives_windows(self):
     # Defaults for Windows
@@ -377,6 +437,26 @@ class Drives(object):
   def available_source_vols(self,Vols=[]):
       return [a for a in Vols if self.acceptable_source_vol(a)]
 
+  def seekWDBackups(self):
+    backupLocations = []
+    for srcDevice in self.RemovableMedia:
+      wdBackup = os.path.join(srcDevice,"SD Card Imports")
+      if not os.path.exists(wdBackup):
+        continue
+      for day in os.listdir(wdBackup):
+        dd = os.path.join(wdBackup, day)
+        if os.path.isdir(dd):
+          for tag in os.listdir(dd):
+            td = os.path.join(dd, tag)
+            if os.path.isdir(td):
+              for card in os.listdir(td):
+                cardDir = os.path.join(td, card)
+                if os.path.isdir(cardDir):
+                  backupLocations.append(cardDir)
+    if len(backupLocations) < 1:
+      return
+    self.RemovableMedia = backupLocations + self.RemovableMedia
+
   def acceptable_source_vol(self,Path):
     if not os.path.exists(Path):
       if gVerbose:
@@ -389,7 +469,7 @@ class Drives(object):
       if gVerbose:
         print("{} forbidden as a source"%(Path))
       return False
-    s = os.path.getsize(Path) # TO-DO: this is not how you get volume size!
+    s = os.path.getsize(Path) # TODO: this is not how you get volume size!
     if os.path.getsize(Path) > Volumes.largestSource:
       print('Oversized source: "{}"'.format(Path))
       return False
@@ -450,7 +530,7 @@ class Drives(object):
     return True
 
 #############################################################
-#############################################################
+### MAIN ACTION #############################################
 #############################################################
 
 class Volumes(object):
@@ -476,6 +556,7 @@ class Volumes(object):
   def __init__(self, pargs=None):
     self.startTime =  time.process_time() if sys.version_info > (3,3)  else time.clock()
     self.drives = Drives()
+    self.storage = StorageHierarchy()
     self.jobname = None
     self.nBytes = long(0)
     self.nFiles = long(0)
@@ -483,13 +564,10 @@ class Volumes(object):
     self.nConversions = 0
     self.audioPrefix = "" # for edirol
     self.createdDirs = {}
-    self.storage = StorageHierarchy()
-    self.dirList = []
+    self.newDirList = []
     self.imgDirs = []
-    self.srcMedia = None
-    self.test = False
-    self.verbose = False
-    self.prefix = None
+    self.srcMedia = []
+    self.prefix = ''
     if pargs is not None:
       self.user_args(pargs)
 
@@ -502,12 +580,11 @@ class Volumes(object):
       self.drive.assign_removable(pargs.source)
     if pargs.archive is not None:
       self.PrimaryArchiveList = pargs.archive
-      if self.host == 'windows':
-        self.PrimaryArchiveList[0] = re.sub('::',self.PrimaryArchiveList[0])
-    if pargs.test is not None:
-      self.test = pargs.test
-    if pargs.verbose is not None:
-      self.verbose = pargs.verbose
+      if self.drives.host == 'windows':
+        self.drives.PrimaryArchiveList[0] = re.sub('::',self.drives.PrimaryArchiveList[0])
+    self.numerate = True if pargs.numerate else False
+    gVerbose  = True if pargs.verbose  else False
+    gTest     = True if pargs.test     else False
     if pargs.prefix is not None:
       self.prefix = "{}_".format(pargs.prefix)
     if pargs.jobpref is not None:
@@ -516,14 +593,13 @@ class Volumes(object):
       else:
         self.prefix = "{}{}_".format(self.prefix,self.jobname)
     # unique to storage
-    if pargs.unify is not None:
-      self.storage.unify = pargs.unify
+    self.storage.unify = True if pargs.unify else False
     # wrapup
     self.storage.jobname = self.jobname
     self.storage.prefix = self.prefix
-    self.storage.test = self.test
-    gTest = self.test
-    gVerbose = self.verbose
+    self.storage.test = gTest # self.test
+    # gTest = self.test
+    # gVerbose = self.verbose
     if gVerbose:
       print("verbose mode")
 
@@ -549,7 +625,7 @@ class Volumes(object):
         print('Archive drive failed verification')
       return False
     self.srcMedia = self.find_src_image_media()
-    self.foundImages = self.srcMedia is not None
+    self.foundImages = self.srcMedia and len(self.srcMedia) > 0
     if not self.foundImages:
       if gVerbose:
         print('Images not found')
@@ -562,6 +638,7 @@ class Volumes(object):
   #
 
   def find_src_image_media(self):
+    foundMedia = []
     if len(self.drives.RemovableMedia) < 1:
       print("Yikes, no source media")
       return None
@@ -573,17 +650,15 @@ class Volumes(object):
       avDir = seek_named_dir(srcDevice, "DCIM", 0, 2)
       if avDir is not None:
         self.imgDirs.append(avDir)
-      # we may have images AND video on the device
+      # we may have images AND video on this device
       avDir = seek_named_dir(srcDevice, "PRIVATE")
       if avDir is None:
         avDir = seek_named_dir(srcDevice, "AVCHD")
       if avDir is not None:
         self.imgDirs.append(avDir)
       if len(self.imgDirs) > 0:
-          return srcDevice
-    if gVerbose:
-      print("nope")
-    return None
+          foundMedia.append(srcDevice)
+    return foundMedia
 
   #
   # Look for external tools
@@ -610,8 +685,8 @@ class Volumes(object):
     if not dh:
       if not os.path.exists(Location):
         self.createdDirs[Location] = 1
-        self.dirList.append(Location)
-        safe_mkdir(result, TestMe=self.test)
+        self.newDirList.append(Location)
+        safe_mkdir(result)
 
   def archive_images_and_video(self):
     "Top image archive method"
@@ -622,7 +697,7 @@ class Volumes(object):
       print("Found These valid image source directories:")
       print("  {}".format(", ".join(self.imgDirs)))
     for srcDir in self.imgDirs:
-      print("Archiving Images from '{}'\n\tto '{}'".format(srcDir, self.drives.pixDestDir))
+      print("Archiving Images from '{}'".format(srcDir))
       self.identify_archive_pix(srcDir, self.drives.pixDestDir, self.drives.vidDestDir)
       self.archive_found_image_data()
 
@@ -663,7 +738,7 @@ class Volumes(object):
             s = os.stat(fullpath)
             self.nBytes += s.st_size
             self.nFiles += 1
-            if not self.test:
+            if not gTest:
                 shutil.copy2(fullpath,trackDir)
           else:
             print("Unable to archive audio to {}".format(ArchDir))
@@ -703,18 +778,19 @@ class Volumes(object):
     if privateDir is None:
       print("avchd error")
       return privateDir
-    avchdDir = safe_mkdir(os.path.join(privateDir,"AVCHD"), "AVCHD", TestMe=self.test)
+    avchdDir = safe_mkdir(os.path.join(privateDir,"AVCHD"), "AVCHD")
     for s in ["AVCHDTN","CANONTHM"]:
-      sd = safe_mkdir(os.path.join(avchdDir,s), "AVCHD"+os.path.sep+s, TestMe=self.test)
-    bdmvDir = safe_mkdir(os.path.join(avchdDir,"BDMV"), "BDMV", TestMe=self.test)
+      sd = safe_mkdir(os.path.join(avchdDir,s), "AVCHD"+os.path.sep+s)
+    bdmvDir = safe_mkdir(os.path.join(avchdDir,"BDMV"), "BDMV")
     for s in ["STREAM","CLIPINF","PLAYLIST","BACKUP"]:
-      sd = safe_mkdir(os.path.join(bdmvDir,s), "BDMV"+os.path.sep+s, TestMe=self.test)
+      sd = safe_mkdir(os.path.join(bdmvDir,s), "BDMV"+os.path.sep+s)
     return privateDir
 
   def dest_name(self, OrigName):
-    if self.prefix:
+    if self.numerate:
+      # TODO extract file extension, format number output, store a number, make sure we are *sorted*
       return "{}{}".format(self.prefix, OrigName)
-    return OrigName
+    return "{}{}".format(self.prefix, OrigName)
 
   def identify_archive_pix(self, FromDir, PixArchDir, VidArchDir):
     "Archive images and video - recursively if needed"
@@ -725,12 +801,11 @@ class Volumes(object):
     # now we can proceed
     localItemCount = 0
     isAVCHDsrc = self.avchd_src(FromDir)
-    #files = os.listdir(FromDir)
     files = [f for f in os.listdir(FromDir) if not Volumes.regexDotFiles.match(f) ]
     files.sort()
     filesOnly = [f for f in files if not os.path.isdir(os.path.join(FromDir,f)) ]
-    if len(filesOnly) > 0:
-      print("Archiving {} files in {}".format(len(filesOnly),FromDir))
+    if gVerbose and len(filesOnly) > 0:
+      print("Archiving {} files in\n    {}".format(len(filesOnly),FromDir))
     for kid in files:
       if Volumes.regexDotFiles.match(kid):
         continue
@@ -784,15 +859,13 @@ class Volumes(object):
           kidData.destPath = destinationPath
           self.images.append(kidData)
           localItemCount += 1
-          #if not self.archive_image(kid, fullKidPath, destinationPath, destName, isDNGible):
-          #  self.nSkipped += 1
         else:
           print("Unable to archive media to {}".format(destinationPath))
-    if localItemCount > 0:
+    if gVerbose and localItemCount > 0:
       print("Found {} items in {}".format(localItemCount, FromDir))
 
   def archive_found_image_data(self):
-    if not self.test:
+    if not gTest:
       for pic in self.images:
         if pic.archive(Force=self.forceCopies, PixDestDir=self.drives.pixDestDir):
           self.nFiles += 1
@@ -804,20 +877,20 @@ class Volumes(object):
   # reporting
   #
   def announce(self):
-    print('SOURCE MEDIA: "{}"'.format(self.srcMedia))
+    print('SOURCE MEDIA: "{}"'.format('\n\t'.join(self.srcMedia)))
     print('DESTINATION DRIVE: "{}"'.format(self.drives.archiveDrive))
     print('JOB NAME: "{}"'.format(self.jobname))
 
   def report(self):
     self.storage.print_report(self.drives.pixDestDir)
-    if len(self.dirList) > 0:
-      print("Created {} Extra Directories:".format(len(self.dirList)))
-      print('\n'.join(self.dirList))
+    if len(self.newDirList) > 0:
+      print("Created {} Extra Directories:".format(len(self.newDirList)))
+      print('\n'.join(self.newDirList))
     print("{} Files, Total MB: {}".format(self.nFiles, self.nBytes/(1024*1024)))
     if self.nSkipped:
       print("Skipped {} files".format(self.nSkipped))
+      print("  with {} doppelgangs".format(len(ArchiveImg.doppelFiles)))
     endTime = time.process_time() if sys.version_info > (3,3)  else time.clock()
-
     elapsed = endTime-self.startTime
     if elapsed > 100:
       print("{} minutes".format(elapsed/60))
@@ -831,17 +904,20 @@ class Volumes(object):
         print("Including {} DNG conversions".format(self.nConversions))
 
 # MAIN EXECUTION BITS ##############
+# MAIN EXECUTION BITS ##############
+# MAIN EXECUTION BITS ##############
 
 def fake_arguments():
     args = argparse.Namespace()
     args.jobname = 'test'
-    args.prefix = 'T_'
+    args.prefix = None
     args.jobpref = None
     args.source = None
     args.archive = None
     args.unify = False
     args.test = True
     args.verbose = False
+    args.numerate = False
     return args
 
 
@@ -856,6 +932,7 @@ if __name__ == '__main__':
     parser.add_argument('-v','--verbose',help='noisy output',action="store_true")
     parser.add_argument('-s','--source',help='Specify source removeable volume (otherwise will guess)')
     parser.add_argument('-a','--archive',help='specify source archive directory (otherwise will use std names)')
+    parser.add_argument('-n','--numerate',help='number images as an animation sequence',action="store_true")
     try:
       pargs = parser.parse_args()
     except:
