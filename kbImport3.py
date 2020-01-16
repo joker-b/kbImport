@@ -64,6 +64,7 @@ import argparse
 win32ok = True
 try:
   import win32file
+  import win32api
 except:
   win32ok = False
 
@@ -255,14 +256,16 @@ class ArchiveImg(object):
 
   def doppelganger(self):
     "figure out if there is a copy of this file in a neighboring archive"
-    if ArchiveImg.doppelFiles.has_key(self.srcName):
+    name = ArchiveImg.doppelFiles.get(self.srcName)
+    if name:
       return True
     (monthPath,dayFolder) = os.path.split(self.destPath)
     dayStr = dayFolder[:10]
     if gVerbose:
-      print("doppelhuntng in {}".format(monthPath))
+      print("doppelhunting in {}".format(monthPath))
     for d in os.listdir(monthPath):
-      if ArchiveImg.doppelPaths.has_key(d):
+      name = ArchiveImg.doppelPaths.get(d)
+      if name:
         # already checked
         continue
       if d[:10] != dayStr:
@@ -274,9 +277,7 @@ class ArchiveImg(object):
         if m:
           theMatch = m.group(0)
           ArchiveImg.doppelFiles[theMatch] = 1
-    if ArchiveImg.doppelFiles.has_key(self.srcName):
-      return True
-    return False # for now
+    return ArchiveImg.doppelFiles.get(self.srcName) is not None
 
   def dest_mkdir(self, Prefix='   '):
     """
@@ -286,7 +287,8 @@ class ArchiveImg(object):
     """
     if not os.path.exists(self.destPath):
       if gTest:
-        if not ArchiveImg.testLog.has_key(self.destPath):
+        dp = ArchiveImg.testLog.get(self.destPath)
+        if not dp:
           print("Need to create dir {} **".format(self.destPath))
           ArchiveImg.testLog[self.destPath] = 1
       else:
