@@ -64,6 +64,7 @@ import argparse
 win32ok = True
 try:
   import win32file
+  import win32api
 except:
   win32ok = False
 
@@ -255,14 +256,16 @@ class ArchiveImg(object):
 
   def doppelganger(self):
     "figure out if there is a copy of this file in a neighboring archive"
-    if ArchiveImg.doppelFiles.has_key(self.srcName):
+    name = ArchiveImg.doppelFiles.get(self.srcName)
+    if name:
       return True
     (monthPath,dayFolder) = os.path.split(self.destPath)
     dayStr = dayFolder[:10]
     if gVerbose:
-      print("doppelhuntng in {}".format(monthPath))
+      print("doppelhunting in {}".format(monthPath))
     for d in os.listdir(monthPath):
-      if ArchiveImg.doppelPaths.has_key(d):
+      name = ArchiveImg.doppelPaths.get(d)
+      if name:
         # already checked
         continue
       if d[:10] != dayStr:
@@ -274,9 +277,7 @@ class ArchiveImg(object):
         if m:
           theMatch = m.group(0)
           ArchiveImg.doppelFiles[theMatch] = 1
-    if ArchiveImg.doppelFiles.has_key(self.srcName):
-      return True
-    return False # for now
+    return ArchiveImg.doppelFiles.get(self.srcName) is not None
 
   def dest_mkdir(self, Prefix='   '):
     """
@@ -286,7 +287,8 @@ class ArchiveImg(object):
     """
     if not os.path.exists(self.destPath):
       if gTest:
-        if not ArchiveImg.testLog.has_key(self.destPath):
+        dp = ArchiveImg.testLog.get(self.destPath)
+        if not dp:
           print("Need to create dir {} **".format(self.destPath))
           ArchiveImg.testLog[self.destPath] = 1
       else:
@@ -457,22 +459,35 @@ class Drives(object):
       return
     self.RemovableMedia = backupLocations + self.RemovableMedia
 
+  def pretty(self, Path):
+    if not win32ok:
+      return Path
+    try:
+      name = win32api.GetVolumeInformation(Path)
+      return '"{}" ({})'.format(name[0],Path)
+    except:
+      pass # print("Can't get volume info for '{}'".format(Path))
+    return Path
+
   def acceptable_source_vol(self,Path):
+    printable = self.pretty(Path)
     if not os.path.exists(Path):
       if gVerbose:
-        print("{} doesn't exist"%(Path))
+        print("{} doesn't exist"%(printable))
       return False
     if not os.path.isdir(Path):
-      print('Error: Proposed source "{}" is not a directory'.format(Path))
+      print('Error: Proposed source "{}" is not a directory'.format(printable))
       return False
     if Path in self.ForbiddenSources:
       if gVerbose:
-        print("{} forbidden as a source"%(Path))
+        print("{} forbidden as a source"%(printable))
       return False
     s = os.path.getsize(Path) # TODO: this is not how you get volume size!
-    if os.path.getsize(Path) > Volumes.largestSource:
-      print('Oversized source: "{}"'.format(Path))
+    if s > Volumes.largestSource:
+      print('Oversized source: "{}"'.format(printable))
       return False
+    if gVerbose:
+      print("Found source {}".format(printable))
     return True
 
   def assign_removable(self, SourceName):
@@ -644,7 +659,7 @@ class Volumes(object):
       return None
     for srcDevice in self.drives.RemovableMedia:
       if gVerbose:
-        print("  Checking {} for source media".format(srcDevice))
+        print("  Checking {} for source media".format(self.drives.pretty(srcDevice)))
       if (self.drives.archiveDrive == srcDevice) or (not os.path.exists(srcDevice)) or os.path.islink(srcDevice):
         continue
       avDir = seek_named_dir(srcDevice, "DCIM", 0, 2)
@@ -805,7 +820,7 @@ class Volumes(object):
     files.sort()
     filesOnly = [f for f in files if not os.path.isdir(os.path.join(FromDir,f)) ]
     if gVerbose and len(filesOnly) > 0:
-      print("Archiving {} files in\n    {}".format(len(filesOnly),FromDir))
+      print("Archiving {} files from\n    {}".format(len(filesOnly),FromDir))
     for kid in files:
       if Volumes.regexDotFiles.match(kid):
         continue
@@ -877,8 +892,8 @@ class Volumes(object):
   # reporting
   #
   def announce(self):
-    print('SOURCE MEDIA: "{}"'.format('\n\t'.join(self.srcMedia)))
-    print('DESTINATION DRIVE: "{}"'.format(self.drives.archiveDrive))
+    print('SOURCE MEDIA:      {}'.format('\n\t'.join([self.drives.pretty(d) for d in self.srcMedia])))
+    print('DESTINATION DRIVE: {}'.format(self.drives.pretty(self.drives.archiveDrive)))
     print('JOB NAME: "{}"'.format(self.jobname))
 
   def report(self):
