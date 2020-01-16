@@ -625,7 +625,7 @@ class Volumes(object):
         print('Archive drive failed verification')
       return False
     self.srcMedia = self.find_src_image_media()
-    self.foundImages = len(self.srcMedia) > 0
+    self.foundImages = self.srcMedia and len(self.srcMedia) > 0
     if not self.foundImages:
       if gVerbose:
         print('Images not found')
