@@ -134,7 +134,8 @@ class StorageHierarchy(object):
     testing = TestMe
     if not os.path.exists(Dir):
       if testing:
-        if not self.testLog.has_key(report):
+        gr = self.testLog.get(report)
+        if not gr:
           print("Need to create dir {} **".format(report))
           self.testLog[report] = 1
       else:
@@ -366,7 +367,7 @@ class Drives(object):
   def init_drives_windows(self):
     # Defaults for Windows
     self.host = 'windows'
-    self.PrimaryArchiveList = ['F:', 'R:', 'I:', 'G:']
+    self.PrimaryArchiveList = ['F:', 'R:', 'I:']
     self.LocalArchiveList = ['D:']
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
     self.RemovableMedia = self.available_source_vols(['J:', 'I:', 'H:', 'K:','G:'])
@@ -378,11 +379,15 @@ class Drives(object):
 
   def acceptable_source_vol(self,Path):
     if not os.path.exists(Path):
+      if gVerbose:
+        print("{} doesn't exist"%(Path))
       return False
     if not os.path.isdir(Path):
       print('Error: Proposed source "{}" is not a directory'.format(Path))
       return False
     if Path in self.ForbiddenSources:
+      if gVerbose:
+        print("{} forbidden as a source"%(Path))
       return False
     s = os.path.getsize(Path) # TO-DO: this is not how you get volume size!
     if os.path.getsize(Path) > Volumes.largestSource:
@@ -490,6 +495,8 @@ class Volumes(object):
 
   def user_args(self, pargs):
     "set state according to object 'pargs'"
+    global gTest
+    global gVerbose
     self.jobname = pargs.jobname
     if pargs.source is not None:
       self.drive.assign_removable(pargs.source)
@@ -517,6 +524,8 @@ class Volumes(object):
     self.storage.test = self.test
     gTest = self.test
     gVerbose = self.verbose
+    if gVerbose:
+      print("verbose mode")
 
   def archive(self):
     "Main dealio right here"
@@ -532,12 +541,18 @@ class Volumes(object):
   def media_are_ready(self):
     "Do we have all media in place? Find sources, destination, and optional converter"
     if not self.drives.find_archive_drive():
+      if gVerbose:
+        print('No archive drive found')
       return False
     if not self.drives.verify_archive_locations():
+      if gVerbose:
+        print('Archive drive failed verification')
       return False
     self.srcMedia = self.find_src_image_media()
     self.foundImages = self.srcMedia is not None
     if not self.foundImages:
+      if gVerbose:
+        print('Images not found')
       return False
     self.DNG = self.seek_dng_converter()
     return True
@@ -547,6 +562,9 @@ class Volumes(object):
   #
 
   def find_src_image_media(self):
+    if len(self.drives.RemovableMedia) < 1:
+      print("Yikes, no source media")
+      return None
     for srcDevice in self.drives.RemovableMedia:
       if gVerbose:
         print("  Checking {} for source media".format(srcDevice))
@@ -563,6 +581,8 @@ class Volumes(object):
         self.imgDirs.append(avDir)
       if len(self.imgDirs) > 0:
           return srcDevice
+    if gVerbose:
+      print("nope")
     return None
 
   #
@@ -571,10 +591,12 @@ class Volumes(object):
   def seek_dng_converter(self):
     "find a DNG converter, if one is available"
     converter = None
-    if os.environ.has_key('PROGRAMFILES'): # windows
-      converter = os.path.join(os.environ['PROGRAMFILES'],"Adobe","Adobe DNG Converter.exe")
+    pf =  os.environ.get('PROGRAMFILES')
+    if pf: # windows
+      converter = os.path.join(pf,"Adobe","Adobe DNG Converter.exe")
       if not os.path.exists(converter):
-        converter = os.path.join(os.environ['PROGRAMFILES(X86)'],"Adobe","Adobe DNG Converter.exe")
+        pfx = os.environ.get('PROGRAMFILES(X86)')
+        converter = os.path.join(pfx,"Adobe","Adobe DNG Converter.exe")
       if not os.path.exists(converter):
         converter = None
     return converter
@@ -584,7 +606,8 @@ class Volumes(object):
   #
   def mkArchiveDir(self, Location):
     "possibly create a directory"
-    if not self.createdDirs.has_key(Location):
+    dh = self.createdDirs.get(Location)
+    if not dh:
       if not os.path.exists(Location):
         self.createdDirs[Location] = 1
         self.dirList.append(Location)
