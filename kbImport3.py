@@ -48,9 +48,11 @@
 # TODO - frames for animaition: renumber (RAF/JPG will require a map), then also write a text file showing the map
 # TODO handle inter-HD uploads in general? (this used to the be domain of "drobolize")
 
-versionString = "kbImport - 12nov2019 - (c)2004-2019 K Bjorke"
+versionString = "kbImport - 15jan2020 - (c)2004-2020 K Bjorke"
 
 import sys
+if sys.version_info > (3,):
+  long = int
 import os
 import platform
 import shutil
@@ -135,7 +137,8 @@ class StorageHierarchy(object):
     report = PrettierName or Dir
     if not os.path.exists(Dir):
       if gTest:
-        if not self.testLog.has_key(report):
+        gr = self.testLog.get(report)
+        if not gr:
           print("Need to create dir {} **".format(report))
           self.testLog[report] = 1
       else:
@@ -248,7 +251,7 @@ class ArchiveImg(object):
   def __init__(self, Name, Path):
     self.srcName = Name
     self.srcPath = Path
-    self.nBytes = 0L
+    self.nBytes = long(0)
 
   def doppelganger(self):
     "figure out if there is a copy of this file in a neighboring archive"
@@ -391,8 +394,9 @@ class Drives(object):
     """
     TODO: modify for Raspberry
     """
+    # mk = '/media/kevin'
+    mk = '/mnt'
     self.host = 'linux'
-    mk = '/media/kevin'
     # pxd = 'pix18'
     # pxd = 'BjorkeSSD'   # TODO(kevin): this is so bad
     pxd = 'pix20'
@@ -423,10 +427,10 @@ class Drives(object):
   def init_drives_windows(self):
     # Defaults for Windows
     self.host = 'windows'
-    self.PrimaryArchiveList = ['R:', 'I:', 'G:']
+    self.PrimaryArchiveList = ['F:', 'R:', 'I:']
     self.LocalArchiveList = ['D:']
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
-    self.RemovableMedia = self.available_source_vols(['J:', 'I:', 'H:', 'K:','G:', 'F:'])
+    self.RemovableMedia = self.available_source_vols(['J:', 'I:', 'H:', 'K:','G:'])
     if win32ok:
       self.RemovableMedia = [d for d in self.RemovableMedia if win32file.GetDriveType(d)==win32file.DRIVE_REMOVABLE]
 
@@ -455,11 +459,15 @@ class Drives(object):
 
   def acceptable_source_vol(self,Path):
     if not os.path.exists(Path):
+      if gVerbose:
+        print("{} doesn't exist"%(Path))
       return False
     if not os.path.isdir(Path):
       print('Error: Proposed source "{}" is not a directory'.format(Path))
       return False
     if Path in self.ForbiddenSources:
+      if gVerbose:
+        print("{} forbidden as a source"%(Path))
       return False
     s = os.path.getsize(Path) # TODO: this is not how you get volume size!
     if os.path.getsize(Path) > Volumes.largestSource:
@@ -546,13 +554,13 @@ class Volumes(object):
   images = [] # array of ArchiveImg
 
   def __init__(self, pargs=None):
-    self.startTime = time.clock()
+    self.startTime =  time.process_time() if sys.version_info > (3,3)  else time.clock()
     self.drives = Drives()
     self.storage = StorageHierarchy()
     self.jobname = None
-    self.nBytes = 0L
-    self.nFiles = 0L
-    self.nSkipped = 0L
+    self.nBytes = long(0)
+    self.nFiles = long(0)
+    self.nSkipped = long(0)
     self.nConversions = 0
     self.audioPrefix = "" # for edirol
     self.createdDirs = {}
@@ -565,6 +573,8 @@ class Volumes(object):
 
   def user_args(self, pargs):
     "set state according to object 'pargs'"
+    global gTest
+    global gVerbose
     self.jobname = pargs.jobname
     if pargs.source is not None:
       self.drive.assign_removable(pargs.source)
@@ -587,12 +597,17 @@ class Volumes(object):
     # wrapup
     self.storage.jobname = self.jobname
     self.storage.prefix = self.prefix
+    self.storage.test = gTest # self.test
+    # gTest = self.test
+    # gVerbose = self.verbose
+    if gVerbose:
+      print("verbose mode")
 
   def archive(self):
     "Main dealio right here"
     print(versionString)
     if not self.media_are_ready():
-      print("No '{}' media found, please connect it to this {}".format(self.jobname, self.drives.host))
+      print("No '{}' media found, please connect it to this {} computer".format(self.jobname, self.drives.host))
       sys.exit()
     self.announce()
     self.archive_images_and_video()
@@ -602,12 +617,18 @@ class Volumes(object):
   def media_are_ready(self):
     "Do we have all media in place? Find sources, destination, and optional converter"
     if not self.drives.find_archive_drive():
+      if gVerbose:
+        print('No archive drive found')
       return False
     if not self.drives.verify_archive_locations():
+      if gVerbose:
+        print('Archive drive failed verification')
       return False
     self.srcMedia = self.find_src_image_media()
     self.foundImages = len(self.srcMedia) > 0
     if not self.foundImages:
+      if gVerbose:
+        print('Images not found')
       return False
     self.DNG = self.seek_dng_converter()
     return True
@@ -618,6 +639,9 @@ class Volumes(object):
 
   def find_src_image_media(self):
     foundMedia = []
+    if len(self.drives.RemovableMedia) < 1:
+      print("Yikes, no source media")
+      return None
     for srcDevice in self.drives.RemovableMedia:
       if gVerbose:
         print("  Checking {} for source media".format(srcDevice))
@@ -642,10 +666,12 @@ class Volumes(object):
   def seek_dng_converter(self):
     "find a DNG converter, if one is available"
     converter = None
-    if os.environ.has_key('PROGRAMFILES'): # windows
-      converter = os.path.join(os.environ['PROGRAMFILES'],"Adobe","Adobe DNG Converter.exe")
+    pf =  os.environ.get('PROGRAMFILES')
+    if pf: # windows
+      converter = os.path.join(pf,"Adobe","Adobe DNG Converter.exe")
       if not os.path.exists(converter):
-        converter = os.path.join(os.environ['PROGRAMFILES(X86)'],"Adobe","Adobe DNG Converter.exe")
+        pfx = os.environ.get('PROGRAMFILES(X86)')
+        converter = os.path.join(pfx,"Adobe","Adobe DNG Converter.exe")
       if not os.path.exists(converter):
         converter = None
     return converter
@@ -655,7 +681,8 @@ class Volumes(object):
   #
   def mkArchiveDir(self, Location):
     "possibly create a directory"
-    if not self.createdDirs.has_key(Location):
+    dh = self.createdDirs.get(Location)
+    if not dh:
       if not os.path.exists(Location):
         self.createdDirs[Location] = 1
         self.newDirList.append(Location)
@@ -863,13 +890,13 @@ class Volumes(object):
     if self.nSkipped:
       print("Skipped {} files".format(self.nSkipped))
       print("  with {} doppelgangs".format(len(ArchiveImg.doppelFiles)))
-    endTime = time.clock()
+    endTime = time.process_time() if sys.version_info > (3,3)  else time.clock()
     elapsed = endTime-self.startTime
     if elapsed > 100:
       print("{} minutes".format(elapsed/60))
     else:
       print("{} seconds".format(elapsed))
-    if self.nBytes > 0L:
+    if self.nBytes > long(0):
       throughput = self.nBytes/elapsed
       throughput /= (1024*1024)
       print("Estimated performance: {} Mb/sec".format(throughput/elapsed))
