@@ -48,7 +48,7 @@
 # TODO - frames for animaition: renumber (RAF/JPG will require a map), then also write a text file showing the map
 # TODO handle inter-HD uploads in general? (this used to the be domain of "drobolize")
 
-versionString = "kbImport - 15jan2020 - (c)2004-2020 K Bjorke"
+versionString = "kbImport - 22feb2020 - (c)2004-2020 K Bjorke"
 
 import sys
 if sys.version_info > (3,):
@@ -309,10 +309,11 @@ class ArchiveImg(object):
     # TODO -- Apply fancier naming to self.destName
     FullDestPath = os.path.join(self.destPath, self.destName)
     protected = False
+    opDescription = ''
     if os.path.exists(FullDestPath) or self.doppelganger():
       if Force:
         if gVerbose:
-          print("Overwriting {}".format(FullDestPath))
+          opDescription += ("Overwriting {}\n".format(FullDestPath))
         self.incr(self.srcPath)
       else:
         protected = True
@@ -322,15 +323,17 @@ class ArchiveImg(object):
     else:
       # reportPath = '..' + FullDestPath[len(PixDestDir):]
       reportPath = os.path.join('...',os.path.split(self.destPath)[-1], self.destName)
-      print("{} -> {}".format(self.srcName, reportPath))
+      opDescription += ("{} -> {}".format(self.srcName, reportPath))
       self.incr(self.srcPath)
-    if not protected:
-     self.dest_mkdir()
-     if self.makeDNG:
-        return self.dng_convert(self.destPath)
-     else:
-        return self.safe_copy(FullDestPath)
-    return False
+    if protected:
+      return False
+    self.dest_mkdir()
+    if len(opDescription) > 0:
+      print(opDescription)
+    if self.makeDNG:
+      return self.dng_convert(self.destPath)
+    # else:
+    return self.safe_copy(FullDestPath)
 
   def incr(self, FullSrcPath):
     try:
