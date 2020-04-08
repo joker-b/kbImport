@@ -367,9 +367,13 @@ class ArchiveImg(object):
     if gTest:  # TODO - Volume data
       return True # always "work"
     try:
-      shutil.copy2(self.srcPath, DestPath)
+      shutil.copyfile(self.srcPath, DestPath)
     except:
-      print("Failed to copy: '{}'!!\n\t{}\n\t{}".format(sys.exc_info()[0], self.srcPath, DestPath))
+      p = sys.exc_info()[0]
+      pe = p.errno
+      print("Failed to copy: '{}'!!\n\t{}\n\t{}".format(p, self.srcPath, DestPath))
+      print("   Details: errno {} on\n\t'{}'' and\n\t'{}'".format(p.errno, p.filename, p.filename2))
+      print("   Detail2: {} chars, '{}'".format(p.characters_written, p.strerror))
       return False
     return True
 
@@ -387,6 +391,7 @@ class Drives(object):
     if os.name == 'posix': # mac?
       if platform.uname()[0] == 'Linux':
         self.init_drives_linux()
+        self.show_drives()
       else: # mac
         self.init_drives_mac()
     elif os.name == "nt":
@@ -394,6 +399,12 @@ class Drives(object):
     else:
       print("Sorry no initialization for OS '{}' yet!".format(os.name))
       sys.exit()
+
+  def show_drives(self):
+    print('Primary: ',self.PrimaryArchiveList)
+    print('Local: ',self.LocalArchiveList)
+    print('Forbidden: ',self.ForbiddenSources)
+    print('Removable: ',self.RemovableMedia)
 
   def init_drives_linux(self):
     """
@@ -403,8 +414,9 @@ class Drives(object):
     mk = '/mnt'
     self.host = 'linux'
     # pxd = 'pix18'
-    # pxd = 'BjorkeSSD'   # TODO(kevin): this is so bad
-    pxd = 'pix20'
+    pxd = os.path.join('BjorkeSSD','kbImport')   # TODO(kevin): this is so bad
+    mk = "/mnt/chromeos/removable"
+    # pxd = 'pix20'
     self.PrimaryArchiveList = [os.path.join(mk,pxd)]
     self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
