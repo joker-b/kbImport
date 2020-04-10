@@ -130,7 +130,7 @@ class StorageHierarchy(object):
 
   def safe_mkdir(self, Dir, PrettierName=None, Prefix=''):
     """
-    check for existence, create as needed.
+    check for existence, create _recusrsively_ as needed.
     'PrettierName' is a print-pretty version.
     Return directory name.
     When testing is True, still return name of the (non-existent) directory!
@@ -144,9 +144,17 @@ class StorageHierarchy(object):
           self.testLog[report] = 1
       else:
         print("** Creating dir {} **".format(report))
-        os.mkdir(Dir)
+        parent = os.path.split(Dir)[0]
+        if not os.path.exists(parent):
+          print("  inside of {}".format(parent))
+          self.safe_mkdir(parent)
+        try:
+          os.mkdir(Dir)
+        except:
+          print('mkdir "{}" failed'.format(Dir))
+          return None
         if not os.path.exists(Dir):
-          print('mkdir "{}" failed')
+          print('mkdir "{}" failed to appear'.format(Dir))
           return None
         self.createdDirs.append(Prefix+os.path.split(Dir)[1])
         return Dir
@@ -420,7 +428,8 @@ class Drives(object):
     self.PrimaryArchiveList = [os.path.join(mk,pxd)]
     self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
-    self.RemovableMedia = self.available_source_vols([os.path.join(mk,a) for a in os.listdir(mk) if a != pxd and (len(a)<=8)])
+    self.RemovableMedia = self.available_source_vols([os.path.join(mk,a) 
+            for a in os.listdir(mk) if a != pxd and (len(a)<=8)]) if os.path.exists(mk) else []
 
   def init_drives_mac(self):
     self.host = 'mac'
@@ -808,12 +817,12 @@ class Volumes(object):
     if privateDir is None:
       print("avchd error")
       return privateDir
-    avchdDir = safe_mkdir(os.path.join(privateDir,"AVCHD"), "AVCHD")
+    avchdDir = self.storage.safe_mkdir(os.path.join(privateDir,"AVCHD"), "AVCHD")
     for s in ["AVCHDTN","CANONTHM"]:
-      sd = safe_mkdir(os.path.join(avchdDir,s), "AVCHD"+os.path.sep+s)
-    bdmvDir = safe_mkdir(os.path.join(avchdDir,"BDMV"), "BDMV")
+      sd = self.storage.safe_mkdir(os.path.join(avchdDir,s), "AVCHD"+os.path.sep+s)
+    bdmvDir = self.storage.safe_mkdir(os.path.join(avchdDir,"BDMV"), "BDMV")
     for s in ["STREAM","CLIPINF","PLAYLIST","BACKUP"]:
-      sd = safe_mkdir(os.path.join(bdmvDir,s), "BDMV"+os.path.sep+s)
+      sd = self.storage.safe_mkdir(os.path.join(bdmvDir,s), "BDMV"+os.path.sep+s)
     return privateDir
 
   def dest_name(self, OrigName):
