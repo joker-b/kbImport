@@ -56,6 +56,11 @@ you have archived video from two different cameras using different standards int
 data formatting is somewhat... brittle, if you have multiple AVCHD cameras shooting on the same day, archive them
 using slightly different JobNames, e.g. "WeddingCam1" and "WeddingCam2".
 
+Some Performance Numbers
+---
+
+On Chromebook Galaxy to SSD: about 2.9 Mb/sec
+On MBA internal to SSD: about 576 Mb/sec
 
 drobolize
 ---------
