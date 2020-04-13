@@ -446,6 +446,7 @@ class Drives(object):
     self.ForbiddenSources = [os.path.join(Vols,D) for D in
                                 [ 'Macintosh HD',
                                   'MobileBackups',
+                                  'BjorkeSSD',
                                   'Storage',
                                   'Recovery',
                                   'My Passport for Mac'] ]
