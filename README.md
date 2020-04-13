@@ -61,6 +61,8 @@ Some Performance Numbers
 
 On Chromebook Galaxy to SSD: about 2.9 Mb/sec
 On MBA internal to SSD: about 576 Mb/sec
+On MacPro Satechi external reader to SSD: about 410 Mb/sec
+On MacPro Letscom external reader to SSD: about 444 Mb/sec
 
 drobolize
 ---------
