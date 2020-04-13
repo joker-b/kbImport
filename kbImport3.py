@@ -130,7 +130,7 @@ class StorageHierarchy(object):
 
   def safe_mkdir(self, Dir, PrettierName=None, Prefix=''):
     """
-    check for existence, create _recusrsively_ as needed.
+    check for existence, create _recursively_ as needed.
     'PrettierName' is a print-pretty version.
     Return directory name.
     When testing is True, still return name of the (non-existent) directory!
@@ -965,6 +965,7 @@ def fake_arguments():
 
 
 if __name__ == '__main__':
+  pargs = fake_arguments()
   if len(sys.argv) > 1:
     parser = argparse.ArgumentParser(description='Import/Archive Pictures, Video, & Audio from removeable media')
     parser.add_argument('jobname',help='appended to date directory names')
@@ -979,10 +980,12 @@ if __name__ == '__main__':
     try:
       pargs = parser.parse_args()
     except:
-      pargs = fake_arguments()
+      print("adios")
+      exit()
   else:
-    pargs = fake_arguments()
+    print("using fake arguments")
 
+  # TODO(kevin): catch -h with empty args?
   Vols = Volumes(pargs)
   Vols.archive()
 
@@ -990,5 +993,4 @@ if __name__ == '__main__':
 # /disks/Removable/MK1237GSX/DOORKNOB/Pix/
 
 # on linux seek /media/kevin/pix15
-
 
