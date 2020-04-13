@@ -65,6 +65,7 @@ On Chromebook Galaxy Letscom external to SSD: about 9.2-16 Mb/sec (reported inte
 On MBA internal to SSD: about 576 Mb/sec
 Drag in MBA finder card->SSD: ~6.5 Mb/sec!
 `cp -r` on MBA card->SSD: ~380 Mb/sec
+Windows desktop: ~160 Mb/sec
 On MacPro Satechi external reader to SSD: about 410 Mb/sec
 On MacPro Letscom external reader to SSD: about 444 Mb/sec
 
