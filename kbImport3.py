@@ -428,6 +428,8 @@ class Drives(object):
     self.PrimaryArchiveList = [os.path.join(mk,pxd)]
     self.LocalArchiveList = [os.path.join(os.environ['HOME'],'Pictures','kbImport')]
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
+    self.ForbiddenSources.append("Storage")
+    self.ForbiddenSources.append(os.path.join("Storage","SD Card Imports"))
     self.RemovableMedia = self.available_source_vols([os.path.join(mk,a) 
             for a in os.listdir(mk) if a != pxd and (len(a)<=8)]) if os.path.exists(mk) else []
 
@@ -444,6 +446,7 @@ class Drives(object):
     self.ForbiddenSources = [os.path.join(Vols,D) for D in
                                 [ 'Macintosh HD',
                                   'MobileBackups',
+                                  'Storage',
                                   'Recovery',
                                   'My Passport for Mac'] ]
     self.ForbiddenSources = self.ForbiddenSources + self.PrimaryArchiveList + self.LocalArchiveList
