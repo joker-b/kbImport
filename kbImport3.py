@@ -455,13 +455,14 @@ class Drives(object):
 
   def init_drives_windows(self):
     # Defaults for Windows
+    # TODO(kevin): this is a mess. Use the drive string name if possible... and attend to ForbiddenSources
     self.host = 'windows'
-    self.PrimaryArchiveList = ['F:', 'R:', 'I:']
-    self.LocalArchiveList = ['D:']
+    self.PrimaryArchiveList = ['I:\kbImport'] # , 'F:', 'R:']
+    self.LocalArchiveList = ['I:\kbImport']
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
-    self.RemovableMedia = self.available_source_vols(['J:', 'I:', 'H:', 'K:','G:'])
-    if win32ok:
-      self.RemovableMedia = [d for d in self.RemovableMedia if win32file.GetDriveType(d)==win32file.DRIVE_REMOVABLE]
+    self.RemovableMedia = self.available_source_vols(['G:']) # , 'J:', 'I:', 'H:', 'K:','G:'])
+    #if win32ok:
+    #  self.RemovableMedia = [d for d in self.RemovableMedia if win32file.GetDriveType(d)==win32file.DRIVE_REMOVABLE]
 
   def available_source_vols(self,Vols=[]):
       return [a for a in Vols if self.acceptable_source_vol(a)]
