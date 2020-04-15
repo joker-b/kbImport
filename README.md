@@ -61,13 +61,15 @@ Some Performance Numbers
 
 Testing with about a dozen `JPG`/`RAF` pairs:
 
-On Chromebook Galaxy Letscom external to SSD: about 9.2-16 Mb/sec (reported internally: 75 Mb/sec)
-On MBA internal to SSD: about 576 Mb/sec
-Drag in MBA finder card->SSD: ~6.5 Mb/sec!
-`cp -r` on MBA card->SSD: ~380 Mb/sec
-Windows desktop: ~160 Mb/sec
-On MacPro Satechi external reader to SSD: about 410 Mb/sec
-On MacPro Letscom external reader to SSD: about 444 Mb/sec
+* On Chromebook Galaxy Letscom external to SSD: about 9.2-16 Mb/sec (reported internally: 75 Mb/sec)
+* On MBA internal to SSD: about 576 Mb/sec
+* Drag in GCB Files card->SSD: \~68 Mb/sec
+* Drag in MBA finder card->SSD: \~6.5 Mb/sec!
+* `cp -r` on MBA card->SSD: \~380 Mb/sec
+* `cp -r` on GCB card->SSD: \~125 Mb/sec
+* Windows desktop: \~160 Mb/sec
+* On MacPro Satechi external reader to SSD: about 410 Mb/sec
+* On MacPro Letscom external reader to SSD: about 444 Mb/sec
 
 drobolize
 ---------
