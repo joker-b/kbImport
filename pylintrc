@@ -1,0 +1,9 @@
+[FORMAT]
+
+# String used as indentation unit. This is usually "    " (4 spaces) or "\t" (1
+# tab).
+indent-string='  '
+
+[MESSAGES_CONTROL]
+
+disable=C0103, C0116, R0205, W0511, W0702
