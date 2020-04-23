@@ -61,6 +61,7 @@ import sys
 import os
 import shutil
 #import subprocess
+from AppOptions import AppOptions
 import argparse
 import Volumes
 
@@ -79,16 +80,11 @@ except ModuleNotFoundError:
 ##### global variable ##########################
 ################################################
 
-VERSION_STRING = "kbImport - 21apr2020 - (c)2004-2020 K Bjorke"
-# if TESTING is True, don't actually copy files (for testing).....
-TESTING = False
-VERBOSE = False
-
-#########################################################################################
-## FUNCTIONS START HERE #################################################################
-#########################################################################################
-
-
+options = AppOptions()
+options.verbose = False
+options.testing = False
+options.version = "kbImport - 21apr2020 - (c)2004-2020 K Bjorke"
+options.win32 = WIN32_OK
 
 #############################################################
 ### MAIN ACTION #############################################
@@ -99,22 +95,10 @@ VERBOSE = False
 # MAIN EXECUTION BITS ##############
 # MAIN EXECUTION BITS ##############
 
-def fake_arguments():
-  args = argparse.Namespace()
-  args.jobname = 'test'
-  args.prefix = None
-  args.jobpref = None
-  args.source = None
-  args.archive = None
-  args.unify = False
-  args.test = True
-  args.verbose = False
-  args.numerate = False
-  return args
 
 
 if __name__ == '__main__':
-  arguments = fake_arguments()
+  arguments = options.default_arguments()
   if len(sys.argv) > 1:
     parser = argparse.ArgumentParser(
         description='Import/Archive Pictures, Video, & Audio from removeable media')
@@ -149,8 +133,10 @@ if __name__ == '__main__':
     print("using fake arguments")
 
   # TODO(kevin): catch -h with empty args?
-  ActiveVolumes = Volumes.Volumes(arguments, VERBOSE, WIN32_OK, TESTING, VERSION_STRING)
-  ActiveVolumes.archive()
+  options.user_args(arguments)
+
+  activeVols = Volumes.Volumes(options)
+  activeVols.archive()
 
 # /disks/Removable/Flash\ Reader/EOS_DIGITAL/DCIM/100EOS5D/
 # /disks/Removable/MK1237GSX/DOORKNOB/Pix/

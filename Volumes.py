@@ -1,9 +1,11 @@
-#! /bin/python
+#! /usr/bin/python3
 
 import os
 import sys
 import re
 import time
+import shutil
+from AppOptions import AppOptions
 import StorageHierarchy
 import Drives
 import ArchiveImg
@@ -11,34 +13,70 @@ import ArchiveImg
 if sys.version_info > (3,):
   long = int
 
-class Volumes(object):
-  'object for import/archive environment'
-  AVCHDTargets = {"MTS": os.path.join("AVCHD", "BDMV", "STREAM"),
-                  "CPI": os.path.join("AVCHD", "BDMV", "CLIPINF"),
-                  "MPL": os.path.join("AVCHD", "BDMV", "PLAYLIST"),
-                  "BDM": os.path.join("AVCHD", "BDMV"),
-                  "TDT": os.path.join("AVCHD", "ACVHDTN"),
-                  "TID": os.path.join("AVCHD", "ACVHDTN")}
-  AVCHDTargets["JPG"] = os.path.join("AVCHD", "CANONTHM")
+class Avchd(object):
   regexAvchd = re.compile('AVCHD')
   regexAvchdFiles = re.compile(r'\.(MTS|CPI|TDT|TID|MPL|BDM)')
+  def __init__(self, Storage):
+    self.storage = Storage
+    self.AVCHDTargets = {"MTS": os.path.join("AVCHD", "BDMV", "STREAM"),
+                         "CPI": os.path.join("AVCHD", "BDMV", "CLIPINF"),
+                         "MPL": os.path.join("AVCHD", "BDMV", "PLAYLIST"),
+                         "BDM": os.path.join("AVCHD", "BDMV"),
+                         "TDT": os.path.join("AVCHD", "ACVHDTN"),
+                         "TID": os.path.join("AVCHD", "ACVHDTN")}
+    self.AVCHDTargets["JPG"] = os.path.join("AVCHD", "CANONTHM")
+    self.type = 'JPG'
+
+  def src(self, FromDir):
+    if self.regexAvchd.search(FromDir):
+      return True
+    return False
+
+  def dest_dir_name(self, SrcFile, ArchDir):
+    """
+    AVCHD has a complex format, let's keep it intact so clips can be archived to blu-ray etc.
+    We will say that the dated directory is equivalent to the "PRIVATE" directory in the spec.
+    We don't handle the DCIM and MISC sub-dirs.
+    """
+    privateDir = self.storage.dest_dir_name(SrcFile, ArchDir)
+    if privateDir is None:
+      print("avchd error")
+      return privateDir
+    adir = self.storage.safe_mkdir(os.path.join(privateDir, "AVCHD"), "AVCHD")
+    for s in ["AVCHDTN", "CANONTHM"]:
+      self.storage.safe_mkdir(os.path.join(adir, s), "AVCHD"+os.path.sep+s)
+    bdmvDir = self.storage.safe_mkdir(os.path.join(adir, "BDMV"), "BDMV")
+    for s in ["STREAM", "CLIPINF", "PLAYLIST", "BACKUP"]:
+      self.storage.safe_mkdir(os.path.join(bdmvDir, s), "BDMV"+os.path.sep+s)
+    return privateDir
+
+  def destination_path(self, fullKidPath, VidArchDir):
+    path = self.dest_dir_name(fullKidPath, VidArchDir)
+    if path is None:
+      return None
+    return os.path.join(path, self.AVCHDTargets[self.type])
+
+#######################
+
+
+##############################
+
+class Volumes(object):
+  '''object for import/archive environment'''
   regexVidFiles = re.compile(r'\.(M4V|MP4|MOV|3GP)')
   regexDotFiles = re.compile(r'^\..*(BridgeCache|dropbox\.device)')
   regexJPG = re.compile(r'(.*)\.JPG')
-  regexDNGsrc = re.compile(r'(.*)\.RW2') # might be more in the future....
-  largestSource = 130 * 1024*1024*1024 # in GB - hack to not scan hard drives as source media
-  #
+  regexDNGsrc = re.compile(r'(.*)\.RW2')
+  # in GB - hack to not scan hard drives as source media
+  largestSource = 130 * 1024*1024*1024
   forceCopies = False
-  images = [] # array of ArchiveImg
 
-  def __init__(self, pargs=None, Verbose=False, Win32=False, Testing=False, Version="2020"):
+  def __init__(self, Options=AppOptions()):
     self.startTime = time.process_time() if sys.version_info > (3, 3)  else time.clock()
-    self.verbose = Verbose
-    self.win32 = Win32
-    self.testing = Testing
-    self.version = Version
-    self.drives = Drives.Drives(self.verbose, self.win32)
-    self.storage = StorageHierarchy.StorageHierarchy(self.testing)
+    self.opt = Options
+    self.drives = Drives.Drives(Options)
+    self.storage = StorageHierarchy.StorageHierarchy(Options)
+    self.avchd = Avchd(self.storage)
     self.jobname = None
     self.nBytes = long(0)
     self.nFiles = long(0)
@@ -51,74 +89,49 @@ class Volumes(object):
     self.srcMedia = []
     self.prefix = ''
     self.foundImages = False
-    if pargs is not None:
-      self.user_args(pargs)
+    self.images = [] # array of ArchiveImg
+    self.process_options()
 
-  def user_args(self, pargs):
-    "set state according to object 'pargs'"
-    self.jobname = pargs.jobname
-    if pargs.source is not None:
-      self.drives.assign_removable(pargs.source)
-    if pargs.archive is not None:
-      self.PrimaryArchiveList = pargs.archive
+  def process_options(self):
+    "set state according to options object"
+    if self.opt.source is not None:
+      self.drives.assign_removable(self.opt.source)
+    if self.opt.archive is not None:
+      self.PrimaryArchiveList = self.opt.archive # TODO(kevin): duplicated to drives?
       if self.drives.host == 'windows':
         # TODO(kevin): what is wanted here? and why isn't it in the Drives object?
-        self.drives.PrimaryArchiveList[0] = re.sub('::', self.drives.PrimaryArchiveList[0])
-    self.numerate = bool(pargs.numerate)
-    self.verbose = bool(pargs.verbose)
-    self.testing = bool(pargs.test)
-    if pargs.prefix is not None:
-      self.prefix = "{}_".format(pargs.prefix)
-    if pargs.jobpref is not None:
-      if self.prefix is None:
-        self.prefix = "{}_".format(self.jobname)
-      else:
-        self.prefix = "{}{}_".format(self.prefix, self.jobname)
-    # unique to storage
-    self.storage.unify = bool(pargs.unify)
-    # wrapup
-    self.storage.jobname = self.jobname #TODO: messy
-    self.storage.prefix = self.prefix # TODO: messy
-    self.storage.test = self.testing # self.test
-    # self.testing = self.test
-    # self.verbose = self.verbose
-    if self.verbose:
-      print("verbose mode")
+        self.drives.PrimaryArchiveList[0] = re.sub('::', 'todo', self.drives.PrimaryArchiveList[0])
 
-def seek_named_dir(self, LookHere, DesiredName, Level=0, MaxLevels=6):
-  """
-  Recursively look in 'LookHere' for a directory of the 'DesiredName'.
-  Return full path or None.
-  Don't dig more than MaxLevels deep.
-  """
-  if Level >= MaxLevels:
-    # print("self.seek_named_dir('{}','{}',{},{}): too deep".format(
-    #        LookHere,DesiredName,Level,MaxLevels))
+  def seek_named_dir(self, ParentDir, FindDir, Level=0, MaxLevels=6):
+    """
+    Recursively look in 'ParentDir' for a directory of the 'FindDir'.
+    Return full path or None.
+    Don't dig more than MaxLevels deep.
+    """
+    if Level >= MaxLevels or not os.path.exists(ParentDir):
+      return None
+    try:
+      allSubs = os.listdir(ParentDir)
+    except FileNotFoundError:
+      print('No such path: {}'.format(ParentDir))
+      return None
+    except:
+      print("seek_named_dir(): {}".format(sys.exc_info()[0]))
+      return None
+    for subdir in allSubs:
+      if subdir == FindDir:
+        return os.path.join(ParentDir, subdir)
+    for subdir in allSubs:
+      fullpath = os.path.join(ParentDir, subdir)
+      if os.path.isdir(fullpath):
+        sr = self.seek_named_dir(fullpath, FindDir, Level+1, MaxLevels) # recurse
+        if sr is not None:
+          return sr
     return None
-  if not os.path.exists(LookHere):
-    print('self.seek_named_dir({}) No such path'.format(LookHere))
-    return None
-  try:
-    allSubs = os.listdir(LookHere)
-  except:
-    if self.verbose:
-      print("self.seek_named_dir('{}','{}'):\n\tno luck, '{}'".format(
-          LookHere, DesiredName, sys.exc_info()[0]))
-    return None
-  for subdir in allSubs:
-    if subdir == DesiredName:
-      return os.path.join(LookHere, subdir) # got it
-  for subdir in allSubs:
-    fullpath = os.path.join(LookHere, subdir)
-    if os.path.isdir(fullpath):
-      sr = self.seek_named_dir(fullpath, DesiredName, Level+1, MaxLevels) # recurse
-      if sr is not None:
-        return sr
-  return None
 
   def archive(self):
     "Main dealio right here"
-    print(self.version)
+    print(self.opt.version)
     if not self.media_are_ready():
       print("No '{}' media found, please connect it to this {} computer".format(
           self.jobname, self.drives.host))
@@ -131,17 +144,17 @@ def seek_named_dir(self, LookHere, DesiredName, Level=0, MaxLevels=6):
   def media_are_ready(self):
     "Do we have all media in place? Find sources, destination, and optional converter"
     if not self.drives.find_archive_drive():
-      if self.verbose:
+      if self.opt.verbose:
         print('No archive drive found')
       return False
     if not self.drives.verify_archive_locations():
-      if self.verbose:
+      if self.opt.verbose:
         print('Archive drive failed verification')
       return False
     self.srcMedia = self.find_src_image_media()
     self.foundImages = self.srcMedia and len(self.srcMedia) > 0
     if not self.foundImages:
-      if self.verbose:
+      if self.opt.verbose:
         print('Images not found')
       return False
     return True
@@ -156,7 +169,7 @@ def seek_named_dir(self, LookHere, DesiredName, Level=0, MaxLevels=6):
       print("Yikes, no source media")
       return None
     for srcDevice in self.drives.RemovableMedia:
-      if self.verbose:
+      if self.opt.verbose:
         print("  Checking {} for source media".format(self.drives.pretty(srcDevice)))
       if ((self.drives.archiveDrive == srcDevice) or
           (not os.path.exists(srcDevice)) or
@@ -193,7 +206,7 @@ def seek_named_dir(self, LookHere, DesiredName, Level=0, MaxLevels=6):
     if not self.foundImages:
       print("No images to archive")
       return
-    if self.verbose:
+    if self.opt.verbose:
       print("Found These valid image source directories:")
       print("  {}".format(", ".join(self.imgDirs)))
     for srcDir in self.imgDirs:
@@ -238,7 +251,7 @@ def seek_named_dir(self, LookHere, DesiredName, Level=0, MaxLevels=6):
             s = os.stat(fullpath)
             self.nBytes += s.st_size
             self.nFiles += 1
-            if not self.testing:
+            if not self.opt.testing:
               shutil.copy2(fullpath, trackDir)
           else:
             print("Unable to archive audio to {}".format(ArchDir))
@@ -263,29 +276,6 @@ def seek_named_dir(self, LookHere, DesiredName, Level=0, MaxLevels=6):
       return False
     return True
 
-  def avchd_src(self, FromDir):
-    if Volumes.regexAvchd.search(FromDir):
-      return True
-    return False
-
-  def dest_avchd_dir_name(self, SrcFile, ArchDir):
-    """
-    AVCHD has a complex format, let's keep it intact so clips can be archived to blu-ray etc.
-    We will say that the dated directory is equivalent to the "PRIVATE" directory in the spec.
-    We don't handle the DCIM and MISC sub-dirs.
-    """
-    privateDir = self.storage.dest_dir_name(SrcFile, ArchDir)
-    if privateDir is None:
-      print("avchd error")
-      return privateDir
-    avchdDir = self.storage.safe_mkdir(os.path.join(privateDir, "AVCHD"), "AVCHD")
-    for s in ["AVCHDTN", "CANONTHM"]:
-      sd = self.storage.safe_mkdir(os.path.join(avchdDir, s), "AVCHD"+os.path.sep+s)
-    bdmvDir = self.storage.safe_mkdir(os.path.join(avchdDir, "BDMV"), "BDMV")
-    for s in ["STREAM", "CLIPINF", "PLAYLIST", "BACKUP"]:
-      sd = self.storage.safe_mkdir(os.path.join(bdmvDir, s), "BDMV"+os.path.sep+s)
-    return privateDir
-
   def dest_name(self, OrigName):
     if self.numerate:
       # TODO extract file extension, format number output, store a number, make sure we are *sorted*
@@ -300,11 +290,11 @@ def seek_named_dir(self, LookHere, DesiredName, Level=0, MaxLevels=6):
       return
     # now we can proceed
     localItemCount = 0
-    isAVCHDsrc = self.avchd_src(FromDir)
+    isAVCHDsrc = self.avchd.src(FromDir)
     files = [f for f in os.listdir(FromDir) if not Volumes.regexDotFiles.match(f)]
     files.sort()
     filesOnly = [f for f in files if not os.path.isdir(os.path.join(FromDir, f))]
-    if self.verbose and len(filesOnly) > 0:
+    if self.opt.verbose and len(filesOnly) > 0:
       print("Archiving {} files from\n    {}".format(len(filesOnly), FromDir))
     for kid in files:
       if Volumes.regexDotFiles.match(kid):
@@ -318,18 +308,18 @@ def seek_named_dir(self, LookHere, DesiredName, Level=0, MaxLevels=6):
         kidData = ArchiveImg.ArchiveImg(kid, fullKidPath)
         isSimpleVideo = False
         isAVCHD = False
-        avchdType = "JPG"
+        self.avchd.type = "JPG" # blah
         upcaseKid = kid.upper()
         kidData.destName = self.dest_name(kid)  # renaming allowed here
-        m = Volumes.regexAvchdFiles.search(upcaseKid)
+        m = Avchd.regexAvchdFiles.search(upcaseKid)
         if m:
           isAVCHD = True
-          avchdType = m.group(1)
+          self.avchd.type = m.group(1)
         isSimpleVideo = Volumes.regexVidFiles.search(upcaseKid) is not None
         m = Volumes.regexDNGsrc.search(upcaseKid)
         if m:
           if Vols.dng.active:
-            kidData.dng.active = bool(True and self.win32)
+            kidData.dng.active = bool(True and self.opt.win32)
             # renaming allowed here
             kidData.destName = "{}.DNG".format(self.dest_name(m.groups(0)[0]))
         m = Volumes.regexJPG.search(upcaseKid)
@@ -337,7 +327,7 @@ def seek_named_dir(self, LookHere, DesiredName, Level=0, MaxLevels=6):
           # keep an eye open for special thumbnail JPGs....
           if isAVCHDsrc:
             isAVCHD = True
-            avchdType = "JPG"
+            self.avchd.type = "JPG"
             kidData.destName = kid # renaming NOT allowed for AVCHD thumbnails
           else:
             root = m.groups(0)[0]
@@ -347,11 +337,7 @@ def seek_named_dir(self, LookHere, DesiredName, Level=0, MaxLevels=6):
                 # print("List contains both {} and {}".format(kid,vidName))
                 isSimpleVideo = True # send the thumbnail to the video directory too
         if isAVCHD:
-          avchdPath = self.dest_avchd_dir_name(fullKidPath, VidArchDir)
-          if avchdPath is None:
-            destinationPath = None
-          else:
-            destinationPath = os.path.join(avchdPath, Volumes.AVCHDTargets[avchdType])
+          destinationPath = self.avchd.destination_path(fullKidPath, VidArchDir)
         elif isSimpleVideo:
           destinationPath = self.storage.dest_dir_name(fullKidPath, VidArchDir)
         else:                                                            # a still photo
@@ -362,11 +348,11 @@ def seek_named_dir(self, LookHere, DesiredName, Level=0, MaxLevels=6):
           localItemCount += 1
         else:
           print("Unable to archive media to {}".format(destinationPath))
-    if self.verbose and localItemCount > 0:
+    if self.opt.verbose and localItemCount > 0:
       print("Found {} items in {}".format(localItemCount, FromDir))
 
   def archive_found_image_data(self):
-    if not self.testing:
+    if not self.opt.testing:
       for pic in self.images:
         if pic.archive(Force=self.forceCopies, PixDestDir=self.drives.pixDestDir):
           self.nFiles += 1
@@ -407,3 +393,5 @@ def seek_named_dir(self, LookHere, DesiredName, Level=0, MaxLevels=6):
 
 if __name__ == '__main__':
   print("testing time")
+  v = Volumes()
+  print(dir(v))

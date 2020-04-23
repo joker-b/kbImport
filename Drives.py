@@ -3,6 +3,9 @@
 import sys
 import os
 import platform
+import re
+from AppOptions import AppOptions
+from Volumes import Volumes # TODO(kevin): needed?
 
 #pylint: disable=too-many-instance-attributes
 # Nine is reasonable in this case.
@@ -14,10 +17,9 @@ class Drives(object):
   ForbiddenSources = []
   RemovableMedia = []
 
-  def __init__(self, Verbose=False, Win32=False):
+  def __init__(self, Options=AppOptions()):
     """blah"""
-    self.verbose = Verbose
-    self.win32 = Win32
+    self.opt = Options
     self.archiveDrive = ""
     self.pixDestDir = ""
     self.vidDestDir = ""
@@ -28,7 +30,7 @@ class Drives(object):
         self.show_drives()
       else: # mac
         self.init_drives_mac()
-    elif os.name == "nt" or win32:
+    elif os.name == "nt" or self.opt.win32:
       self.init_drives_windows()
     else:
       print("Sorry no initialization for OS '{}' yet!".format(os.name))
@@ -92,7 +94,7 @@ class Drives(object):
     self.LocalArchiveList = [r'I:\kbImport']
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
     self.RemovableMedia = self.available_source_vols(['G:']) # , 'J:', 'I:', 'H:', 'K:','G:'])
-    #if self.win32:
+    #if self.opt.win32:
     #  self.RemovableMedia = [d for d in self.RemovableMedia \
     #         if win32file.GetDriveType(d)==win32file.DRIVE_REMOVABLE]
 
@@ -120,7 +122,7 @@ class Drives(object):
     self.RemovableMedia = backupLocations + self.RemovableMedia
 
   def pretty(self, Path):
-    if not self.win32:
+    if not self.opt.win32:
       return Path
     try:
       name = win32api.GetVolumeInformation(Path)
@@ -132,21 +134,21 @@ class Drives(object):
   def acceptable_source_vol(self, Path):
     printable = self.pretty(Path)
     if not os.path.exists(Path):
-      if self.verbose:
+      if self.opt.verbose:
         print("{} doesn't exist"%(printable))
       return False
     if not os.path.isdir(Path):
       print('Error: Proposed source "{}" is not a directory'.format(printable))
       return False
     if Path in self.ForbiddenSources:
-      if self.verbose:
+      if self.opt.verbose:
         print("{} forbidden as a source"%(printable))
       return False
     s = os.path.getsize(Path) # TODO: this is not how you get volume size!
     if s > Volumes.largestSource:
       print('Oversized source: "{}"'.format(printable))
       return False
-    if self.verbose:
+    if self.opt.verbose:
       print("Found source {}".format(printable))
     return True
 
@@ -174,7 +176,7 @@ class Drives(object):
         self.vidDestDir = os.path.join(arch, "Vid")
         self.audioDestDir = os.path.join(arch, "Audio")
         return True
-    if self.verbose:
+    if self.opt.verbose:
       print("Primary archive disk unavailable, from these {} options:".format(
           len(self.PrimaryArchiveList)))
       print("  " + "\n  ".join(self.PrimaryArchiveList))
@@ -187,7 +189,7 @@ class Drives(object):
         self.archiveDrive = arch
         if arch[-1] == ':':
           arch = arch+os.path.sep
-        if self.verbose:
+        if self.opt.verbose:
           print("Using local archive {}".format(arch))
         self.pixDestDir = os.path.join(arch, "Pix")
         self.vidDestDir = os.path.join(arch, "Vid")

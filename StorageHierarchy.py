@@ -1,7 +1,8 @@
 #! /bin/python
 
 import os
-from ArchiveImg import *
+from AppOptions import AppOptions
+import ArchiveImg
 
 #####################################################
 ## Find or Create Archive Destination Directories ###
@@ -11,12 +12,9 @@ class StorageHierarchy(object):
   """Destination Directory Hierarchy"""
   createdDirs = []
 
-  def __init__(self, Testing=False, Unified=False, jobname=None, UniDir=None):
-    self.unify = Unified
-    self.jobname = jobname
-    self.unified_archive_dir = UniDir # TODO: is this ever actually set?
+  def __init__(self, Options=AppOptions()):
+    self.opt = Options
     self.testLog = {}
-    self.prefix = ''
     self.test = Testing
 
   def print_report(self, TopDir='.'):
@@ -84,8 +82,8 @@ class StorageHierarchy(object):
 
   def unified_dir_name(self, ArchDir, ReportName=""):
     'TODO: redundant calls to safe_mkdir?'
-    if self.unified_archive_dir is not None:
-      return self.unified_archive_dir
+    if self.opt.unify is not None:
+      return self.opt.unify
     now = time.localtime()
     yearStr = time.strftime("%Y", now)
     yearPath = os.path.join(ArchDir, yearStr)
@@ -96,8 +94,8 @@ class StorageHierarchy(object):
     archivePath = archivePath+os.path.sep+monthStr
     self.safe_mkdir(monthPath, archivePath, Prefix='  ')
     dateStr = time.strftime("%Y_%m_%d", now)
-    if self.jobname is not None:
-      dateStr = "{}_{}".format(dateStr, self.jobname)
+    if self.opt.jobname is not None:
+      dateStr = "{}_{}".format(dateStr, self.opt.jobname)
     unifiedDir = os.path.join(monthPath, dateStr)
     archivePath = archivePath+os.path.sep+dateStr
     self.safe_mkdir(unifiedDir, archivePath, Prefix='    ')
@@ -111,7 +109,7 @@ class StorageHierarchy(object):
     Seek or create an archive directory based on the src file's origination date,
     unless 'unify' is active, in which case base it on today's date.
     """
-    if self.unify:
+    if self.opt.unify:
       return self.unified_dir_name(ArchDir, ReportName)
     try:
       s = os.stat(SrcFile)
@@ -122,8 +120,8 @@ class StorageHierarchy(object):
     monthDir = self.month_subdir(s, yearDir)
     timeFormat = "%Y_%m_%d"
     dateDir = time.strftime(timeFormat, time.localtime(s.st_mtime))
-    if self.jobname is not None:
-      dateDir = "{}_{}".format(dateDir, self.jobname)
+    if self.opt.jobname is not None:
+      dateDir = "{}_{}".format(dateDir, self.opt.jobname)
     destDir = os.path.join(monthDir, dateDir)
     # reportStr = ReportName + os.path.sep + dateDir
     return destDir
