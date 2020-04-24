@@ -8,7 +8,7 @@ import shutil
 from AppOptions import AppOptions
 import StorageHierarchy
 import Drives
-from ArchiveImg import ArchiveImg
+from ImgInfo import ImgInfo
 from DNGConverter import DNGConverter
 
 if sys.version_info > (3,):
@@ -91,8 +91,8 @@ class Volumes(object):
     self.drives = Drives.Drives(Options)
     self.storage = StorageHierarchy.StorageHierarchy(Options)
     self.dng = DNGConverter(Options)
-    ArchiveImg.set_options(Options)
-    ArchiveImg.set_dng_converter(self.dng)
+    ImgInfo.set_options(Options)
+    ImgInfo.set_dng_converter(self.dng)
     self.avchd = Avchd(self.storage)
     self.nBytes = long(0)
     self.nFiles = long(0)
@@ -104,7 +104,7 @@ class Volumes(object):
     self.imgDirs = []
     self.srcMedia = []
     self.prefix = ''
-    self.images = [] # array of ArchiveImg
+    self.images = [] # array of ImgInfo
     self.process_options()
 
   def process_options(self):
@@ -293,7 +293,7 @@ class Volumes(object):
     "found a potential file, let's add it as a data record"
     # if .MOV or .M4V or .MP4 or .3GP it's a vid
     # if JPG, check to see if there's a matching vid
-    kidData = ArchiveImg(kid, fullKidPath)
+    kidData = ImgInfo(kid, fullKidPath)
     isSimpleVideo = False
     isAVCHD = False
     self.avchd.type = "JPG" # blah
@@ -388,7 +388,7 @@ class Volumes(object):
     print("{} Files, Total MB: {}".format(self.nFiles, self.nBytes/(1024*1024)))
     if self.nSkipped:
       print("Skipped {} files".format(self.nSkipped))
-      print("  with {} doppelgangs".format(len(ArchiveImg.doppelFiles)))
+      print("  with {} doppelgangs".format(len(ImgInfo.doppelFiles)))
     endTime = time.process_time() if sys.version_info > (3, 3)  else time.clock()
     elapsed = endTime-self.startTime
     if elapsed > 100:

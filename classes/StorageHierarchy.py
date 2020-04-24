@@ -4,7 +4,7 @@ import os
 import time
 
 from AppOptions import AppOptions
-from ArchiveImg import ArchiveImg
+from ImgInfo import ImgInfo
 
 #####################################################
 ## Find or Create Archive Destination Directories ###
@@ -19,7 +19,7 @@ class StorageHierarchy(object):
     self.testLog = {}
 
   def print_report(self, TopDir='.'):
-    allDirs = self.createdDirs + ArchiveImg.createdDirs
+    allDirs = self.createdDirs + ImgInfo.createdDirs
     if len(allDirs) > 0:
       print("Created directories within {}:".format(TopDir))
       print(' ' + '\n '.join(allDirs))

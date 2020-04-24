@@ -1,6 +1,6 @@
 #! /bin/python
 """
-Each ArchiveImg object contains archive data about a single image
+Each ImgInfo object contains archive data about a single image
 """
 
 import os
@@ -12,7 +12,7 @@ from DNGConverter import DNGConverter
 if sys.version_info > (3,):
   long = int
 
-class ArchiveImg(object):
+class ImgInfo(object):
   """Data About Images"""
   doppelFiles = {}
   doppelPaths = {}
@@ -40,14 +40,14 @@ class ArchiveImg(object):
     self.destName = ''
     self.destPath = ''
     self.has_dng = False
-    if ArchiveImg.opt is None:
+    if ImgInfo.opt is None:
       print("Caution: Class wasn't initialized for image '{},' using defaults".format(self.srcName))
-      ArchiveImg.set_dng_converter()
+      ImgInfo.set_dng_converter()
     self.nBytes = long(0)
 
   def doppelganger(self):
     "figure out if there is a copy of this file in a neighboring archive"
-    name = ArchiveImg.doppelFiles.get(self.srcName)
+    name = ImgInfo.doppelFiles.get(self.srcName)
     if name:
       return True
     (monthPath, dayFolder) = os.path.split(self.destPath)
@@ -55,20 +55,20 @@ class ArchiveImg(object):
     if self.opt.unify:
       print("doppelhunting in {}".format(monthPath))
     for d in os.listdir(monthPath):
-      name = ArchiveImg.doppelPaths.get(d)
+      name = ImgInfo.doppelPaths.get(d)
       if name:
         # already checked
         continue
       if d[:10] != dayStr:
         # only review days we care about
         continue
-      ArchiveImg.doppelPaths[d] = 1
+      ImgInfo.doppelPaths[d] = 1
       for f in os.listdir(os.path.join(monthPath, d)):
-        m = ArchiveImg.regexPic.search(f)
+        m = ImgInfo.regexPic.search(f)
         if m:
           theMatch = m.group(0)
-          ArchiveImg.doppelFiles[theMatch] = 1
-    return ArchiveImg.doppelFiles.get(self.srcName) is not None
+          ImgInfo.doppelFiles[theMatch] = 1
+    return ImgInfo.doppelFiles.get(self.srcName) is not None
 
   def dest_mkdir(self, Prefix='   '):
     """
@@ -77,18 +77,18 @@ class ArchiveImg(object):
     When testing is True, still return name of the (non-existent) directory!
     """
     if not os.path.exists(self.destPath):
-      if ArchiveImg.opt.testing:
-        dp = ArchiveImg.testLog.get(self.destPath)
+      if ImgInfo.opt.testing:
+        dp = ImgInfo.testLog.get(self.destPath)
         if not dp:
           print("Need to create dir {} **".format(self.destPath))
-          ArchiveImg.testLog[self.destPath] = 1
+          ImgInfo.testLog[self.destPath] = 1
       else:
         print("** Creating dir {} **".format(self.destPath))
         os.mkdir(self.destPath)
         if not os.path.exists(self.destPath):
           print('mkdir "{}" failed')
           return None
-        ArchiveImg.createdDirs.append(Prefix+os.path.split(self.destPath)[1])
+        ImgInfo.createdDirs.append(Prefix+os.path.split(self.destPath)[1])
         return self.destPath
     elif not os.path.isdir(self.destPath):
       print("Path error: {} is not a directory!".format(self.destPath))
@@ -103,12 +103,12 @@ class ArchiveImg(object):
     opDescription = ''
     if os.path.exists(FullDestPath) or self.doppelganger():
       if ArciveImg.opt.force_copies:
-        if ArchiveImg.opt.verbose:
+        if ImgInfo.opt.verbose:
           opDescription += ("Overwriting {}\n".format(FullDestPath))
         self.incr(self.srcPath)
       else:
         protected = True
-        m = ArchiveImg.regexDotAvchd.search(FullDestPath)
+        m = ImgInfo.regexDotAvchd.search(FullDestPath)
         if m:
           FullDestPath = os.path.join(m.group(1), "...", self.srcName)
     else:
@@ -120,8 +120,8 @@ class ArchiveImg(object):
     self.dest_mkdir()
     if len(opDescription) > 0:
       print(opDescription)
-    if ArchiveImg.opt.use_dng:
-      return ArchiveImg.dng.convert(self.srcPath, self.destPath, self.destName)
+    if ImgInfo.opt.use_dng:
+      return ImgInfo.dng.convert(self.srcPath, self.destPath, self.destName)
     # else:
     return self.safe_copy(FullDestPath)
 
@@ -137,7 +137,7 @@ class ArchiveImg(object):
 
   def safe_copy(self, DestPath):
     "Copy file, unless we are testing"
-    if ArchiveImg.opt.testing:  # TODO - Volume data
+    if ImgInfo.opt.testing:  # TODO - Volume data
       return True # always "work"
     try:
       shutil.copyfile(self.srcPath, DestPath)
@@ -151,4 +151,4 @@ class ArchiveImg(object):
 
 if __name__ == '__main__':
   print("testing time")
-  ai = ArchiveImg('test.jpg', '.')
+  ai = ImgInfo('test.jpg', '.')
