@@ -1,21 +1,32 @@
 #! /bin/python
 
+import os
+import re
+from AppOptions import AppOptions
+
 class DNGConverter(object):
   """handle optional DNG conversion"""
-  def __init__(self, Active=False):
-    self.active = bool(Active and WIN32_OK)
+  regexDNGsrc = re.compile(r'(.*)\.RW2')
+
+  @classmethod
+  def filetype_search(cls, Filename):
+    return cls.regexDNGsrc.search(Filename)
+
+  def __init__(self, Options=AppOptions()):
+    self.opt = Options
+    self.active = Options.use_dng and Options.win32
     self.nConversions = 0
     self.seek_converter()
 
   def convert(self, srcPath, destPath, destName):
     "TODO: check for testing? - based on old dng_convert()"
     # TODO: get command from Volumes instance
-    if not WIN32_OK:
+    if not self.opt.win32:
       return False
     cmd = "\"{}\" -c -d \"{}\" -o {} \"{}\"".format(
         self.converter, destPath, destName, srcPath)
     # print(cmd)
-    if TESTING:
+    if self.opt.test:
       print(cmd)
       return True # pretend
     p = os.popen(r'cmd /k')
@@ -30,7 +41,7 @@ class DNGConverter(object):
   def seek_converter(self):
     """find a DNG converter, if one is available"""
     self.converter = None
-    if not WIN32_OK:
+    if not self.opt.win32:
       self.active = False
       return
     pf = os.environ.get('PROGRAMFILES')
@@ -44,3 +55,6 @@ class DNGConverter(object):
 
 if __name__ == '__main__':
   print("testing time")
+  d = DNGConverter()
+  print("convertor is {}".format(d.converter))
+  print("active? {}".format(d.active))

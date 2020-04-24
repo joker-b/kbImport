@@ -58,44 +58,29 @@ Volumes()
 """
 
 import sys
-import os
-import shutil
-#import subprocess
-from AppOptions import AppOptions
 import argparse
+sys.path.append('classes')
+# pylint: disable=C0413
+from AppOptions import AppOptions
 import Volumes
 
-WIN32_OK = True
+options = AppOptions()
+options.verbose = False
+options.testing = False
+options.version = "kbImport - 21apr2020 - (c)2004-2020 K Bjorke"
+options.win32 = True
+
 try:
 # pylint: disable=E0401
 # this error is more informatiove than "platform"
   import win32api
   # import win32file
 except ModuleNotFoundError:
-  WIN32_OK = False
-
-
-
-################################################
-##### global variable ##########################
-################################################
-
-options = AppOptions()
-options.verbose = False
-options.testing = False
-options.version = "kbImport - 21apr2020 - (c)2004-2020 K Bjorke"
-options.win32 = WIN32_OK
+  options.win32 = False
 
 #############################################################
 ### MAIN ACTION #############################################
 #############################################################
-
-
-# MAIN EXECUTION BITS ##############
-# MAIN EXECUTION BITS ##############
-# MAIN EXECUTION BITS ##############
-
-
 
 if __name__ == '__main__':
   arguments = options.default_arguments()

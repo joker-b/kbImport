@@ -1,8 +1,10 @@
 #! /bin/python
 
 import os
+import time
+
 from AppOptions import AppOptions
-import ArchiveImg
+from ArchiveImg import ArchiveImg
 
 #####################################################
 ## Find or Create Archive Destination Directories ###
@@ -10,18 +12,19 @@ import ArchiveImg
 
 class StorageHierarchy(object):
   """Destination Directory Hierarchy"""
-  createdDirs = []
 
   def __init__(self, Options=AppOptions()):
     self.opt = Options
+    self.createdDirs = []
     self.testLog = {}
-    self.test = Testing
 
   def print_report(self, TopDir='.'):
     allDirs = self.createdDirs + ArchiveImg.createdDirs
     if len(allDirs) > 0:
       print("Created directories within {}:".format(TopDir))
       print(' ' + '\n '.join(allDirs))
+    else:
+      print("No new directories were created")
 
   def safe_mkdir(self, Dir, PrettierName=None, Prefix=''):
     """
@@ -32,10 +35,10 @@ class StorageHierarchy(object):
     """
     report = PrettierName or Dir
     if not os.path.exists(Dir):
-      if TESTING:
+      if self.opt.testing:
         gr = self.testLog.get(report)
         if not gr:
-          print("Need to create dir {} **".format(report))
+          print("Need to create dir '{}' **".format(report))
           self.testLog[report] = 1
       else:
         print("** Creating dir {} **".format(report))
@@ -99,7 +102,7 @@ class StorageHierarchy(object):
     unifiedDir = os.path.join(monthPath, dateStr)
     archivePath = archivePath+os.path.sep+dateStr
     self.safe_mkdir(unifiedDir, archivePath, Prefix='    ')
-    if not (os.path.isdir(unifiedDir) or TESTING):
+    if not (os.path.isdir(unifiedDir) or self.opt.testing):
       print("path error: {} is not a directory!".format(unifiedDir))
       return None
     return unifiedDir
@@ -128,3 +131,10 @@ class StorageHierarchy(object):
 
 if __name__ == '__main__':
   print("testing time")
+  opt = AppOptions()
+  opt.testing = True
+  opt.set_jobname('StorageTest')
+  s = StorageHierarchy(opt)
+  s.safe_mkdir('here/would_be_a/testing_dir')
+  print(s.dest_dir_name('../kbImport3.py', '/home/kevinbjorke'))
+  s.print_report()

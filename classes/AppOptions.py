@@ -9,6 +9,7 @@ class AppOptions(object):
     self.win32 = False
     self.testing = False
     self.use_dng = False
+    self.force_copies = False
     self.version = "kbImport Default Options"
     if pargs is None:
       self.user_args(self.default_arguments())
@@ -22,21 +23,26 @@ class AppOptions(object):
 
   def user_args(self, pargs):
     "set state according to object 'pargs' created by argparse"
-    self.jobname = pargs.jobname
     self.verbose = self.verbose or bool(pargs.verbose)
     self.testing = self.testing or bool(pargs.test)
     self.numerate = bool(pargs.numerate)
     self.source = pargs.source
     self.archive = pargs.archive
-    if pargs.prefix is not None:
-      self.prefix = "{}_".format(pargs.prefix)
-    if pargs.jobpref is not None:
-      if self.prefix is None:
+    self.init_prefix = '' if pargs.prefix is None else "{}_".format(pargs.prefix)
+    self.use_job_prefix = bool(pargs.jobpref)
+    self.unify = bool(pargs.unify)
+    self.set_jobname(pargs.jobname)
+    # unique to storage
+
+  def set_jobname(self, Job=None):
+    self.jobname = '' if Job is None else Job
+    if self.use_job_prefix:
+      if self.init_prefix is None:
         self.prefix = "{}_".format(self.jobname)
       else:
-        self.prefix = "{}{}_".format(self.prefix, self.jobname)
-    # unique to storage
-    self.unify = bool(pargs.unify)
+        self.prefix = "{}{}_".format(self.init_prefix, self.jobname)
+    else:
+      self.prefix = ''
 
   def default_arguments(self):
     args = argparse.Namespace()
@@ -55,3 +61,4 @@ if __name__ == '__main__':
   print("testing time")
   a = AppOptions()
   print(a)
+  print(a.prefix)

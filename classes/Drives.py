@@ -5,7 +5,6 @@ import os
 import platform
 import re
 from AppOptions import AppOptions
-from Volumes import Volumes # TODO(kevin): needed?
 
 #pylint: disable=too-many-instance-attributes
 # Nine is reasonable in this case.
@@ -16,6 +15,8 @@ class Drives(object):
   LocalArchiveList = []
   ForbiddenSources = []
   RemovableMedia = []
+  # in GB - hack to not scan hard drives as source media
+  largestSource = 130 * 1024*1024*1024
 
   def __init__(self, Options=AppOptions()):
     """blah"""
@@ -27,14 +28,20 @@ class Drives(object):
     if os.name == 'posix': # mac?
       if platform.uname()[0] == 'Linux':
         self.init_drives_linux()
-        self.show_drives()
       else: # mac
         self.init_drives_mac()
     elif os.name == "nt" or self.opt.win32:
       self.init_drives_windows()
     else:
       print("Sorry no initialization for OS '{}' yet!".format(os.name))
-      sys.exit()
+    self.process_options()
+
+  def process_options(self):
+    if self.opt.archive is not None:
+      self.PrimaryArchiveList = [self.opt.archive]
+      if self.host == 'windows':
+        # TODO(kevin): what is wanted here? and why isn't it in the Drives object?
+        self.PrimaryArchiveList[0] = re.sub('::', 'TODO', self.PrimaryArchiveList[0])
 
   def show_drives(self):
     print('Primary: ', self.PrimaryArchiveList)
@@ -55,7 +62,7 @@ class Drives(object):
     # pxd = 'pix20'
     self.PrimaryArchiveList = [os.path.join(mk, pxd)]
     # TODO(kevin): choose a better locl default?
-    self.LocalArchiveList = [os.path.join(os.environ['HOME'], 'Pictures', 'kbImport')]
+    self.LocalArchiveList = [os.path.join(os.environ['HOME'], 'pix', 'kbImport')]
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
     self.ForbiddenSources.append("Storage")
     self.ForbiddenSources.append(os.path.join("Storage", "SD Card Imports"))
@@ -145,7 +152,7 @@ class Drives(object):
         print("{} forbidden as a source"%(printable))
       return False
     s = os.path.getsize(Path) # TODO: this is not how you get volume size!
-    if s > Volumes.largestSource:
+    if s > Drives.largestSource:
       print('Oversized source: "{}"'.format(printable))
       return False
     if self.opt.verbose:
@@ -159,13 +166,13 @@ class Drives(object):
     else:
       self.RemovableMedia = [SourceName]
 
-  def find_archive_drive(self):
+  def found_archive_drive(self):
     "find an archive destination"
-    if self.find_primary_archive_drive():
+    if self.found_primary_archive_drive():
       return True
-    return self.find_local_archive_drive()
+    return self.found_local_archive_drive()
 
-  def find_primary_archive_drive(self):
+  def found_primary_archive_drive(self):
     "find prefered destination"
     for arch in self.PrimaryArchiveList:
       if os.path.exists(arch):
@@ -182,7 +189,7 @@ class Drives(object):
       print("  " + "\n  ".join(self.PrimaryArchiveList))
     return False
 
-  def find_local_archive_drive(self):
+  def found_local_archive_drive(self):
     "find 'backup' destination"
     for arch in self.LocalArchiveList:
       if os.path.exists(arch):
@@ -210,3 +217,11 @@ class Drives(object):
 
 if __name__ == '__main__':
   print("testing time")
+  opt = AppOptions()
+  opt.testing = True
+  opt.set_jobname('DrivesTest')
+  d = Drives(opt)
+  d.show_drives()
+  b = d.found_archive_drive()
+  print("Archive found? {}: '{}''".format(b, d.archiveDrive))
+  b = d.verify_archive_locations()

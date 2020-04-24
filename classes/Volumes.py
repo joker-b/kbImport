@@ -8,7 +8,8 @@ import shutil
 from AppOptions import AppOptions
 import StorageHierarchy
 import Drives
-import ArchiveImg
+from ArchiveImg import ArchiveImg
+from DNGConverter import DNGConverter
 
 if sys.version_info > (3,):
   long = int
@@ -27,10 +28,15 @@ class Avchd(object):
     self.AVCHDTargets["JPG"] = os.path.join("AVCHD", "CANONTHM")
     self.type = 'JPG'
 
-  def src(self, FromDir):
-    if self.regexAvchd.search(FromDir):
+  @classmethod
+  def valid_source_dir(cls, Filename):
+    if cls.regexAvchd.search(Filename):
       return True
     return False
+
+  @classmethod
+  def filetype_search(cls, Filename):
+    return cls.regexAvchdFiles.search(Filename)
 
   def dest_dir_name(self, SrcFile, ArchDir):
     """
@@ -58,26 +64,36 @@ class Avchd(object):
 
 #######################
 
+class Video(object):
+  regexVidFiles = re.compile(r'\.(M4V|MP4|MOV|3GP)')
+  def __init__(self):
+    pass
+  @classmethod
+  def has_filetype(cls, Filename):
+    return cls.regexVidFiles.search(Filename) is not None
+
 
 ##############################
 
 class Volumes(object):
   '''object for import/archive environment'''
-  regexVidFiles = re.compile(r'\.(M4V|MP4|MOV|3GP)')
   regexDotFiles = re.compile(r'^\..*(BridgeCache|dropbox\.device)')
   regexJPG = re.compile(r'(.*)\.JPG')
-  regexDNGsrc = re.compile(r'(.*)\.RW2')
-  # in GB - hack to not scan hard drives as source media
-  largestSource = 130 * 1024*1024*1024
-  forceCopies = False
+
+  @classmethod
+  def is_dot_file(cls, Filename):
+    return cls.regexAvchd.match(Filename)
+
 
   def __init__(self, Options=AppOptions()):
     self.startTime = time.process_time() if sys.version_info > (3, 3)  else time.clock()
     self.opt = Options
     self.drives = Drives.Drives(Options)
     self.storage = StorageHierarchy.StorageHierarchy(Options)
+    self.dng = DNGConverter(Options)
+    ArchiveImg.set_options(Options)
+    ArchiveImg.set_dng_converter(self.dng)
     self.avchd = Avchd(self.storage)
-    self.jobname = None
     self.nBytes = long(0)
     self.nFiles = long(0)
     self.nSkipped = long(0)
@@ -88,7 +104,6 @@ class Volumes(object):
     self.imgDirs = []
     self.srcMedia = []
     self.prefix = ''
-    self.foundImages = False
     self.images = [] # array of ArchiveImg
     self.process_options()
 
@@ -96,11 +111,6 @@ class Volumes(object):
     "set state according to options object"
     if self.opt.source is not None:
       self.drives.assign_removable(self.opt.source)
-    if self.opt.archive is not None:
-      self.PrimaryArchiveList = self.opt.archive # TODO(kevin): duplicated to drives?
-      if self.drives.host == 'windows':
-        # TODO(kevin): what is wanted here? and why isn't it in the Drives object?
-        self.drives.PrimaryArchiveList[0] = re.sub('::', 'todo', self.drives.PrimaryArchiveList[0])
 
   def seek_named_dir(self, ParentDir, FindDir, Level=0, MaxLevels=6):
     """
@@ -134,7 +144,7 @@ class Volumes(object):
     print(self.opt.version)
     if not self.media_are_ready():
       print("No '{}' media found, please connect it to this {} computer".format(
-          self.jobname, self.drives.host))
+          self.opt.jobname, self.drives.host))
       sys.exit()
     self.announce()
     self.archive_images_and_video()
@@ -143,17 +153,16 @@ class Volumes(object):
 
   def media_are_ready(self):
     "Do we have all media in place? Find sources, destination, and optional converter"
-    if not self.drives.find_archive_drive():
+    if not self.drives.found_archive_drive():
       if self.opt.verbose:
         print('No archive drive found')
       return False
-    if not self.drives.verify_archive_locations():
-      if self.opt.verbose:
-        print('Archive drive failed verification')
-      return False
-    self.srcMedia = self.find_src_image_media()
-    self.foundImages = self.srcMedia and len(self.srcMedia) > 0
-    if not self.foundImages:
+    #if not self.drives.verify_archive_locations():
+    #  if self.opt.verbose:
+    #    print('Archive drive failed verification')
+    #  return False
+    self.find_src_image_media()
+    if len(self.srcMedia) == 0:
       if self.opt.verbose:
         print('Images not found')
       return False
@@ -164,10 +173,10 @@ class Volumes(object):
   #
 
   def find_src_image_media(self):
-    foundMedia = []
+    self.srcMedia = []
     if len(self.drives.RemovableMedia) < 1:
       print("Yikes, no source media")
-      return None
+      return
     for srcDevice in self.drives.RemovableMedia:
       if self.opt.verbose:
         print("  Checking {} for source media".format(self.drives.pretty(srcDevice)))
@@ -185,9 +194,7 @@ class Volumes(object):
       if avDir is not None:
         self.imgDirs.append(avDir)
       if len(self.imgDirs) > 0:
-        foundMedia.append(srcDevice)
-    return foundMedia
-
+        self.srcMedia.append(srcDevice)
 
   #
   # Archiving
@@ -203,7 +210,7 @@ class Volumes(object):
 
   def archive_images_and_video(self):
     "Top image archive method"
-    if not self.foundImages:
+    if len(self.srcMedia) == 0:
       print("No images to archive")
       return
     if self.opt.verbose:
@@ -277,10 +284,58 @@ class Volumes(object):
     return True
 
   def dest_name(self, OrigName):
-    if self.numerate:
+    if self.opt.numerate:
       # TODO extract file extension, format number output, store a number, make sure we are *sorted*
       return "{}{}".format(self.prefix, OrigName)
     return "{}{}".format(self.prefix, OrigName)
+
+  def build_image_data(self, kid, FromDir, fullKidPath, PixArchDir, VidArchDir, files):
+    "found a potential file, let's add it as a data record"
+    # if .MOV or .M4V or .MP4 or .3GP it's a vid
+    # if JPG, check to see if there's a matching vid
+    kidData = ArchiveImg(kid, fullKidPath)
+    isSimpleVideo = False
+    isAVCHD = False
+    self.avchd.type = "JPG" # blah
+    upcaseKid = kid.upper()
+    kidData.destName = self.dest_name(kid)  # renaming allowed here
+    m = Avchd.filetype_search(upcaseKid)
+    if m:
+      isAVCHD = True
+      self.avchd.type = m.group(1)
+    isSimpleVideo = Video.has_filetype(upcaseKid)
+    if self.dng.active:
+      m = DNGConverter.filetype_search(upcaseKid)
+      if m:
+        kidData.has_dng = True
+        # renaming allowed here
+        kidData.destName = "{}.DNG".format(self.dest_name(m.groups(0)[0]))
+    m = Volumes.regexJPG.search(upcaseKid)
+    if m:
+      # keep an eye open for special thumbnail JPGs....
+      if Avchd.valid_source_dir(FromDir):
+        isAVCHD = True
+        self.avchd.type = "JPG"
+        kidData.destName = kid # renaming NOT allowed for AVCHD thumbnails
+      else:
+        root = m.groups(0)[0]
+        for suf in ['M4V', 'MOV', 'MP4', '3GP']:
+          vidName = "{}.{}".format(root, suf) # renaming not allowed here
+          if files.__contains__(vidName):
+            isSimpleVideo = True # send the thumbnail to the video directory too
+    if isAVCHD:
+      destinationPath = self.avchd.destination_path(fullKidPath, VidArchDir)
+    elif isSimpleVideo:
+      destinationPath = self.storage.dest_dir_name(fullKidPath, VidArchDir)
+    else:
+      destinationPath = self.storage.dest_dir_name(fullKidPath, PixArchDir)
+    if destinationPath:
+      kidData.destPath = destinationPath
+      self.images.append(kidData)
+      return 1
+    else:
+      print("Unable to archive media to {}".format(destinationPath))
+      return 0
 
   def identify_archive_pix(self, FromDir, PixArchDir, VidArchDir):
     "Archive images and video - recursively if needed"
@@ -290,71 +345,27 @@ class Volumes(object):
       return
     # now we can proceed
     localItemCount = 0
-    isAVCHDsrc = self.avchd.src(FromDir)
-    files = [f for f in os.listdir(FromDir) if not Volumes.regexDotFiles.match(f)]
-    files.sort()
-    filesOnly = [f for f in files if not os.path.isdir(os.path.join(FromDir, f))]
-    if self.opt.verbose and len(filesOnly) > 0:
-      print("Archiving {} files from\n    {}".format(len(filesOnly), FromDir))
+    files = [f for f in os.listdir(FromDir) if not Volumes.is_dot_file(f)].sort()
+    nFiles = len([f for f in files if not os.path.isdir(os.path.join(FromDir, f))])
+    if self.opt.verbose and nFiles > 0:
+      print("Archiving {} files from\n    {}".format(nFiles, FromDir))
     for kid in files:
-      if Volumes.regexDotFiles.match(kid):
+      if Volumes.is_dot_file(kid):
         continue
       fullKidPath = os.path.join(FromDir, kid)
       if os.path.isdir(fullKidPath):
         self.identify_archive_pix(fullKidPath, PixArchDir, VidArchDir)   # recurse
       else:
-        # if .MOV or .M4V or .MP4 or .3GP it's a vid
-        # if JPG, check to see if there's a matching vid
-        kidData = ArchiveImg.ArchiveImg(kid, fullKidPath)
-        isSimpleVideo = False
-        isAVCHD = False
-        self.avchd.type = "JPG" # blah
-        upcaseKid = kid.upper()
-        kidData.destName = self.dest_name(kid)  # renaming allowed here
-        m = Avchd.regexAvchdFiles.search(upcaseKid)
-        if m:
-          isAVCHD = True
-          self.avchd.type = m.group(1)
-        isSimpleVideo = Volumes.regexVidFiles.search(upcaseKid) is not None
-        m = Volumes.regexDNGsrc.search(upcaseKid)
-        if m:
-          if Vols.dng.active:
-            kidData.dng.active = bool(True and self.opt.win32)
-            # renaming allowed here
-            kidData.destName = "{}.DNG".format(self.dest_name(m.groups(0)[0]))
-        m = Volumes.regexJPG.search(upcaseKid)
-        if m:
-          # keep an eye open for special thumbnail JPGs....
-          if isAVCHDsrc:
-            isAVCHD = True
-            self.avchd.type = "JPG"
-            kidData.destName = kid # renaming NOT allowed for AVCHD thumbnails
-          else:
-            root = m.groups(0)[0]
-            for suf in ['M4V', 'MOV', 'MP4', '3GP']:
-              vidName = "{}.{}".format(root, suf) # renaming not allowed here
-              if files.__contains__(vidName):
-                # print("List contains both {} and {}".format(kid,vidName))
-                isSimpleVideo = True # send the thumbnail to the video directory too
-        if isAVCHD:
-          destinationPath = self.avchd.destination_path(fullKidPath, VidArchDir)
-        elif isSimpleVideo:
-          destinationPath = self.storage.dest_dir_name(fullKidPath, VidArchDir)
-        else:                                                            # a still photo
-          destinationPath = self.storage.dest_dir_name(fullKidPath, PixArchDir)
-        if destinationPath:
-          kidData.destPath = destinationPath
-          self.images.append(kidData)
-          localItemCount += 1
-        else:
-          print("Unable to archive media to {}".format(destinationPath))
+        localItemCount += self.build_image_data(kid, FromDir, fullKidPath, PixArchDir, VidArchDir, files)
     if self.opt.verbose and localItemCount > 0:
       print("Found {} items in {}".format(localItemCount, FromDir))
 
   def archive_found_image_data(self):
-    if not self.opt.testing:
+    if self.opt.testing:
+      print("{} files found in testing, none moved".format(len(self.images)))
+    else:
       for pic in self.images:
-        if pic.archive(Force=self.forceCopies, PixDestDir=self.drives.pixDestDir):
+        if pic.archive():
           self.nFiles += 1
           self.nBytes += pic.nBytes
         else:
@@ -367,7 +378,7 @@ class Volumes(object):
     print('SOURCE MEDIA:      {}'.format('\n\t'.join(
         [self.drives.pretty(d) for d in self.srcMedia])))
     print('DESTINATION DRIVE: {}'.format(self.drives.pretty(self.drives.archiveDrive)))
-    print('JOB NAME: "{}"'.format(self.jobname))
+    print('JOB NAME: "{}"'.format(self.opt.jobname))
 
   def report(self):
     self.storage.print_report(self.drives.pixDestDir)
@@ -377,7 +388,7 @@ class Volumes(object):
     print("{} Files, Total MB: {}".format(self.nFiles, self.nBytes/(1024*1024)))
     if self.nSkipped:
       print("Skipped {} files".format(self.nSkipped))
-      print("  with {} doppelgangs".format(len(ArchiveImg.ArchiveImg.doppelFiles)))
+      print("  with {} doppelgangs".format(len(ArchiveImg.doppelFiles)))
     endTime = time.process_time() if sys.version_info > (3, 3)  else time.clock()
     elapsed = endTime-self.startTime
     if elapsed > 100:
@@ -393,5 +404,9 @@ class Volumes(object):
 
 if __name__ == '__main__':
   print("testing time")
-  v = Volumes()
-  print(dir(v))
+  opt = AppOptions()
+  opt.testing = True
+  opt.verbose = True
+  opt.set_jobname('VolumesTest')
+  v = Volumes(opt)
+  v.archive()
