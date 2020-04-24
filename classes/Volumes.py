@@ -103,7 +103,6 @@ class Volumes(object):
     self.newDirList = []
     self.imgDirs = []
     self.srcMedia = []
-    self.prefix = ''
     self.images = [] # array of ImgInfo
     self.process_options()
 
@@ -218,7 +217,7 @@ class Volumes(object):
       print("  {}".format(", ".join(self.imgDirs)))
     for srcDir in self.imgDirs:
       print("Archiving Images from '{}'".format(srcDir))
-      self.identify_archive_pix(srcDir, self.drives.pixDestDir, self.drives.vidDestDir)
+      self.seek_files_in(srcDir)
       self.archive_found_image_data()
 
   def archive_audio(self):
@@ -272,9 +271,9 @@ class Volumes(object):
     if not os.path.isdir(PixArchDir):
       print("Hey, image destination '{}' is not a directory!".format(PixArchDir))
       return False
-    if VidArchDir is not None and not os.path.exists(VidArchDir):
+    if VidArchDir is not None and not os.path.exists(self.drives.vidDestDir):
       print("Caution: Video archive '{}' is vapor, Ignoring it.".format(VidArchDir))
-      VidArchDir = None
+      VidArchDir = None # TODO(kevin): what?
     if not os.path.exists(FromDir):
       print("Hey, image source '{}' is vapor!".format(FromDir))
       return False
@@ -283,64 +282,56 @@ class Volumes(object):
       return False
     return True
 
-  def dest_name(self, OrigName):
-    if self.opt.numerate:
-      # TODO extract file extension, format number output, store a number, make sure we are *sorted*
-      return "{}{}".format(self.prefix, OrigName)
-    return "{}{}".format(self.prefix, OrigName)
+  def add_prefix(self, OrigName):
+    return self.opt.add_prefix(OrigName)
 
-  def build_image_data(self, kid, FromDir, fullKidPath, PixArchDir, VidArchDir, files):
+  def build_image_data(self, Filename, FromDir, FullPath, files):
     "found a potential file, let's add it as a data record"
     # if .MOV or .M4V or .MP4 or .3GP it's a vid
     # if JPG, check to see if there's a matching vid
-    kidData = ImgInfo(kid, fullKidPath)
+    info = ImgInfo(Filename, FullPath)
     isSimpleVideo = False
     isAVCHD = False
     self.avchd.type = "JPG" # blah
-    upcaseKid = kid.upper()
-    kidData.destName = self.dest_name(kid)  # renaming allowed here
-    m = Avchd.filetype_search(upcaseKid)
+    upcaseName = Filename.upper()
+    info.destName = self.add_prefix(Filename)  # renaming allowed here
+    m = Avchd.filetype_search(upcaseName)
     if m:
       isAVCHD = True
       self.avchd.type = m.group(1)
-    isSimpleVideo = Video.has_filetype(upcaseKid)
-    if self.dng.active:
-      m = DNGConverter.filetype_search(upcaseKid)
-      if m:
-        kidData.has_dng = True
-        # renaming allowed here
-        kidData.destName = "{}.DNG".format(self.dest_name(m.groups(0)[0]))
-    m = Volumes.regexJPG.search(upcaseKid)
+    isSimpleVideo = Video.has_filetype(upcaseName)
+    info.dng_check(self.dng.active)
+    m = Volumes.regexJPG.search(upcaseName)
     if m:
       # keep an eye open for special thumbnail JPGs....
       if Avchd.valid_source_dir(FromDir):
         isAVCHD = True
         self.avchd.type = "JPG"
-        kidData.destName = kid # renaming NOT allowed for AVCHD thumbnails
+        info.destName = Filename # renaming NOT allowed for AVCHD thumbnails
       else:
         root = m.groups(0)[0]
         for suf in ['M4V', 'MOV', 'MP4', '3GP']:
           vidName = "{}.{}".format(root, suf) # renaming not allowed here
-          if files.__contains__(vidName):
+          if files.__cifontains__(vidName):
             isSimpleVideo = True # send the thumbnail to the video directory too
     if isAVCHD:
-      destinationPath = self.avchd.destination_path(fullKidPath, VidArchDir)
+      destinationPath = self.avchd.destination_path(FullPath, self.drives.vidDestDir)
     elif isSimpleVideo:
-      destinationPath = self.storage.dest_dir_name(fullKidPath, VidArchDir)
+      destinationPath = self.storage.dest_dir_name(FullPath, self.drives.vidDestDir)
     else:
-      destinationPath = self.storage.dest_dir_name(fullKidPath, PixArchDir)
+      destinationPath = self.storage.dest_dir_name(FullPath, self.drives.pixDestDir)
     if destinationPath:
-      kidData.destPath = destinationPath
-      self.images.append(kidData)
+      info.destPath = destinationPath
+      self.images.append(info)
       return 1
     else:
       print("Unable to archive media to {}".format(destinationPath))
       return 0
 
-  def identify_archive_pix(self, FromDir, PixArchDir, VidArchDir):
+  def seek_files_in(self, FromDir):
     "Archive images and video - recursively if needed"
     # first make sure all inputs are valid
-    if not self.verify_image_archive_dir(FromDir, PixArchDir, VidArchDir):
+    if not self.verify_image_archive_dir(FromDir, self.drives.pixDestDir, self.drives.vidDestDir):
       print("Cannot verify image archive directory")
       return
     # now we can proceed
@@ -349,14 +340,14 @@ class Volumes(object):
     nFiles = len([f for f in files if not os.path.isdir(os.path.join(FromDir, f))])
     if self.opt.verbose and nFiles > 0:
       print("Archiving {} files from\n    {}".format(nFiles, FromDir))
-    for kid in files:
-      if Volumes.is_dot_file(kid):
+    for filename in files:
+      if Volumes.is_dot_file(filename):
         continue
-      fullKidPath = os.path.join(FromDir, kid)
-      if os.path.isdir(fullKidPath):
-        self.identify_archive_pix(fullKidPath, PixArchDir, VidArchDir)   # recurse
+      fullPath = os.path.join(FromDir, filename)
+      if os.path.isdir(fullPath):
+        self.seek_files_in(fullPath)   # recurse
       else:
-        localItemCount += self.build_image_data(kid, FromDir, fullKidPath, PixArchDir, VidArchDir, files)
+        localItemCount += self.build_image_data(filename, FromDir, fullPath, files)
     if self.opt.verbose and localItemCount > 0:
       print("Found {} items in {}".format(localItemCount, FromDir))
 

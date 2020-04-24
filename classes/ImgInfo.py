@@ -149,6 +149,15 @@ class ImgInfo(object):
       return False
     return True
 
+  def dng_check(self, UsingDNG):
+    if UsingDNG:
+      m = DNGConverter.filetype_search(self.srcName.upper())
+      if m:
+        self.has_dng = True
+        # renaming allowed here
+        self.destName = "{}.DNG".format(self.opt.add_prefix(m.groups(0)[0]))
+
 if __name__ == '__main__':
   print("testing time")
   ai = ImgInfo('test.jpg', '.')
+  ai.dng_check()

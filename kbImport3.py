@@ -72,7 +72,7 @@ options.win32 = True
 
 try:
 # pylint: disable=E0401
-# this error is more informatiove than "platform"
+# this "error" is more informative than platform.uname()
   import win32api
   # import win32file
 except ModuleNotFoundError:
@@ -123,7 +123,4 @@ if __name__ == '__main__':
   activeVols = Volumes.Volumes(options)
   activeVols.archive()
 
-# /disks/Removable/Flash\ Reader/EOS_DIGITAL/DCIM/100EOS5D/
-# /disks/Removable/MK1237GSX/DOORKNOB/Pix/
-
-# on linux seek /media/kevin/pix15
+# eof

@@ -44,6 +44,13 @@ class AppOptions(object):
     else:
       self.prefix = ''
 
+  def add_prefix(self, OrigName):
+    "add appropriate prefix(es) to a name"
+    if self.numerate:
+      # TODO extract file extension, format number output, store a number, make sure we are *sorted*
+      return "{}{}".format(self.prefix, OrigName)
+    return "{}{}".format(self.prefix, OrigName)
+
   def default_arguments(self):
     args = argparse.Namespace()
     args.jobname = 'test'
@@ -60,5 +67,8 @@ class AppOptions(object):
 if __name__ == '__main__':
   print("testing time")
   a = AppOptions()
+  a.use_job_prefix = True
+  a.set_jobname('tester')
   print(a)
   print(a.prefix)
+  print(a.add_prefix('DSCF7544.JPG'))
