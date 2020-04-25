@@ -62,6 +62,7 @@ Some Performance Numbers
 Testing with about a dozen `JPG`/`RAF` pairs:
 
 * On Chromebook Galaxy Letscom external to SSD: about 9.2-16 Mb/sec (reported internally: 75 Mb/sec)
+* On Chromebook Galaxy Letscom external to WD Spinning drive: 0.8171636728119824 Mb.sec (reported internally: 63 Mb/sec on 95 Fuji J/R pairs)
 * On MBA internal to SSD: about 576 Mb/sec
 * Drag in GCB Files card->SSD: \~68 Mb/sec
 * Drag in MBA finder card->SSD: \~6.5 Mb/sec!

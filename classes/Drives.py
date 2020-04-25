@@ -56,19 +56,22 @@ class Drives(object):
     # mk = '/media/kevin'
     mk = '/mnt'
     self.host = 'linux'
-    # pxd = 'pix18'
-    pxd = os.path.join('pix20s', 'kbImport')   # TODO(kevin): this is so bad
-    mk = "/mnt/chromeos/removable"
-    # pxd = 'pix20'
-    self.PrimaryArchiveList = [os.path.join(mk, pxd)]
+    ch = os.path.join(mk,'chromeos')
+    if os.path.exists(ch):
+      self.host = 'crostini'
+      mk = "/mnt/chromeos/removable"
+    knownDrives = ['pix20s','KBWIFI','pix20']
+    archDrives = [d for d in knownDrives if os.path.exists(os.path.join(mk,d))]
+    self.PrimaryArchiveList = [os.path.join(mk, d, 'kbImport') for d in archDrives]
     # TODO(kevin): choose a better locl default?
     self.LocalArchiveList = [os.path.join(os.environ['HOME'], 'pix', 'kbImport')]
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
     self.ForbiddenSources.append("Storage")
     self.ForbiddenSources.append(os.path.join("Storage", "SD Card Imports"))
     self.RemovableMedia = self.available_source_vols(
-        [os.path.join(mk, a) for a in os.listdir(mk) if a != pxd and (len(a) <= 8)]) if \
+        [os.path.join(mk, a) for a in os.listdir(mk) if not knownDrives.__contains__(a) and (len(a) <= 8)]) if \
             os.path.exists(mk) else []
+    self.show_drives()
 
   def init_drives_mac(self):
     self.host = 'mac'

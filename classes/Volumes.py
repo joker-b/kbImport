@@ -82,7 +82,7 @@ class Volumes(object):
 
   @classmethod
   def is_dot_file(cls, Filename):
-    return cls.regexAvchd.match(Filename)
+    return cls.regexDotFiles.match(Filename)
 
 
   def __init__(self, Options=AppOptions()):
@@ -273,19 +273,23 @@ class Volumes(object):
   def verify_image_archive_dir(self, FromDir, PixArchDir, VidArchDir):
     if not os.path.exists(PixArchDir):
       print("Hey, image archive '{}' is vapor!".format(PixArchDir))
-      return False
+      if not self.opt.testing:
+        return False
     if not os.path.isdir(PixArchDir):
       print("Hey, image destination '{}' is not a directory!".format(PixArchDir))
-      return False
+      if not self.opt.testing:
+        return False
     if VidArchDir is not None and not os.path.exists(self.drives.vidDestDir):
       print("Caution: Video archive '{}' is vapor, Ignoring it.".format(VidArchDir))
       VidArchDir = None # TODO(kevin): what?
     if not os.path.exists(FromDir):
       print("Hey, image source '{}' is vapor!".format(FromDir))
-      return False
+      if not self.opt.testing:
+        return False
     if not os.path.isdir(FromDir):
       print("Hey, image source '{}' is not a directory!".format(FromDir))
-      return False
+      if not self.opt.testing:
+        return False
     return True
 
   def add_prefix(self, OrigName):
@@ -342,19 +346,30 @@ class Volumes(object):
       return
     # now we can proceed
     localItemCount = 0
-    files = [f for f in os.listdir(FromDir) if not Volumes.is_dot_file(f)].sort()
+    if self.opt.verbose:
+      print("seek_files_in({})".format(FromDir))
+    # files = [f for f in os.listdir(FromDir) if not Volumes.is_dot_file(f)].sort()
+    files = os.listdir(FromDir)
+    files = list(files)
+    files.sort()
+    if files is None:
+      files = []
     nFiles = len([f for f in files if not os.path.isdir(os.path.join(FromDir, f))])
-    if self.opt.verbose and nFiles > 0:
-      print("Archiving {} files from\n    {}".format(nFiles, FromDir))
+    if self.opt.verbose:
+      print("Archiving {} files (from {} entries) from\n    {}".format(nFiles, len(files), FromDir))
     for filename in files:
       if Volumes.is_dot_file(filename):
+        if self.opt.verbose:
+          print("  skipping dotfile {}".format(filename))
         continue
       fullPath = os.path.join(FromDir, filename)
       if os.path.isdir(fullPath):
+        if self.opt.verbose:
+          print("  down to {}".format(fullPath))
         self.seek_files_in(fullPath)   # recurse
       else:
         localItemCount += self.build_image_data(filename, FromDir, fullPath, files)
-    if self.opt.verbose and localItemCount > 0:
+    if self.opt.verbose:
       print("Found {} items in {}".format(localItemCount, FromDir))
 
   def archive_found_image_data(self):

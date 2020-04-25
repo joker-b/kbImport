@@ -6,6 +6,7 @@ Each ImgInfo object contains archive data about a single image
 import os
 import sys
 import re
+import shutil
 from AppOptions import AppOptions
 from DNGConverter import DNGConverter
 
