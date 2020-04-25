@@ -123,6 +123,8 @@ class ImgInfo(object):
     self.dest_mkdir()
     if len(opDescription) > 0:
       print(opDescription)
+    if ImgInfo.opt.rename:
+      return self.safe_rename(FullDestPath)
     if ImgInfo.opt.use_dng:
       return ImgInfo.dng.convert(self.srcPath, self.destPath, self.destName)
     # else:
@@ -150,6 +152,22 @@ class ImgInfo(object):
     except:
       p = sys.exc_info()[0]
       print("Failed to copy: '{}'!!\n\t{}\n\t{}".format(p, self.srcPath, DestPath))
+      print("   Details: errno {} on\n\t'{}'' and\n\t'{}'".format(p.errno, p.filename, p.filename2))
+      print("   Detail2: {} chars, '{}'".format(p.characters_written, p.strerror))
+      return False
+    return True
+
+  def safe_rename(self, DestPath):
+    "Rename file, unless we are testing"
+    if ImgInfo.opt.verbose:
+      print("Rename {}\nAs {}".format(self.srcPath, DestPath))
+    if ImgInfo.opt.testing:  # TODO - Volume data
+      return True # always "work"
+    try:
+      os.rename(self.srcPath, DestPath)
+    except:
+      p = sys.exc_info()[0]
+      print("Failed to rename: '{}'!!\n\t{}\n\t{}".format(p, self.srcPath, DestPath))
       print("   Details: errno {} on\n\t'{}'' and\n\t'{}'".format(p.errno, p.filename, p.filename2))
       print("   Detail2: {} chars, '{}'".format(p.characters_written, p.strerror))
       return False

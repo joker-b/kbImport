@@ -10,6 +10,7 @@ class AppOptions(object):
     self.testing = False
     self.use_dng = False
     self.force_copies = False
+    self.rename = False
     self.version = "kbImport Default Options"
     if pargs is None:
       self.user_args(self.default_arguments())
@@ -28,6 +29,7 @@ class AppOptions(object):
     self.numerate = bool(pargs.numerate)
     self.source = pargs.source
     self.archive = pargs.archive
+    self.rename = pargs.rename
     self.init_prefix = '' if pargs.prefix is None else "{}_".format(pargs.prefix)
     self.use_job_prefix = bool(pargs.jobpref)
     self.unify = bool(pargs.unify)
@@ -59,6 +61,7 @@ class AppOptions(object):
     args.source = None
     args.archive = None
     args.unify = False
+    args.rename = False
     args.test = True
     args.verbose = False
     args.numerate = False

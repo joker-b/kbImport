@@ -415,14 +415,15 @@ class Volumes(object):
         print("Including {} DNG conversions".format(self.nConversions))
 
 if __name__ == '__main__':
-  print("testing time")
+  print("Volumes testing time")
   opt = AppOptions()
   opt.testing = True
   opt.verbose = True
+  opt.rename = True
   opt.set_jobname('VolumesTest')
   v = Volumes(opt)
-  fn = "thing.jpg"
-  fd = "/home/kevinbjorke/pix"
-  fp = os.path.join(fd, fn)
-  v.build_image_data(fn, fd, fp, [fn])
+  #fn = "thing.jpg"
+  #fd = "/home/kevinbjorke/pix"
+  #fp = os.path.join(fd, fn)
+  #v.build_image_data(fn, fd, fp, [fn])
   v.archive()

@@ -4,6 +4,7 @@ import sys
 import os
 import platform
 import re
+import glob
 from AppOptions import AppOptions
 
 #pylint: disable=too-many-instance-attributes
@@ -57,21 +58,30 @@ class Drives(object):
     mk = '/mnt'
     self.host = 'linux'
     ch = os.path.join(mk,'chromeos')
+    knownDrives = ['pix20s','KBWIFI','pix20']
     if os.path.exists(ch):
       self.host = 'crostini'
       mk = "/mnt/chromeos/removable"
-    knownDrives = ['pix20s','KBWIFI','pix20']
+      knownDrives.append('evo256')
     archDrives = [d for d in knownDrives if os.path.exists(os.path.join(mk,d))]
     self.PrimaryArchiveList = [os.path.join(mk, d, 'kbImport') for d in archDrives]
-    # TODO(kevin): choose a better locl default?
+    # TODO(kevin): choose a better local default?
     self.LocalArchiveList = [os.path.join(os.environ['HOME'], 'pix', 'kbImport')]
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
     self.ForbiddenSources.append("Storage")
-    self.ForbiddenSources.append(os.path.join("Storage", "SD Card Imports"))
     self.RemovableMedia = self.available_source_vols(
         [os.path.join(mk, a) for a in os.listdir(mk) if not knownDrives.__contains__(a) and (len(a) <= 8)]) if \
             os.path.exists(mk) else []
-    self.show_drives()
+    if self.opt.rename:
+      wdBkp = os.path.join(mk,'KBWIFI','SD Card Imports/')
+
+      self.RemovableMedia = glob.glob(wdBkp+'*/*/*')
+      print(self.RemovableMedia)
+      self.RemovableMedia = self.RemovableMedia + [os.path.join(mk,'evo256','pix'),
+                            "/home/kevinbjorke/pix/SD"] + self.RemovableMedia
+    else:
+      self.ForbiddenSources.append(os.path.join("Storage", "SD Card Imports"))
+    # self.show_drives()
 
   def init_drives_mac(self):
     self.host = 'mac'
@@ -219,9 +229,10 @@ class Drives(object):
     return True
 
 if __name__ == '__main__':
-  print("testing time")
+  print("Drives testing time")
   opt = AppOptions()
   opt.testing = True
+  opt.verbose = True
   opt.set_jobname('DrivesTest')
   d = Drives(opt)
   d.show_drives()
