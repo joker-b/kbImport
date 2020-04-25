@@ -1,6 +1,7 @@
 #! /bin/python
 
 import os
+import sys
 import time
 
 from AppOptions import AppOptions
@@ -10,15 +11,18 @@ from ImgInfo import ImgInfo
 ## Find or Create Archive Destination Directories ###
 #####################################################
 
-class StorageHierarchy(object):
-  """Destination Directory Hierarchy"""
+class Store(object):
+  """Storeage Operationns"""
 
   def __init__(self, Options=AppOptions()):
     self.opt = Options
     self.createdDirs = []
+    self.encountered = {}
     self.testLog = {}
+    self.unifiedDir = None
 
   def print_report(self, TopDir='.'):
+    print("Out of {} directory requests:".format(len(self.encountered)))
     allDirs = self.createdDirs + ImgInfo.createdDirs
     if len(allDirs) > 0:
       print("Created directories within {}:".format(TopDir))
@@ -30,35 +34,40 @@ class StorageHierarchy(object):
     """
     check for existence, create _recursively_ as needed.
     'PrettierName' is a print-pretty version.
-    Return directory name.
+    Returns Dir or None
     When testing is True, still return name of the (non-existent) directory!
     """
     report = PrettierName or Dir
-    if not os.path.exists(Dir):
-      if self.opt.testing:
-        gr = self.testLog.get(report)
-        if not gr:
-          print("Need to create dir '{}' **".format(report))
-          self.testLog[report] = 1
-      else:
-        print("** Creating dir {} **".format(report))
-        parent = os.path.split(Dir)[0]
-        if not os.path.exists(parent):
-          print("  inside of {}".format(parent))
-          self.safe_mkdir(parent)
-        try:
-          os.mkdir(Dir)
-        except:
-          print('mkdir "{}" failed'.format(Dir))
+    if self.encountered.get(Dir): # no need to call stat()
+      return Dir
+    if os.path.exists(Dir):
+      if not os.path.isdir(Dir):
+        print("Path error: '{}' exists but not a directory!".format(Dir))
+        return None
+      self.encountered[Dir] = 1
+      return Dir
+    if self.opt.testing:
+      gr = self.testLog.get(report)
+      if not gr:
+        print("safe_mkdir('{}') needed **".format(report))
+        self.testLog[report] = 1
+    else:
+      parent = os.path.split(Dir)[0]
+      if not os.path.exists(parent):
+        p = self.safe_mkdir(parent)
+        if p is None:
           return None
-        if not os.path.exists(Dir):
-          print('mkdir "{}" failed to appear'.format(Dir))
-          return None
-        self.createdDirs.append(Prefix+os.path.split(Dir)[1])
-        return Dir
-    elif not os.path.isdir(Dir):
-      print("Path error: '{}' is not a directory!".format(Dir))
-      return None
+      try:
+        os.mkdir(Dir)
+      except:
+        print('mkdir "{}" failed'.format(Dir))
+        return None
+      if not os.path.exists(Dir):
+        print('mkdir result "{}" failed to appear'.format(Dir))
+        return None
+      self.createdDirs.append(Prefix+os.path.split(Dir)[1])
+      print("** Created dir {} **".format(report))
+    self.encountered[Dir] = 1
     return Dir
 
   ######
@@ -83,10 +92,14 @@ class StorageHierarchy(object):
     self.safe_mkdir(result, report, Prefix='  ')
     return result
 
+  #########
+
   def unified_dir_name(self, ArchDir, ReportName=""):
-    'TODO: redundant calls to safe_mkdir?'
-    if self.opt.unify is not None:
-      return self.opt.unify
+    '''
+    When the unify option is active, we just make one directory
+    '''
+    if self.unifiedDir is not None:
+      return self.unifiedDir # already have it
     now = time.localtime()
     yearStr = time.strftime("%Y", now)
     yearPath = os.path.join(ArchDir, yearStr)
@@ -99,13 +112,14 @@ class StorageHierarchy(object):
     dateStr = time.strftime("%Y_%m_%d", now)
     if self.opt.jobname is not None:
       dateStr = "{}_{}".format(dateStr, self.opt.jobname)
-    unifiedDir = os.path.join(monthPath, dateStr)
+    unifiedName = os.path.join(monthPath, dateStr)
     archivePath = archivePath+os.path.sep+dateStr
-    self.safe_mkdir(unifiedDir, archivePath, Prefix='    ')
-    if not (os.path.isdir(unifiedDir) or self.opt.testing):
-      print("path error: {} is not a directory!".format(unifiedDir))
+    self.safe_mkdir(unifiedName, archivePath, Prefix='    ')
+    if not (os.path.isdir(unifiedName) or self.opt.testing):
+      print("path error: {} is not a directory!".format(unifiedName))
       return None
-    return unifiedDir
+    self.unifiedDir = unifiedName
+    return self.unifiedDir
 
   def dest_dir_name(self, SrcFile, ArchDir, ReportName=""):
     """
@@ -116,6 +130,9 @@ class StorageHierarchy(object):
       return self.unified_dir_name(ArchDir, ReportName)
     try:
       s = os.stat(SrcFile)
+    except FileNotFoundError:
+      print('dest_dir_name("{}") not found'.format(SrcFile))
+      return None
     except:
       print('Stat failure: "{}"'.format(sys.exc_info()[0]))
       return None
@@ -133,8 +150,12 @@ if __name__ == '__main__':
   print("testing time")
   opt = AppOptions()
   opt.testing = True
+  #opt.unify = True
   opt.set_jobname('StorageTest')
-  s = StorageHierarchy(opt)
+  s = Store(opt)
   s.safe_mkdir('here/would_be_a/testing_dir')
-  print(s.dest_dir_name('../kbImport3.py', '/home/kevinbjorke'))
+  s.safe_mkdir('/home/kevinbjorke/pix/kbImport/Pix')
+  d = (s.dest_dir_name('../kbImport3.py', '/home/kevinbjorke/pix/kbImport/Pix'))
+  print("for '{}':".format(d))
+  s.safe_mkdir(d)
   s.print_report()

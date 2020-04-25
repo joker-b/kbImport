@@ -6,7 +6,7 @@ import re
 import time
 import shutil
 from AppOptions import AppOptions
-import StorageHierarchy
+import Store
 import Drives
 from ImgInfo import ImgInfo
 from DNGConverter import DNGConverter
@@ -89,7 +89,7 @@ class Volumes(object):
     self.startTime = time.process_time() if sys.version_info > (3, 3)  else time.clock()
     self.opt = Options
     self.drives = Drives.Drives(Options)
-    self.storage = StorageHierarchy.StorageHierarchy(Options)
+    self.storage = Store.Store(Options)
     self.dng = DNGConverter(Options)
     ImgInfo.set_options(Options)
     ImgInfo.set_dng_converter(self.dng)
@@ -144,7 +144,8 @@ class Volumes(object):
     if not self.media_are_ready():
       print("No '{}' media found, please connect it to this {} computer".format(
           self.opt.jobname, self.drives.host))
-      sys.exit()
+      if not self.opt.testing:
+        sys.exit()
     self.announce()
     self.archive_images_and_video()
     self.archive_audio()
@@ -156,10 +157,10 @@ class Volumes(object):
       if self.opt.verbose:
         print('No archive drive found')
       return False
-    #if not self.drives.verify_archive_locations():
-    #  if self.opt.verbose:
-    #    print('Archive drive failed verification')
-    #  return False
+    if not self.drives.verify_archive_locations(self.storage):
+      if self.opt.verbose:
+        print('Archive drive failed verification')
+      return False
     self.find_src_image_media()
     if len(self.srcMedia) == 0:
       if self.opt.verbose:
@@ -254,11 +255,16 @@ class Volumes(object):
           if trackDir:
             print("{} -> {}".format(kid, trackDir))
             # INSERT CODE FOR RENAMING HERE
-            s = os.stat(fullpath)
-            self.nBytes += s.st_size
-            self.nFiles += 1
-            if not self.opt.testing:
-              shutil.copy2(fullpath, trackDir)
+            try:
+              s = os.stat(fullpath)
+            except FileNotFoundError:
+              print('archive_audio_tracks({}) not found'.format(fullpath))
+              s = None
+            if s:
+              self.nBytes += s.st_size
+              self.nFiles += 1
+              if not self.opt.testing:
+                shutil.copy2(fullpath, trackDir)
           else:
             print("Unable to archive audio to {}".format(ArchDir))
         else:
@@ -312,7 +318,7 @@ class Volumes(object):
         root = m.groups(0)[0]
         for suf in ['M4V', 'MOV', 'MP4', '3GP']:
           vidName = "{}.{}".format(root, suf) # renaming not allowed here
-          if files.__cifontains__(vidName):
+          if files.__contains__(vidName):
             isSimpleVideo = True # send the thumbnail to the video directory too
     if isAVCHD:
       destinationPath = self.avchd.destination_path(FullPath, self.drives.vidDestDir)
@@ -400,4 +406,8 @@ if __name__ == '__main__':
   opt.verbose = True
   opt.set_jobname('VolumesTest')
   v = Volumes(opt)
+  fn = "thing.jpg"
+  fd = "/home/kevinbjorke/pix"
+  fp = os.path.join(fd, fn)
+  v.build_image_data(fn, fd, fp, [fn])
   v.archive()

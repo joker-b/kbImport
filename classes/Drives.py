@@ -207,10 +207,10 @@ class Drives(object):
     print("  " + "\n  ".join(self.LocalArchiveList))
     return False
 
-  def verify_archive_locations(self):
-    "double-check existence of the archive directories"
+  def verify_archive_locations(self, store):
+    "double-check existence of the archive sub_directories"
     for d in [self.pixDestDir, self.vidDestDir, self.audioDestDir]:
-      if not os.path.exists(d):
+      if store.safe_mkdir(d) is None:
         print("Error, cannot verify archive {}".format(d))
         return False
     return True
@@ -224,4 +224,4 @@ if __name__ == '__main__':
   d.show_drives()
   b = d.found_archive_drive()
   print("Archive found? {}: '{}''".format(b, d.archiveDrive))
-  b = d.verify_archive_locations()
+  # b = d.verify_archive_locations()

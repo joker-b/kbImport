@@ -52,7 +52,7 @@
 Class Hierarchy:
 Volumes()
   Drives()
-  StorageHierarchy()
+  Store()
   ImgInfo()[]
     DNGConverter() # oops
 """

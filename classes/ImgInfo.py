@@ -45,7 +45,7 @@ class ImgInfo(object):
       ImgInfo.set_dng_converter()
     self.nBytes = long(0)
 
-  def doppelganger(self):
+  def has_doppelganger(self):
     "figure out if there is a copy of this file in a neighboring archive"
     name = ImgInfo.doppelFiles.get(self.srcName)
     if name:
@@ -54,6 +54,8 @@ class ImgInfo(object):
     dayStr = dayFolder[:10]
     if self.opt.unify:
       print("doppelhunting in {}".format(monthPath))
+    if not os.path.exists(monthPath):
+        return False
     for d in os.listdir(monthPath):
       name = ImgInfo.doppelPaths.get(d)
       if name:
@@ -80,18 +82,18 @@ class ImgInfo(object):
       if ImgInfo.opt.testing:
         dp = ImgInfo.testLog.get(self.destPath)
         if not dp:
-          print("Need to create dir {} **".format(self.destPath))
+          print("Need to dest_mkdir({}) **".format(self.destPath))
           ImgInfo.testLog[self.destPath] = 1
       else:
-        print("** Creating dir {} **".format(self.destPath))
         os.mkdir(self.destPath)
         if not os.path.exists(self.destPath):
-          print('mkdir "{}" failed')
+          print('dest_mkdir("{}") failed')
           return None
+        print("** dest_mkdir({}) succeeded **".format(self.destPath))
         ImgInfo.createdDirs.append(Prefix+os.path.split(self.destPath)[1])
         return self.destPath
     elif not os.path.isdir(self.destPath):
-      print("Path error: {} is not a directory!".format(self.destPath))
+      print("dest_mkdir() error: {} exists but not a directory!".format(self.destPath))
       return None
     return self.destPath
 
@@ -101,8 +103,8 @@ class ImgInfo(object):
     FullDestPath = os.path.join(self.destPath, self.destName)
     protected = False
     opDescription = ''
-    if os.path.exists(FullDestPath) or self.doppelganger():
-      if ArciveImg.opt.force_copies:
+    if os.path.exists(FullDestPath) or self.has_doppelganger():
+      if ImgInfo.opt.force_copies:
         if ImgInfo.opt.verbose:
           opDescription += ("Overwriting {}\n".format(FullDestPath))
         self.incr(self.srcPath)
@@ -128,8 +130,11 @@ class ImgInfo(object):
   def incr(self, FullSrcPath):
     try:
       s = os.stat(FullSrcPath)
+    except FileNotFoundError:
+      print("incr('{}') no file".format(FullSrcPath))
+      return False
     except:
-      print("incr() cannot stat source '{}'".format(FullSrcPath))
+      print("incr('{}') cannot stat source".format(FullSrcPath))
       print("Err {}".format(sys.exc_info()[0]))
       return False
     self.nBytes += s.st_size
@@ -159,5 +164,10 @@ class ImgInfo(object):
 
 if __name__ == '__main__':
   print("testing time")
-  ai = ImgInfo('test.jpg', '.')
-  ai.dng_check()
+  opt = AppOptions()
+  opt.testing = True
+  opt.set_jobname('InfoTest')
+  ImgInfo.set_options(opt)
+  ai = ImgInfo('test.jpg', '/home/kevinbjorke/pix')
+  ai.dng_check(ImgInfo.opt.use_dng)
+  ai.archive()
