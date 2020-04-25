@@ -15,7 +15,7 @@ class Drives(object):
   PrimaryArchiveList = []
   LocalArchiveList = []
   ForbiddenSources = []
-  RemovableMedia = []
+  PossibleSources = []
   # in GB - hack to not scan hard drives as source media
   largestSource = 130 * 1024*1024*1024
 
@@ -48,7 +48,7 @@ class Drives(object):
     print('Primary: ', self.PrimaryArchiveList)
     print('Local: ', self.LocalArchiveList)
     print('Forbidden: ', self.ForbiddenSources)
-    print('Removable: ', self.RemovableMedia)
+    print('Removable: ', self.PossibleSources)
 
   def init_drives_linux(self):
     """
@@ -69,16 +69,16 @@ class Drives(object):
     self.LocalArchiveList = [os.path.join(os.environ['HOME'], 'pix', 'kbImport')]
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
     self.ForbiddenSources.append("Storage")
-    self.RemovableMedia = self.available_source_vols(
+    self.PossibleSources = self.available_source_vols(
         [os.path.join(mk, a) for a in os.listdir(mk) if not knownDrives.__contains__(a) and (len(a) <= 8)]) if \
             os.path.exists(mk) else []
     if self.opt.rename:
+      # look for some known locations of unformatted backups
       wdBkp = os.path.join(mk,'KBWIFI','SD Card Imports/')
-
-      self.RemovableMedia = glob.glob(wdBkp+'*/*/*')
-      print(self.RemovableMedia)
-      self.RemovableMedia = self.RemovableMedia + [os.path.join(mk,'evo256','pix'),
-                            "/home/kevinbjorke/pix/SD"] + self.RemovableMedia
+      bkpDirs = glob.glob(wdBkp+'*/*/*')
+      bkpDirs.append(os.path.join(mk,'evo256','pix'))
+      bkpDirs.append("/home/kevinbjorke/pix/SD")
+      self.PossibleSources = bkpDirs + self.PossibleSources
     else:
       self.ForbiddenSources.append(os.path.join("Storage", "SD Card Imports"))
     # self.show_drives()
@@ -101,7 +101,7 @@ class Drives(object):
                               'Recovery',
                               'My Passport for Mac']]
     self.ForbiddenSources = self.ForbiddenSources + self.PrimaryArchiveList + self.LocalArchiveList
-    self.RemovableMedia = self.available_source_vols(
+    self.PossibleSources = self.available_source_vols(
         [os.path.join('/Volumes', a) for a in os.listdir('/Volumes')])
     self.seekWDBackups()
 
@@ -113,9 +113,9 @@ class Drives(object):
     self.PrimaryArchiveList = [r'I:\kbImport'] # , 'F:', 'R:']
     self.LocalArchiveList = [r'I:\kbImport']
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
-    self.RemovableMedia = self.available_source_vols(['G:']) # , 'J:', 'I:', 'H:', 'K:','G:'])
+    self.PossibleSources = self.available_source_vols(['G:']) # , 'J:', 'I:', 'H:', 'K:','G:'])
     #if self.opt.win32:
-    #  self.RemovableMedia = [d for d in self.RemovableMedia \
+    #  self.PossibleSources = [d for d in self.PossibleSources \
     #         if win32file.GetDriveType(d)==win32file.DRIVE_REMOVABLE]
 
   def available_source_vols(self, Vols=[]):
@@ -123,7 +123,7 @@ class Drives(object):
 
   def seekWDBackups(self):
     backupLocations = []
-    for srcDevice in self.RemovableMedia:
+    for srcDevice in self.PossibleSources:
       wdBackup = os.path.join(srcDevice, "SD Card Imports")
       if not os.path.exists(wdBackup):
         continue
@@ -139,7 +139,7 @@ class Drives(object):
                   backupLocations.append(cardDir)
     if len(backupLocations) < 1:
       return
-    self.RemovableMedia = backupLocations + self.RemovableMedia
+    self.PossibleSources = backupLocations + self.PossibleSources
 
   def pretty(self, Path):
     if not self.opt.win32:
@@ -174,10 +174,10 @@ class Drives(object):
 
   def assign_removable(self, SourceName):
     if self.host == 'windows':
-      self.RemovableMedia = ['{}:'.format(SourceName)]
-      self.RemovableMedia[0] = re.sub('::', ':', self.RemovableMedia[0])
+      self.PossibleSources = ['{}:'.format(SourceName)]
+      self.PossibleSources[0] = re.sub('::', ':', self.PossibleSources[0])
     else:
-      self.RemovableMedia = [SourceName]
+      self.PossibleSources = [SourceName]
 
   def found_archive_drive(self):
     "find an archive destination"

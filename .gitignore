@@ -1,4 +1,6 @@
 *.py[cod]
+# misc sketches etc
+scratch
 
 # C extensions
 *.so

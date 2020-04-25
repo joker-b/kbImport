@@ -61,11 +61,14 @@ Some Performance Numbers
 
 Testing with about a dozen `JPG`/`RAF` pairs:
 
+_25 April 2020: Discovered that performance numbers from kbImport are wrong - they should be *higher.* They'd been accidentally scaled not by elapsed time `(bytes/time)` but instead by `(bytes/(time*time))` -- new numbers forthcoming._
+
 * On Chromebook Galaxy Letscom external:
 ** to SSD: about 9.2-16 Mb/sec (reported internally: 75 Mb/sec)
 ** to WD Spinning drive: 0.8171636728119824 Mb.sec (reported internally: 63 Mb/sec on 95 Fuji J/R pairs)
 ** to internal: 1.0680323526102329 Mb.sec (reported internally: 73 Mb/sec on 95 Fuji J/R pairs, but... wall time 220s means more like 22 MB/s)
 ** rename more on spinning WD: 118 MB/sec
+
 * Drag in GCB Files card->SSD: \~68 Mb/sec
 * On MBA internal to SSD: about 576 Mb/sec
 * Drag in MBA finder card->SSD: \~6.5 Mb/sec!
