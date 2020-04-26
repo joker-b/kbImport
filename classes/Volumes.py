@@ -1,77 +1,23 @@
 #! /usr/bin/python3
+"""
+Where the main coordination happens
+"""
 
 import os
 import sys
 import re
-import time
 import shutil
 from AppOptions import AppOptions
 import Store
 import Drives
 from ImgInfo import ImgInfo
 from DNGConverter import DNGConverter
+from Avchd import Avchd
+from Video import Video
+from PerfMon import PerfMon
 
 if sys.version_info > (3,):
   long = int
-
-class Avchd(object):
-  regexAvchd = re.compile('AVCHD')
-  regexAvchdFiles = re.compile(r'\.(MTS|CPI|TDT|TID|MPL|BDM)')
-  def __init__(self, Storage):
-    self.storage = Storage
-    self.AVCHDTargets = {"MTS": os.path.join("AVCHD", "BDMV", "STREAM"),
-                         "CPI": os.path.join("AVCHD", "BDMV", "CLIPINF"),
-                         "MPL": os.path.join("AVCHD", "BDMV", "PLAYLIST"),
-                         "BDM": os.path.join("AVCHD", "BDMV"),
-                         "TDT": os.path.join("AVCHD", "ACVHDTN"),
-                         "TID": os.path.join("AVCHD", "ACVHDTN")}
-    self.AVCHDTargets["JPG"] = os.path.join("AVCHD", "CANONTHM")
-    self.type = 'JPG'
-
-  @classmethod
-  def valid_source_dir(cls, Filename):
-    if cls.regexAvchd.search(Filename):
-      return True
-    return False
-
-  @classmethod
-  def filetype_search(cls, Filename):
-    return cls.regexAvchdFiles.search(Filename)
-
-  def dest_dir_name(self, SrcFile, ArchDir):
-    """
-    AVCHD has a complex format, let's keep it intact so clips can be archived to blu-ray etc.
-    We will say that the dated directory is equivalent to the "PRIVATE" directory in the spec.
-    We don't handle the DCIM and MISC sub-dirs.
-    """
-    privateDir = self.storage.dest_dir_name(SrcFile, ArchDir)
-    if privateDir is None:
-      print("avchd error")
-      return privateDir
-    adir = self.storage.safe_mkdir(os.path.join(privateDir, "AVCHD"), "AVCHD")
-    for s in ["AVCHDTN", "CANONTHM"]:
-      self.storage.safe_mkdir(os.path.join(adir, s), "AVCHD"+os.path.sep+s)
-    bdmvDir = self.storage.safe_mkdir(os.path.join(adir, "BDMV"), "BDMV")
-    for s in ["STREAM", "CLIPINF", "PLAYLIST", "BACKUP"]:
-      self.storage.safe_mkdir(os.path.join(bdmvDir, s), "BDMV"+os.path.sep+s)
-    return privateDir
-
-  def destination_path(self, fullKidPath, VidArchDir):
-    path = self.dest_dir_name(fullKidPath, VidArchDir)
-    if path is None:
-      return None
-    return os.path.join(path, self.AVCHDTargets[self.type])
-
-#######################
-
-class Video(object):
-  regexVidFiles = re.compile(r'\.(M4V|MP4|MOV|3GP)')
-  def __init__(self):
-    pass
-  @classmethod
-  def has_filetype(cls, Filename):
-    return cls.regexVidFiles.search(Filename) is not None
-
 
 ##############################
 
@@ -84,9 +30,8 @@ class Volumes(object):
   def is_dot_file(cls, Filename):
     return cls.regexDotFiles.match(Filename)
 
-
   def __init__(self, Options=AppOptions()):
-    self.startTime = time.process_time() if sys.version_info > (3, 3)  else time.clock()
+    self.perfmon = PerfMon()
     self.opt = Options
     self.drives = Drives.Drives(Options)
     self.storage = Store.Store(Options)
@@ -110,33 +55,6 @@ class Volumes(object):
     "set state according to options object"
     if self.opt.source is not None:
       self.drives.assign_removable(self.opt.source)
-
-  def seek_named_dir(self, ParentDir, FindDir, Level=0, MaxLevels=6):
-    """
-    Recursively look in 'ParentDir' for a directory of the 'FindDir'.
-    Return full path or None.
-    Don't dig more than MaxLevels deep.
-    """
-    if Level >= MaxLevels or not os.path.exists(ParentDir):
-      return None
-    try:
-      allSubs = os.listdir(ParentDir)
-    except FileNotFoundError:
-      print('No such path: {}'.format(ParentDir))
-      return None
-    except:
-      print("seek_named_dir(): {}".format(sys.exc_info()[0]))
-      return None
-    for subdir in allSubs:
-      if subdir == FindDir:
-        return os.path.join(ParentDir, subdir)
-    for subdir in allSubs:
-      fullpath = os.path.join(ParentDir, subdir)
-      if os.path.isdir(fullpath):
-        sr = self.seek_named_dir(fullpath, FindDir, Level+1, MaxLevels) # recurse
-        if sr is not None:
-          return sr
-    return None
 
   def archive(self):
     "Main dealio right here"
@@ -172,25 +90,61 @@ class Volumes(object):
   # Find Source Material
   #
 
+  def seek_named_source_dir(self, ParentDir, FindDir, Level=0, MaxLevels=6):
+    """
+    Recursively look in 'ParentDir' for a directory of the 'FindDir'.
+    Return full path or None.
+    Don't dig more than MaxLevels deep.
+       ONLY called by find_src_image_media()
+    """
+    if Level >= MaxLevels or not os.path.exists(ParentDir):
+      return None
+    try:
+      allSubs = os.listdir(ParentDir)
+    except FileNotFoundError:
+      print('No such path: {}'.format(ParentDir))
+      return None
+    except:
+      print("seek_named_source_dir(): {}".format(sys.exc_info()[0]))
+      return None
+    for subdir in allSubs:
+      if subdir == FindDir:
+        return os.path.join(ParentDir, subdir)
+    for subdir in allSubs:
+      fullpath = os.path.join(ParentDir, subdir)
+      if os.path.isdir(fullpath):
+        sr = self.seek_named_source_dir(fullpath, FindDir, Level+1, MaxLevels) # recurse
+        if sr is not None:
+          return sr
+    return None
+
   def find_src_image_media(self):
+    "TODO(kevin): this might go into the Drives class"
     self.srcMedia = []
-    if len(self.drives.RemovableMedia) < 1:
+    if len(self.drives.PossibleSources) < 1:
       print("Yikes, no source media")
       return
-    for srcDevice in self.drives.RemovableMedia:
+    archiveDeviceID = os.stat(self.drives.archiveDrive).st_dev
+    for srcDevice in self.drives.PossibleSources:
       if self.opt.verbose:
         print("  Checking {} for source media".format(self.drives.pretty(srcDevice)))
       if ((self.drives.archiveDrive == srcDevice) or
           (not os.path.exists(srcDevice)) or
           os.path.islink(srcDevice)):
         continue
-      avDir = self.seek_named_dir(srcDevice, "DCIM", 0, 2)
+      if self.opt.rename:
+        if archiveDeviceID != os.stat(srcDevice).st_dev:
+          if self.opt.verbose:
+            print("Can't rename across devices\n\tfrom {}\n\tto   {}".format(
+                srcDevice, self.drives.archiveDrive))
+          continue
+      avDir = self.seek_named_source_dir(srcDevice, "DCIM", 0, 2)
       if avDir is not None:
         self.imgDirs.append(avDir)
       # we may have images AND video on this device
-      avDir = self.seek_named_dir(srcDevice, "PRIVATE")
+      avDir = self.seek_named_source_dir(srcDevice, "PRIVATE")
       if avDir is None:
-        avDir = self.seek_named_dir(srcDevice, "AVCHD")
+        avDir = self.seek_named_source_dir(srcDevice, "AVCHD")
       if avDir is not None:
         self.imgDirs.append(avDir)
       if len(self.imgDirs) > 0:
@@ -225,6 +179,7 @@ class Volumes(object):
     'TODO fix this method'
     # print("Archiving Audio from '{}'\n\tto '{}'".format(self.srcMedia, self.audioDestDir))
     # self.archive_audio_tracks(srcMedia,audioDestDir) ## HACKKKK
+
   def archive_audio_tracks(self, FromDir, ArchDir):
     "Archive audio tracks"
     # first validate our inputs
@@ -253,7 +208,7 @@ class Volumes(object):
           # print("{}...".format(kid))
           trackDir = self.storage.dest_dir_name(fullpath, ArchDir)
           if trackDir:
-            print("{} -> {}".format(kid, trackDir))
+            print("Track {} -> {}".format(kid, trackDir))
             # INSERT CODE FOR RENAMING HERE
             try:
               s = os.stat(fullpath)
@@ -334,15 +289,14 @@ class Volumes(object):
       info.destPath = destinationPath
       self.images.append(info)
       return 1
-    else:
-      print("Unable to archive media to {}".format(destinationPath))
-      return 0
+    print("Unable to archive media to {}".format(destinationPath))
+    return 0
 
   def seek_files_in(self, FromDir):
     "Archive images and video - recursively if needed"
     # first make sure all inputs are valid
     if not self.verify_image_archive_dir(FromDir, self.drives.pixDestDir, self.drives.vidDestDir):
-      print("Cannot verify image archive directory")
+      print("Cannot verify pix/vid archive directory")
       return
     # now we can proceed
     localItemCount = 0
@@ -375,21 +329,28 @@ class Volumes(object):
   def archive_found_image_data(self):
     if self.opt.testing:
       print("{} files found in testing, none moved".format(len(self.images)))
-    else:
-      for pic in self.images:
-        if pic.archive():
-          self.nFiles += 1
-          self.nBytes += pic.nBytes
-        else:
-          self.nSkipped += 1
+      return
+    for pic in self.images:
+      if pic.archive():
+        self.nFiles += 1
+        self.nBytes += pic.nBytes
+      else:
+        self.nSkipped += 1
 
   #
   # reporting
   #
   def announce(self):
-    print('SOURCE MEDIA:      {}'.format('\n\t'.join(
-        [self.drives.pretty(d) for d in self.srcMedia])))
-    print('DESTINATION DRIVE: {}'.format(self.drives.pretty(self.drives.archiveDrive)))
+    if self.opt.rename:
+      if len(self.srcMedia) > 0:
+        print('SOURCE MEDIA:  {}'.format('\n\t'.join(
+            [self.drives.pretty(d) for d in self.srcMedia])))
+      print('RENAMING INTO: {}'.format(self.drives.pretty(self.drives.archiveDrive)))
+    else:
+      if len(self.srcMedia) > 0:
+        print('SOURCE MEDIA:      {}'.format('\n\t'.join(
+            [self.drives.pretty(d) for d in self.srcMedia])))
+      print('DESTINATION DRIVE: {}'.format(self.drives.pretty(self.drives.archiveDrive)))
     print('JOB NAME: "{}"'.format(self.opt.jobname))
 
   def report(self):
@@ -401,25 +362,20 @@ class Volumes(object):
     if self.nSkipped:
       print("Skipped {} files".format(self.nSkipped))
       print("  with {} doppelgangs".format(len(ImgInfo.doppelFiles)))
-    endTime = time.process_time() if sys.version_info > (3, 3)  else time.clock()
-    elapsed = endTime-self.startTime
-    if elapsed > 100:
-      print("{} minutes".format(elapsed/60))
-    else:
-      print("{} seconds".format(elapsed))
+    self.perfmon.halt()
+    self.perfmon.report_elapsed()
     if self.nBytes > long(0):
-      throughput = self.nBytes/elapsed
-      throughput /= (1024*1024)
-      print("Estimated performance: {} Mb/sec".format(throughput/elapsed))
+      self.perfmon.report_throughput(self.nBytes)
       if self.nConversions > 0:
         print("Including {} DNG conversions".format(self.nConversions))
+    ImgInfo.final_cleanup()
 
 if __name__ == '__main__':
   print("Volumes testing time")
   opt = AppOptions()
   opt.testing = True
-  opt.verbose = True
-  opt.rename = True
+  # opt.verbose = True
+  # opt.rename = True
   opt.set_jobname('VolumesTest')
   v = Volumes(opt)
   #fn = "thing.jpg"

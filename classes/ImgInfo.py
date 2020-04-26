@@ -18,6 +18,7 @@ class ImgInfo(object):
   doppelFiles = {}
   doppelPaths = {}
   createdDirs = []
+  failedCopies = []
   testLog = {}
   regexDotAvchd = re.compile('(.*).AVCHD')
   regexPic = re.compile(r'([A-Z_][A-Z_][A-Z_][A-Z_]\d\d\d\d)\.(JPG|RAF|RW2|RAW|DNG)')
@@ -149,11 +150,16 @@ class ImgInfo(object):
       return True # always "work"
     try:
       shutil.copyfile(self.srcPath, DestPath)
+    except OSErr:
+      print("OSErr, bad copy for {}".format(p, self.srcPath, DestPath))
+      ImgInfo.failedCopies.append(DestPath)
+      return False
     except:
       p = sys.exc_info()[0]
       print("Failed to copy: '{}'!!\n\t{}\n\t{}".format(p, self.srcPath, DestPath))
       print("   Details: errno {} on\n\t'{}'' and\n\t'{}'".format(p.errno, p.filename, p.filename2))
       print("   Detail2: {} chars, '{}'".format(p.characters_written, p.strerror))
+      ImgInfo.failedCopies.append(DestPath)
       return False
     return True
 
@@ -180,6 +186,21 @@ class ImgInfo(object):
         self.has_dng = True
         # renaming allowed here
         self.destName = "{}.DNG".format(self.opt.add_prefix(m.groups(0)[0]))
+
+  @classmethod
+  def final_cleanup(cls):
+    if len(cls.failedCopies) < 1:
+      return
+    print("FAILED COPIES: {}".format(len(cls.failedCopies)))
+    foundCruft = False
+    for file in cls.failedCopies:
+      if os.path.exists(file):
+        if not foundCruft:
+          print("RECOMMENDED ACTION:")
+          foundCruft = True
+        print("rm {}".format(file))
+    if foundCruft:
+      print("running kbImport again may catch the missing files after cleanup")
 
 if __name__ == '__main__':
   print("testing time")

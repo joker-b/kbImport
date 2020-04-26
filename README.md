@@ -56,26 +56,41 @@ you have archived video from two different cameras using different standards int
 data formatting is somewhat... brittle, if you have multiple AVCHD cameras shooting on the same day, archive them
 using slightly different JobNames, e.g. "WeddingCam1" and "WeddingCam2".
 
+Copying vs Renaming
+---
+
+As of April 2020 kbImport can also rename and arrange "simple backup" files in disk: e.g., if you have just copied am SD card DCIM to a local drive, kbImport can find those files, relabel and rearrange them _on the same disk._ This requires no real copying and is just very fast. Use the `-r` option for relabelling.
+
+As you'll see below, raw copying followed by relabelling can be the fastest option for some devices.
+
 Some Performance Numbers
 ---
 
 Testing with about a dozen `JPG`/`RAF` pairs:
 
-* On Chromebook Galaxy Letscom external:
-** to SSD: about 9.2-16 Mb/sec (reported internally: 75 Mb/sec)
-** to WD Spinning drive: 0.8171636728119824 Mb.sec (reported internally: 63 Mb/sec on 95 Fuji J/R pairs)
-** to internal: 1.0680323526102329 Mb.sec (reported internally: 73 Mb/sec on 95 Fuji J/R pairs, but... wall time 220s means more like 22 MB/s)
-** rename more on spinning WD: 118 MB/sec
-* Drag in GCB Files card->SSD: \~68 Mb/sec
-* On MBA internal to SSD: about 576 Mb/sec
-* Drag in MBA finder card->SSD: \~6.5 Mb/sec!
-* `cp -r` on MBA card->SSD: \~380 Mb/sec
-* `cp -r` on GCB card->SSD: \~125 Mb/sec
-* Windows desktop: \~160 Mb/sec
-* On MacPro Satechi external reader to SSD: about 410 Mb/sec
-* On MacPro Letscom external reader to SSD: about 444 Mb/sec
+_25 April 2020: Discovered that performance numbers from kbImport are wrong - they should be *higher.* They'd been accidentally scaled not by elapsed time `(bytes/time)` but instead by `(bytes/(time*time))` -- new numbers forthcoming._
 
-drobolize
+* On Chromebook Galaxy Letscom external: *Revised* based on 11,63GB in 423 files
+** To External SSD: 26.5 minutes, 7.471 Mb/s
+** To microSD evo256 : 26.7 minutes  7.403 Mb/sec with one error from SD reader - second run fixed in about 5 seconds
+** Drag to microSD of the same folder: about 8mins, or 24.8 MB/sec + renaming 36sec = about 24MB/sec
+** WD auto-backup: about 5 minutes, or about 40MB/s + renaming pass 28sec ("486MB/sec") or in total about 36MB/s
+** `cp -r` to internal drive: 5.5min or about 36MB/s before renaming - flaky SSD reader? one error
+
+* Old meaasures:
+
+* Macbook Air with integrated SD reader
+** On MBA internal to SSD: about 576 Mb/sec
+** Drag in MBA finder card->SSD: \~6.5 Mb/sec!
+** `cp -r` on MBA card->SSD: \~380 Mb/sec
+* Windows 10 desktop (older):
+** Windows desktop: \~160 Mb/sec
+** On MacPro Satechi external reader to SSD: about 410 Mb/sec
+** On MacPro Letscom external reader to SSD: about 444 Mb/sec
+* Additional GCB:
+** `cp -r` on GCB card->SSD: \~125 Mb/sec
+
+drobolize - deprecated for 2020
 ---------
 
 Because kbImport is meant to be useful even on small laptops when travelling (I often have used it on an Asus EE-PC with an
