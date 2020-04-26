@@ -77,7 +77,7 @@ class Drives(object):
       wdBkp = os.path.join(mk,'KBWIFI','SD Card Imports/')
       bkpDirs = glob.glob(wdBkp+'*/*/*')
       bkpDirs.append(os.path.join(mk,'evo256','pix'))
-      bkpDirs.append("/home/kevinbjorke/pix/SD")
+      bkpDirs.append("/home/kevinbjorke/pix/Drag_SD_Data_Here")
       self.PossibleSources = bkpDirs + self.PossibleSources
     else:
       self.ForbiddenSources.append(os.path.join("Storage", "SD Card Imports"))
@@ -187,6 +187,8 @@ class Drives(object):
 
   def found_primary_archive_drive(self):
     "find prefered destination"
+    if self.opt.verbose:
+      print("Primary Candidates:\n\t{}".format('\n\t'.join(self.PrimaryArchiveList)))
     for arch in self.PrimaryArchiveList:
       if os.path.exists(arch):
         self.archiveDrive = arch
@@ -196,6 +198,8 @@ class Drives(object):
         self.vidDestDir = os.path.join(arch, "Vid")
         self.audioDestDir = os.path.join(arch, "Audio")
         return True
+      elif self.opt.verbose:
+        print("Primary candidate {} not present".format(arch))
     if self.opt.verbose:
       print("Primary archive disk unavailable, from these {} options:".format(
           len(self.PrimaryArchiveList)))

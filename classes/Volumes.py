@@ -1,4 +1,7 @@
 #! /usr/bin/python3
+"""
+Where the main coordination happens
+"""
 
 import os
 import sys
@@ -132,7 +135,8 @@ class Volumes(object):
       if self.opt.rename:
         if archiveDeviceID != os.stat(srcDevice).st_dev:
           if self.opt.verbose:
-            print("Can't rename across devices\n\tfrom {}\n\tto   {}".format(srcDevice, self.drives.archiveDrive))
+            print("Can't rename across devices\n\tfrom {}\n\tto   {}".format(
+                srcDevice, self.drives.archiveDrive))
           continue
       avDir = self.seek_named_source_dir(srcDevice, "DCIM", 0, 2)
       if avDir is not None:
@@ -175,6 +179,7 @@ class Volumes(object):
     'TODO fix this method'
     # print("Archiving Audio from '{}'\n\tto '{}'".format(self.srcMedia, self.audioDestDir))
     # self.archive_audio_tracks(srcMedia,audioDestDir) ## HACKKKK
+
   def archive_audio_tracks(self, FromDir, ArchDir):
     "Archive audio tracks"
     # first validate our inputs
@@ -284,9 +289,8 @@ class Volumes(object):
       info.destPath = destinationPath
       self.images.append(info)
       return 1
-    else:
-      print("Unable to archive media to {}".format(destinationPath))
-      return 0
+    print("Unable to archive media to {}".format(destinationPath))
+    return 0
 
   def seek_files_in(self, FromDir):
     "Archive images and video - recursively if needed"
@@ -340,12 +344,12 @@ class Volumes(object):
     if self.opt.rename:
       if len(self.srcMedia) > 0:
         print('SOURCE MEDIA:  {}'.format('\n\t'.join(
-          [self.drives.pretty(d) for d in self.srcMedia])))
+            [self.drives.pretty(d) for d in self.srcMedia])))
       print('RENAMING INTO: {}'.format(self.drives.pretty(self.drives.archiveDrive)))
     else:
       if len(self.srcMedia) > 0:
         print('SOURCE MEDIA:      {}'.format('\n\t'.join(
-          [self.drives.pretty(d) for d in self.srcMedia])))
+            [self.drives.pretty(d) for d in self.srcMedia])))
       print('DESTINATION DRIVE: {}'.format(self.drives.pretty(self.drives.archiveDrive)))
     print('JOB NAME: "{}"'.format(self.opt.jobname))
 
@@ -364,6 +368,7 @@ class Volumes(object):
       self.perfmon.report_throughput(self.nBytes)
       if self.nConversions > 0:
         print("Including {} DNG conversions".format(self.nConversions))
+    ImgInfo.final_cleanup()
 
 if __name__ == '__main__':
   print("Volumes testing time")
