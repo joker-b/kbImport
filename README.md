@@ -78,6 +78,8 @@ _25 April 2020: Discovered that performance numbers from kbImport are wrong - th
 * `cp -r` to internal drive: 5.5min or about 36MB/s before renaming - flaky SSD reader? one error
 * *Macbook Air 2013* with integrated SD reader
 * To External SSD: 2.44 minutes, 81.394 Mb/s
+* *Win 10 desktop* with IOGear SD reader
+* To External SSD: 5.29 minutes, 37.547 Mb/s
 
 Older Performance Numbers
 ----
