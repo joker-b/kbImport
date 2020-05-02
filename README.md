@@ -66,37 +66,21 @@ As you'll see below, raw copying followed by relabelling can be the fastest opti
 Some Performance Numbers
 ---
 
-Testing with about a dozen `JPG`/`RAF` pairs:
+_Most measured with an 11.63GB collection comprised of 423 JPG and RAW files._
 
-_25 April 2020: Discovered that performance numbers from kbImport are wrong - they should be *higher.* They'd been accidentally scaled not by elapsed time `(bytes/time)` but instead by `(bytes/(time*time))` -- new numbers forthcoming._
-
-* On **Chromebook Galaxy** with *Letscom* external: *Revised* based on 11,63GB in 423 files
-* To External SSD: 26.5 minutes, 7.471 Mb/s
-* To microSD evo256 : 26.7 minutes  7.403 Mb/sec with one error from broken SD reader - second run fixed in about 5 seconds
-* Drag to microSD of the same folder: about 8mins, or 24.8 MB/sec + renaming 36sec = about 24MB/sec
-* `cp -r` to internal drive: 5.5min or about 36MB/s before renaming - flaky SSD reader one error
-* **WD Wireless Pro** auto-backup: about 5 minutes, or about 40MB/s + renaming pass 28sec ("486MB/sec") or in total about 36MB/s
 * **Macbook Air 2013** with integrated SD reader
 * To External SSD: 2.44 minutes, 81.394 Mb/s
 * **Win 10 desktop** with IOGear SD reader
 * To External SSD: 5.29 minutes, 37.547 Mb/s
 * **Macbook Pro 2018**
 * On Satechi external reader to SSD: 2:30, 79.29 Mb/sec
-
-Older Performance Numbers
-----
-
-* **Macbook Air** with integrated SD reader
-* On MBA internal to SSD: about 576 Mb/sec (questionable)
-* Drag in MBA finder card->SSD: \~6.5 Mb/sec!
-* `cp -r` on MBA card->SSD: \~380 Mb/sec
-* **Windows 10 desktop** (older):
-* Windows desktop: \~160 Mb/sec (questionable)
-* **Macbook Pro 2018**
-* On Satechi external reader to SSD: about 410 Mb/sec (questionable)
-* On Letscom external reader to SSD: about 444 Mb/sec (questionable)
-* Additional **Galaxy Chromebook**
-* `cp -r` on GCB card->SSD: \~125 Mb/sec
+* **Chromebook Galaxy** with *Letscom* external (reader faulty?):
+* To External SSD: 26.5 minutes, 7.471 Mb/s
+* To microSD evo256 : 26.7 minutes, 7.403 Mb/sec
+* Drag to microSD of the same folder: about 8mins, 24.8 MB/sec
+* as above, plus _kbImport_ renaming: 36sec = about 24MB/sec in total
+* `cp -r` to internal drive: 5.5min or about 36MB/s before renaming -- about the same as using the WD Wireless drive.
+* **WD Wireless Pro** auto-backup: about 5 minutes, or about 40MB/s + renaming pass 28sec ("486MB/sec") or in total about 36MB/s
 
 drobolize - deprecated for 2020
 ---------
