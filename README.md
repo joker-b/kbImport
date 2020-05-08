@@ -74,6 +74,8 @@ _Most measured with an 11.63GB collection comprised of 423 JPG and RAW files._
 * To External SSD: 5.29 minutes, 37.547 Mb/s
 * **Macbook Pro 2018**
 * On Satechi external reader to SSD: 2:30, 79.29 Mb/sec
+* **Raspberry Pi 4** with *UGreen* USB-3 external:
+* To external SSD: 2:35, 72.03 Mb/sec
 * **Chromebook Galaxy** with *Letscom* external (reader faulty?):
 * To External SSD: 26.5 minutes, 7.471 Mb/s
 * To microSD evo256 : 26.7 minutes, 7.403 Mb/sec
