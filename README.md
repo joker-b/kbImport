@@ -84,6 +84,23 @@ _Most measured with an 11.63GB collection comprised of 423 JPG and RAW files._
 * `cp -r` to internal drive: 5.5min or about 36MB/s before renaming -- about the same as using the WD Wireless drive.
 * **WD Wireless Pro** auto-backup: about 5 minutes, or about 40MB/s + renaming pass 28sec ("486MB/sec") or in total about 36MB/s
 
+Mounting Drives on the Pi
+----------
+
+```
+sudo lsblk -o UUID,NAME,FSTYPE,SIZE,MOUNTPOINT,LABEL,MODEL
+sudo mkdir /mnt/pix20s
+sudo mkdir /mnt/X100F
+sudo chmod 770 /mnt/pix20s/
+sudo chmod 770 /mnt/X100F/
+sudo mount /dev/sda1 /mnt/pix20s
+sudo mount /dev/sdb1 /mnt/X100F
+cd src/kbImport/
+python3 kbImport3.py -p bjorke -j PiTest
+sudo umount /dev/sda1
+sudo umount /dev/sdb1
+```
+
 drobolize - deprecated for 2020
 ---------
 
