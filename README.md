@@ -83,6 +83,8 @@ _Most measured with an 11.63GB collection comprised of 423 JPG and RAW files._
 * as above, plus _kbImport_ renaming: 36sec = about 24MB/sec in total
 * `cp -r` to internal drive: 5.5min or about 36MB/s before renaming -- about the same as using the WD Wireless drive.
 * **WD Wireless Pro** auto-backup: about 5 minutes, or about 40MB/s + renaming pass 28sec ("486MB/sec") or in total about 36MB/s
+* **Chromebook Pixel 2013** running Gallium:
+* To External SSD: 14.05 Mb/s using the internal card reader
 
 Mounting Drives on the Pi
 ----------
