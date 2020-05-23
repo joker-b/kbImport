@@ -84,12 +84,15 @@ class Drives(object):
     # self.show_drives()
 
   def init_drives_mac(self):
+    """
+    seek source and archive locations for mac
+    """
     self.host = 'mac'
     #self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
     Vols = os.path.sep+'Volumes'
     self.PrimaryArchiveList = [os.path.join(Vols, D) for D in
-                               ['pix20', 'pix18', 'pix15',
-                                os.path.join('pix20s', 'kbImport'),
+                               [os.path.join('pix20s', 'kbImport'),
+                               'pix20', 'pix18', 'pix15',
                                 'CameraWork', 'Liq', 'Pix17', 'BJORKEBYTES',
                                 'T3', 'Sept2013']]
     self.LocalArchiveList = [os.path.join(os.environ['HOME'], 'Pictures', 'kbImport')]
@@ -155,14 +158,14 @@ class Drives(object):
     printable = self.pretty(Path)
     if not os.path.exists(Path):
       if self.opt.verbose:
-        print("{} doesn't exist"%(printable))
+        print("{} doesn't exist".format(printable))
       return False
     if not os.path.isdir(Path):
       print('Error: Proposed source "{}" is not a directory'.format(printable))
       return False
     if Path in self.ForbiddenSources:
       if self.opt.verbose:
-        print("{} forbidden as a source"%(printable))
+        print("{} forbidden as a source".format(printable))
       return False
     s = os.path.getsize(Path) # TODO: this is not how you get volume size!
     if s > Drives.largestSource:
@@ -188,7 +191,7 @@ class Drives(object):
   def found_primary_archive_drive(self):
     "find prefered destination"
     if self.opt.verbose:
-      print("Primary Candidates:\n\t{}".format('\n\t'.join(self.PrimaryArchiveList)))
+      print("Primary Archive Candidates:\n\t{}".format('\n\t'.join(self.PrimaryArchiveList)))
     for arch in self.PrimaryArchiveList:
       if os.path.exists(arch):
         self.archiveDrive = arch
