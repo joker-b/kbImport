@@ -236,15 +236,15 @@ class Volumes(object):
 
   def verify_image_archive_dir(self, FromDir, PixArchDir, VidArchDir):
     if not os.path.exists(PixArchDir):
-      print("Hey, image archive '{}' is vapor!".format(PixArchDir))
+      print(" verify_image_archive_dir({}) image archive is vapor!".format(PixArchDir))
       if not self.opt.testing:
         return False
     if not os.path.isdir(PixArchDir):
-      print("Hey, image destination '{}' is not a directory!".format(PixArchDir))
+      print(" verify_image_archive_dir({}): not a directory".format(PixArchDir))
       if not self.opt.testing:
         return False
     if VidArchDir is not None and not os.path.exists(self.drives.vidDestDir):
-      print("Caution: Video archive '{}' is vapor, Ignoring it.".format(VidArchDir))
+      print("verify_image_archive_dir({}) Video archive is vapor, Ignoring".format(VidArchDir))
       VidArchDir = None # TODO(kevin): what?
     if not os.path.exists(FromDir):
       print("Hey, image source '{}' is vapor!".format(FromDir))
