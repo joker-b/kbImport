@@ -74,10 +74,10 @@ _Most measured with an 11.63GB collection comprised of 423 JPG and RAW files._
 * To External SSD: 5.29 minutes, 37.547 Mb/s
 * **Macbook Pro 2018**
 * On Satechi external reader to SSD: 2:30, 79.29 Mb/sec
-* **Chromebook Galaxy** with *Letscom* external (reader faulty?):
-* To External SSD: 26.5 minutes, 7.471 Mb/s
-* To microSD evo256 : 26.7 minutes, 7.403 Mb/sec
-* Drag to microSD of the same folder: about 8mins, 24.8 MB/sec
+* **Chromebook Galaxy**
+* To External SSD (old reader): 7.471 Mb/s
+* To microSD evo256 (new reader): 14.865 Mb/sec
+* Drag to microSD of the same folder (old reader): about 8mins, 24.8 MB/sec
 * as above, plus _kbImport_ renaming: 36sec = about 24MB/sec in total
 * `cp -r` to internal drive: 5.5min or about 36MB/s before renaming -- about the same as using the WD Wireless drive.
 * **WD Wireless Pro** auto-backup: about 5 minutes, or about 40MB/s + renaming pass 28sec ("486MB/sec") or in total about 36MB/s
