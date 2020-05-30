@@ -52,17 +52,22 @@ class Drives(object):
 
   def init_drives_linux(self):
     """
-    TODO: modify for Raspberry
+    TODO: modify for Raspberry (done?)
     """
     # mk = '/media/kevin'
-    mk = '/mnt'
     self.host = 'linux'
-    ch = os.path.join(mk,'chromeos')
+    chrRoot = '/mnt/chromeos'
+    ubuRoot = os.path.join('/media/', os.environ['USER'])
     knownDrives = ['pix20s','KBWIFI','pix20']
-    if os.path.exists(ch):
+    if os.path.exists(chrRoot):
       self.host = 'crostini'
-      mk = "/mnt/chromeos/removable"
+      mk = os.path.join(chrRoot, "removable")
       knownDrives.append('evo256')
+    elif os.path.exists(ubuRoot):
+      self.host = 'ubuntu'
+      mk = ubuRoot
+    else:
+      mk = '/mnt'
     archDrives = [d for d in knownDrives if os.path.exists(os.path.join(mk,d))]
     self.PrimaryArchiveList = [os.path.join(mk, d, 'kbImport') for d in archDrives]
     # TODO(kevin): choose a better local default?
@@ -84,12 +89,15 @@ class Drives(object):
     # self.show_drives()
 
   def init_drives_mac(self):
+    """
+    seek source and archive locations for mac
+    """
     self.host = 'mac'
     #self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
     Vols = os.path.sep+'Volumes'
     self.PrimaryArchiveList = [os.path.join(Vols, D) for D in
-                               ['pix20', 'pix18', 'pix15',
-                                os.path.join('pix20s', 'kbImport'),
+                               [os.path.join('pix20s', 'kbImport'),
+                               'pix20', 'pix18', 'pix15',
                                 'CameraWork', 'Liq', 'Pix17', 'BJORKEBYTES',
                                 'T3', 'Sept2013']]
     self.LocalArchiveList = [os.path.join(os.environ['HOME'], 'Pictures', 'kbImport')]
@@ -155,14 +163,14 @@ class Drives(object):
     printable = self.pretty(Path)
     if not os.path.exists(Path):
       if self.opt.verbose:
-        print("{} doesn't exist"%(printable))
+        print("{} doesn't exist".format(printable))
       return False
     if not os.path.isdir(Path):
       print('Error: Proposed source "{}" is not a directory'.format(printable))
       return False
     if Path in self.ForbiddenSources:
       if self.opt.verbose:
-        print("{} forbidden as a source"%(printable))
+        print("{} forbidden as a source".format(printable))
       return False
     s = os.path.getsize(Path) # TODO: this is not how you get volume size!
     if s > Drives.largestSource:
@@ -188,7 +196,7 @@ class Drives(object):
   def found_primary_archive_drive(self):
     "find prefered destination"
     if self.opt.verbose:
-      print("Primary Candidates:\n\t{}".format('\n\t'.join(self.PrimaryArchiveList)))
+      print("Primary Archive Candidates:\n\t{}".format('\n\t'.join(self.PrimaryArchiveList)))
     for arch in self.PrimaryArchiveList:
       if os.path.exists(arch):
         self.archiveDrive = arch

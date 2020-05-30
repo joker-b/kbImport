@@ -74,13 +74,36 @@ _Most measured with an 11.63GB collection comprised of 423 JPG and RAW files._
 * To External SSD: 5.29 minutes, 37.547 Mb/s
 * **Macbook Pro 2018**
 * On Satechi external reader to SSD: 2:30, 79.29 Mb/sec
-* **Chromebook Galaxy**
+* **Raspberry Pi 4** with *UGreen* USB-3 external:
+* To external SSD: 2:35, 72.03 Mb/sec
+* **Chromebook Galaxy** with *Letscom* external (reader faulty?):
 * To External SSD (old reader): 7.471 Mb/s
 * To microSD evo256 (new reader): 14.865 Mb/sec
-* Drag to microSD of the same folder (old reader): about 8mins, 24.8 MB/sec
+* Drag to microSD of the same folder: about 8mins, 24.8 MB/sec
 * as above, plus _kbImport_ renaming: 36sec = about 24MB/sec in total
 * `cp -r` to internal drive: 5.5min or about 36MB/s before renaming -- about the same as using the WD Wireless drive.
 * **WD Wireless Pro** auto-backup: about 5 minutes, or about 40MB/s + renaming pass 28sec ("486MB/sec") or in total about 36MB/s
+* **Chromebook Pixel 2013** running Gallium:
+* To External SSD: 14.05 Mb/s using the internal card reader
+* **Chromebook Pixel 2013** running Ubuntu:
+* To External SSD: 13.97 Mb/s using the internal card reader
+
+Mounting Drives on the Pi
+----------
+
+```
+sudo lsblk -o UUID,NAME,FSTYPE,SIZE,MOUNTPOINT,LABEL,MODEL
+sudo mkdir /mnt/pix20s
+sudo mkdir /mnt/X100F
+sudo chmod 770 /mnt/pix20s/
+sudo chmod 770 /mnt/X100F/
+sudo mount /dev/sda1 /mnt/pix20s
+sudo mount /dev/sdb1 /mnt/X100F
+cd src/kbImport/
+python3 kbImport3.py -p bjorke -j PiTest
+sudo umount /dev/sda1
+sudo umount /dev/sdb1
+```
 
 drobolize - deprecated for 2020
 ---------

@@ -24,11 +24,16 @@ if sys.version_info > (3,):
 class Volumes(object):
   '''object for import/archive environment'''
   regexDotFiles = re.compile(r'^\..*(BridgeCache|dropbox\.device)')
+  regexAnyDot = re.compile(r'^\.\w')
   regexJPG = re.compile(r'(.*)\.JPG')
 
   @classmethod
   def is_dot_file(cls, Filename):
     return cls.regexDotFiles.match(Filename)
+
+  @classmethod
+  def is_any_dot_file(cls, Filename):
+    return cls.regexAnyDot.match(Filename)
 
   def __init__(self, Options=AppOptions()):
     self.perfmon = PerfMon()
@@ -91,7 +96,7 @@ class Volumes(object):
   #
 
   def seek_named_source_dir(self, ParentDir, FindDir, Level=0, MaxLevels=6):
-    """
+    """∏
     Recursively look in 'ParentDir' for a directory of the 'FindDir'.
     Return full path or None.
     Don't dig more than MaxLevels deep.
@@ -101,11 +106,15 @@ class Volumes(object):
       return None
     try:
       allSubs = os.listdir(ParentDir)
+    except PermissionError:
+      if self.opt.verbose:
+        print('Permission denied: seek_named_source({})'.format(ParentDir))
+      return None
     except FileNotFoundError:
-      print('No such path: {}'.format(ParentDir))
+      print('No such path: seek_named_source({})'.format(ParentDir))
       return None
     except:
-      print("seek_named_source_dir(): {}".format(sys.exc_info()[0]))
+      print("seek_named_source_dir({}) error: {}".format(ParentDir, sys.exc_info()[0]))
       return None
     for subdir in allSubs:
       if subdir == FindDir:
@@ -227,15 +236,15 @@ class Volumes(object):
 
   def verify_image_archive_dir(self, FromDir, PixArchDir, VidArchDir):
     if not os.path.exists(PixArchDir):
-      print("Hey, image archive '{}' is vapor!".format(PixArchDir))
+      print(" verify_image_archive_dir({}) image archive is vapor!".format(PixArchDir))
       if not self.opt.testing:
         return False
     if not os.path.isdir(PixArchDir):
-      print("Hey, image destination '{}' is not a directory!".format(PixArchDir))
+      print(" verify_image_archive_dir({}): not a directory".format(PixArchDir))
       if not self.opt.testing:
         return False
     if VidArchDir is not None and not os.path.exists(self.drives.vidDestDir):
-      print("Caution: Video archive '{}' is vapor, Ignoring it.".format(VidArchDir))
+      print("verify_image_archive_dir({}) Video archive is vapor, Ignoring".format(VidArchDir))
       VidArchDir = None # TODO(kevin): what?
     if not os.path.exists(FromDir):
       print("Hey, image source '{}' is vapor!".format(FromDir))
@@ -312,7 +321,7 @@ class Volumes(object):
     if self.opt.verbose:
       print("Archiving {} files (from {} entries) from\n    {}".format(nFiles, len(files), FromDir))
     for filename in files:
-      if Volumes.is_dot_file(filename):
+      if Volumes.is_any_dot_file(filename):
         if self.opt.verbose:
           print("  skipping dotfile {}".format(filename))
         continue
@@ -383,3 +392,6 @@ if __name__ == '__main__':
   #fp = os.path.join(fd, fn)
   #v.build_image_data(fn, fd, fp, [fn])
   v.archive()
+
+  fn = ".AppleDouble"
+  print('"{}" dotfile? {}'.format(fn, Volumes.is_any_dot_file(fn) is not None))
