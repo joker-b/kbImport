@@ -52,17 +52,22 @@ class Drives(object):
 
   def init_drives_linux(self):
     """
-    TODO: modify for Raspberry
+    TODO: modify for Raspberry (done?)
     """
     # mk = '/media/kevin'
-    mk = '/mnt'
     self.host = 'linux'
-    ch = os.path.join(mk,'chromeos')
+    chrRoot = '/mnt/chromeos'
+    ubuRoot = os.path.join('/media/', os.environ['USER'])
     knownDrives = ['pix20s','KBWIFI','pix20']
-    if os.path.exists(ch):
+    if os.path.exists(chrRoot):
       self.host = 'crostini'
-      mk = "/mnt/chromeos/removable"
+      mk = os.path.join(chrRoot, "removable")
       knownDrives.append('evo256')
+    elif os.path.exists(ubuRoot):
+      self.host = 'ubuntu'
+      mk = ubuRoot
+    else:
+      mk = '/mnt'
     archDrives = [d for d in knownDrives if os.path.exists(os.path.join(mk,d))]
     self.PrimaryArchiveList = [os.path.join(mk, d, 'kbImport') for d in archDrives]
     # TODO(kevin): choose a better local default?

@@ -85,6 +85,8 @@ _Most measured with an 11.63GB collection comprised of 423 JPG and RAW files._
 * **WD Wireless Pro** auto-backup: about 5 minutes, or about 40MB/s + renaming pass 28sec ("486MB/sec") or in total about 36MB/s
 * **Chromebook Pixel 2013** running Gallium:
 * To External SSD: 14.05 Mb/s using the internal card reader
+* **Chromebook Pixel 2013** running Ubuntu:
+* To External SSD: 13.97 Mb/s using the internal card reader
 
 Mounting Drives on the Pi
 ----------
