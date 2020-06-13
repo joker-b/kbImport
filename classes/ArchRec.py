@@ -23,6 +23,7 @@ class ArchImgFile(object):
     self.volume = None
     self.orig = None
     self.archived = False
+    self.archDir = None
   def origin_name(self):
     "try to match camera standard naming patterns"
     if self.filename is None:
@@ -52,19 +53,25 @@ class ArchImgFile(object):
     return True
   def in_annual_folder(self):
     chain = self.filename.split(os.path.sep)
+    if len(chain) < 2:
+      return False
     look = 2
     while look <= len(chain):
       if re.match(r'\d{4}$', chain[-look]):
-        self.annualDir = os.path.join(chain[-look:-1])
+        self.annualDir = os.path.sep.join(chain[-look:-1])
         return True
       look = look + 1
     return False
   def archive_location(self):
+    if self.archDir:
+      return self.archDir
     if self.in_structured_folder():
-      return os.path.join(self.yearDir, self.monthDir, self.dayDir)
-    if self.in_annual_folder():
-      return self.annualDir
-    return self.folder()
+      self.archDir = os.path.join(self.yearDir, self.monthDir, self.dayDir)
+    elif self.in_annual_folder():
+      self.archDir = self.annualDir
+    else:
+      self.archDir = self.folder()
+    return self.archDir
   def __str__(self):
     return '.../{} arch to {}'.format(os.path.basename(self.filename),
       self.archive_location())
@@ -139,10 +146,18 @@ if __name__ == '__main__':
   d.add_folder(f2)
   # d.add_folder(os.path.split(f)[0])
   print(d)
-  x = min(len(d.archRecs), 15)
+  x = min(len(d.archRecs), 3)
   for n in range(x):
     k = list(d.archRecs.keys())[n]
     d.archRecs[k].print_stats()
+  archLocs = {}
+  for k in d.archRecs:
+    for v in d.archRecs[k].versions:
+      archLocs[v.archive_location()] = 1
+  print("Archive Locations")
+  for d in list(archLocs.keys()):
+    print(d)
+
 
 
 
