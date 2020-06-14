@@ -13,6 +13,7 @@ import re
 import subprocess
 import json
 import xml.etree.ElementTree as ET
+from enum import Enum
 
 # never needed?
 if sys.version_info > (3,):
@@ -33,66 +34,72 @@ xmp:Rating="3"
 (xmp files can be general or for specific JPG/RAF files... by DarkTable?)
 '''
 
+class ArchFileType(Enum):
+  "File types that the archiver may handle in special ways"
+  JPG = 1
+  RAW = 2
+  PP3 = 3
+  XMP = 4
+  UNKNOWN = 5
+  MISSING = 6
+  ERROR = 7
+
+#pylint: disable=too-many-instance-attributes
+# Nine is reasonable in this case.
+
 class ArchImgFile(object):
   '''
+  info for for ONE file
+  TODO: precompile regex's
+  add archive() method
   '''
-  def __init__(self, Filename = None):
+  RawTypes = ['.RAF', '.DNG', '.CRW', '.CR2']
+  def __init__(self, Filename=None):
+    '''
+    basics
+    '''
     self.filename = Filename
-    self.volume = None
-    self.orig = None
-    self.archived = False
-    self.archDir = None
-    self.rating = None
-    self.label = None
-  def origin_name(self):
-    "try to match camera standard naming patterns"
-    if self.filename is None:
-     return None
-    if self.orig:
-      return self.orig
-    b = os.path.basename(self.filename)
-    b = os.path.splitext(b)[0]
-    m = re.search(r'[A-Za-z_][A-Za-z_]{3}\d{4}', b)
-    if not m:
-      self.orig = b
-    else:
-      self.orig = m.group()
-    return self.orig
-  def folder(self):
-    chain = self.filename.split(os.path.sep)
-    if len(chain) < 2:
-      return '.'
-    return chain[-2]
-  def in_structured_folder(self):
-    chain = self.filename.split(os.path.sep)
-    if not re.match(r'\d{4}$', chain[-4]):
-      return False
-    self.yearDir = chain[-4]
-    self.monthDir = chain[-3]
-    self.dayDir = chain[-2]
-    return True
-  def in_annual_folder(self):
-    chain = self.filename.split(os.path.sep)
-    if len(chain) < 2:
-      return False
-    look = 2
-    while look <= len(chain):
-      if re.match(r'\d{4}$', chain[-look]):
-        self.annualDir = os.path.sep.join(chain[-look:-1])
-        return True
-      look = look + 1
-    return False
-  def archive_location(self):
-    if self.archDir:
-      return self.archDir
-    if self.in_structured_folder():
-      self.archDir = os.path.join(self.yearDir, self.monthDir, self.dayDir)
-    elif self.in_annual_folder():
-      self.archDir = self.annualDir
-    else:
-      self.archDir = self.folder()
-    return self.archDir
+    self.src_volume = None
+    self.was_archived = False
+    self._initialize_type() # first
+    self._initialize_size() # second
+    # others can arrive in arbitrary order
+    self._initialize_origin_name()
+    self._initialize_rating()
+    self._determine_archive_location_()
 
+  def _initialize_type(self):
+    ext = os.path.splitext(self.filename)[1].upper()
+    if ext == '.PP3':
+      self.type = ArchFileType.PP3
+    elif ext == '.XMP':
+      self.type = ArchFileType.XMP
+    elif ext == '.JPG':
+      self.type = ArchFileType.JPG
+    elif ArchImgFile.RawTypes.__contains__(ext):
+      self.type = ArchFileType.RAW
+    else:
+      self.type = ArchFileType.UNKNOWN
+
+  def _initialize_size(self):
+    "calls stat()"
+    self.nBytes = 0 # long
+    try:
+      s = os.stat(self.filename)
+    except FileNotFoundError:
+      print("incr('{}') no file".format(self.filename))
+      self.type = ArchFileType.MISSING
+      return False
+    except:
+      print("incr('{}') cannot stat source".format(self.filename))
+      print("Err {}".format(sys.exc_info()[0]))
+      self.type = ArchFileType.ERROR
+      return False
+    self.nBytes += s.st_size
+    return True
+
+#pylint: disable=attribute-defined-outside-init
+#   linter is just confused by the function indirection
   def _query_xmp(self):
     '''
     only if the file is xmp... could also use exiftool!
@@ -108,7 +115,7 @@ class ArchImgFile(object):
     j = subprocess.run(["exiftool", "-json", "-Rating", "-Label", "-UserComment", self.filename],
           capture_output=True)
     exif = json.loads(j.stdout)[0]
-    print(exif)
+    # print(exif)
     self.rating = exif.get('Rating')
     self.label = exif.get('Label')
   def _query_pp3(self):
@@ -121,24 +128,66 @@ class ArchImgFile(object):
       m = label_exp.match(line)
       if m:
         self.label = int(m.group(1))
-  def query_rating(self):
-    if not os.path.exists(self.filename):
-      print("query_rating({}) no file".format(self.filename))
-      return None
-    ext = os.path.splitext(self.filename)[1].lower()
-    print(ext)
-    if ext == '.pp3':
-      self._query_pp3()
-    elif ext == '.xmp':
-      self._query_xmp()
-    elif ext == '.jpg':
-      self._query_exif()
-    else:
-      self._query_exif()
+  def _initialize_rating(self):
+    self.rating = None
+    self.label = None
+    queries = {
+        ArchFileType.PP3: self._query_pp3,
+        ArchFileType.XMP: self._query_xmp,
+        ArchFileType.JPG: self._query_exif,
+        ArchFileType.RAW: self._query_exif
+    }
+    fn = queries.get(self.type)
+    if fn is not None:
+      fn()
     return self.rating
+
+  def _initialize_origin_name(self):
+    "try to match camera standard naming patterns"
+    self.origin_name = None
+    if self.filename is None:
+      return
+    b = os.path.basename(self.filename)
+    b = os.path.splitext(b)[0]
+    m = re.search(r'[A-Za-z_][A-Za-z_]{3}\d{4}', b)
+    if not m:
+      self.origin_name = b
+    else:
+      self.origin_name = m.group()
+
+  def _determine_archive_location_(self):
+    '''
+    Determines the location where the archive WOULD be, relative to the
+      archive directory. Does not actually archive, that determination is
+      made elsewhere
+    '''
+    chain = self.filename.split(os.path.sep)
+    if re.match(r'\d{4}$', chain[-4]):
+      yearDir = chain[-4]
+      monthDir = chain[-3]
+      dayDir = chain[-2]
+      self.destination_dir = os.path.join(yearDir, monthDir, dayDir)
+      return
+    if len(chain) >= 2:
+      look = 2
+      while look <= len(chain):
+        if re.match(r'\d{4}$', chain[-look]):
+          self.destination_dir = os.path.sep.join(chain[-look:-1])
+          return
+        look = look + 1
+    self.destination_dir = self.folder()
+
+  # END OF INITIALIZERS
+
+  def folder(self):
+    chain = self.filename.split(os.path.sep)
+    if len(chain) < 2:
+      return '.'
+    return chain[-2]
+
   def __str__(self):
     return '.../{}: rating {}, arch to {}'.format(os.path.basename(self.filename),
-      self.query_rating(), self.archive_location())
+                                                  self.rating, self.destination_dir)
 
 
 #
@@ -149,16 +198,16 @@ if __name__ == '__main__':
   #f = H+'/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_13_XE/bjorke_XE_ESCF4060.JPG'
   H = '/home/kevinbjorke/pix/kbImport/Pix/2020'
   samples = [
-    H+'/2020-05-May/2020_05_31_BLM/bjorke_BLM_KBXF8642.RAF',
-    H+'/2020-06-Jun/2020_06_06_WoodX/bjorke_Wood_DSCF6121.JPG',
-    H+'/2020-06-Jun/2020_06_06_WoodX/bjorke_Wood_DSCF6121.RAF',
-    H+'/2020-06-Jun/2020_06_06_WoodX/bjorke_Wood_DSCF6121.xmp',
+      H+'/2020-05-May/2020_05_31_BLM/bjorke_BLM_KBXF8642.RAF',
+      H+'/2020-06-Jun/2020_06_06_WoodX/bjorke_Wood_DSCF6121.JPG',
+      H+'/2020-06-Jun/2020_06_06_WoodX/bjorke_Wood_DSCF6121.RAF',
+      H+'/2020-06-Jun/2020_06_06_WoodX/bjorke_Wood_DSCF6121.xmp',
   ]
-  for f in samples:
-    if not os.path.exists(f):
-      print('skipping {} no file'.format(f))
+  for sample_f in samples:
+    if not os.path.exists(sample_f):
+      print('skipping {} no file'.format(sample_f))
       continue
-    print('----- {} -----'.format(f))
-    aif = ArchImgFile(f) 
-    print("Archive Location {}".format(aif.archive_location()))
+    print('----- {}'.format(sample_f))
+    aif = ArchImgFile(sample_f)
+    # print("Archive Location {}".format(aif._determine_archive_location_()))
     print(aif)
