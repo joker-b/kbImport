@@ -103,14 +103,13 @@ class ArchImgFile(object):
     except FileNotFoundError:
       print("incr('{}') no file".format(self.filename))
       self.type = ArchFileType.MISSING
-      return False
+      return
     except:
       print("incr('{}') cannot stat source".format(self.filename))
       print("Err {}".format(sys.exc_info()[0]))
       self.type = ArchFileType.ERROR
-      return False
+      return
     self.nBytes += s.st_size
-    return True
 
 #pylint: disable=attribute-defined-outside-init
 #   linter is just confused by the function indirection
@@ -220,9 +219,9 @@ class ArchImgFile(object):
 
   def __str__(self):
     return '.../{}: {:.2f} MB, rating {}, arch to {}'.format(
-      os.path.basename(self.filename),
-      self.nBytes/(1024*1024),
-          self.rating, self.destination_dir)
+        os.path.basename(self.filename),
+        self.nBytes/(1024*1024),
+        self.rating, self.destination_dir)
 
 
 #
