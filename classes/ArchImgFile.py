@@ -10,11 +10,19 @@
 import os
 import sys
 import re
+import subprocess
+import json
 
 # never needed?
 if sys.version_info > (3,):
   long = int
 
+'''
+EXIF Tags we care about
+Rating: 0
+UserComment: ""
+
+'''
 
 class ArchImgFile(object):
   '''
@@ -73,9 +81,17 @@ class ArchImgFile(object):
     else:
       self.archDir = self.folder()
     return self.archDir
+  def query_rating(self):
+    j = subprocess.run(["exiftool", "-json", "-Rating", "-UserComment", self.filename],
+          capture_output=True)
+    exif = json.loads(j.stdout)[0]
+    print(exif)
+    self.rating = exif.get('Rating')
+    return self.rating
+
   def __str__(self):
-    return '.../{} arch to {}'.format(os.path.basename(self.filename),
-      self.archive_location())
+    return '.../{}: rating {}, arch to {}'.format(os.path.basename(self.filename),
+      self.query_rating(), self.archive_location())
 
 
 #
@@ -83,5 +99,8 @@ class ArchImgFile(object):
 #
 if __name__ == '__main__':
   f = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-05-May/2020_05_31_BLM/bjorke_BLM_KBXF8642.RAF'
+  #H = os.environ['HOME']
+  #f = H+'/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_13_XE/bjorke_XE_ESCF4060.JPG'
   aif = ArchImgFile(f) 
   print("Archive Location {}".format(aif.archive_location()))
+  print(aif)
