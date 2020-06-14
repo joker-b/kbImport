@@ -23,32 +23,43 @@ class ArchDB(object):
       # if it fails, print an error and continue empty
       print("get db from storage")
     self.archRecs = {}
+
   def add_file(self, Filename):
     '''
     TODO: does this know too much about ArchImgFile/ArchRec internals?
     '''
     img = ArchImgFile(Filename)
-    o = img.origin_name()
+    o = img.origin_name
     rec = self.archRecs.get(o)
     if not rec:
       rec = ArchRec()
       self.archRecs[o] = rec
     rec.add_img_file(img)
+
   def add_folder(self, Folder):
-    for d in os.listdir(Folder):
-      full = os.path.join(Folder,d)
+    for item in os.listdir(Folder):
+      # TODO: ignore dotfiles
+      full = os.path.join(Folder, item)
       if os.path.isdir(full):
         self.add_folder(full)
       else:
         self.add_file(full) # TODO: only images
+
+  def archive_size(self):
+    total = 0
+    for kn in self.archRecs:
+      total += self.archRecs[kn].archive_size()
+    return total
+
+  def source_size(self):
+    total = 0
+    for kn in self.archRecs:
+      total += self.archRecs[kn].source_size()
+    return total
+
   def __str__(self):
-    return '{} Images:\n'.format(len(self.archRecs))  
+    return '{} Images:\n'.format(len(self.archRecs))
     # '\n'.join([self.archRecs[a].__str__() for a in self.archRecs]))
-
-
-def archive_folder(source_path):
-  'go through folder adding ArchRecs and add to ArchDB'
-  print("blah")
 
 #
 # Basic tests
@@ -56,27 +67,27 @@ def archive_folder(source_path):
 if __name__ == '__main__':
   f = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-05-May/2020_05_31_BLM/bjorke_BLM_KBXF8642.RAF'
   f2 = '/home/kevinbjorke/pix/kbImport/Pix/'
+  f2 = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun'
+  f2 = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_06_WoodX/'
   # f2 = '/home/kevinbjorke/pix/'
-  d = ArchDB()
+  db = ArchDB()
   # d.add_file(f)
-  d.add_folder(f2)
+  db.add_folder(f2)
   # d.add_folder(os.path.split(f)[0])
-  print(d)
+  print(db)
   n = 0
   archLocs = {}
-  for k in d.archRecs:
-    ar = d.archRecs[k]
+  for k in db.archRecs:
+    ar = db.archRecs[k]
     if n < 3:
-      k = list(d.archRecs.keys())[n]
+      k = list(db.archRecs.keys())[n]
       ar.print_stats()
     n += 1
     for loc in ar.archive_locations():
       archLocs[loc] = 1
-  print("Archive Locations")
-  for d in list(archLocs.keys()):
-    print(d)
-
-
-
-
-
+  print("{} Archive Locations".format(len(archLocs)))
+  for dest in list(archLocs.keys()):
+    print(dest)
+  print("Archive Size: {:.4f}MB from {:.6}MB".format(
+      db.archive_size()/(1024*1024),
+      db.source_size()/(1024*1024)))

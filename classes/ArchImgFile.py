@@ -40,9 +40,11 @@ class ArchFileType(Enum):
   RAW = 2
   PP3 = 3
   XMP = 4
-  UNKNOWN = 5
-  MISSING = 6
-  ERROR = 7
+  EDITOR = 5
+  UNKNOWN = 6
+  MISSING = 7
+  ERROR = 8
+  IGNORE = 9
 
 #pylint: disable=too-many-instance-attributes
 # Nine is reasonable in this case.
@@ -54,6 +56,8 @@ class ArchImgFile(object):
   add archive() method
   '''
   RawTypes = ['.RAF', '.DNG', '.CRW', '.CR2']
+  IgnoreTypes = ['.SWP', '.LOG']
+  EditorTypes = ['.PSD', '.XCF', '.TIFF', '.TIF']
   def __init__(self, Filename=None):
     '''
     basics
@@ -69,6 +73,10 @@ class ArchImgFile(object):
     self._determine_archive_location_()
 
   def _initialize_type(self):
+    '''
+    simplify file types for this use
+    TODO: GIF and PNG
+    '''
     ext = os.path.splitext(self.filename)[1].upper()
     if ext == '.PP3':
       self.type = ArchFileType.PP3
@@ -78,12 +86,18 @@ class ArchImgFile(object):
       self.type = ArchFileType.JPG
     elif ArchImgFile.RawTypes.__contains__(ext):
       self.type = ArchFileType.RAW
+    elif ArchImgFile.EditorTypes.__contains__(ext):
+      self.type = ArchFileType.EDITOR
+    elif ArchImgFile.IgnoreTypes.__contains__(ext):
+      self.type = ArchFileType.IGNORE
     else:
       self.type = ArchFileType.UNKNOWN
 
   def _initialize_size(self):
     "calls stat()"
     self.nBytes = 0 # long
+    if self.type is ArchFileType.IGNORE:
+      return
     try:
       s = os.stat(self.filename)
     except FileNotFoundError:
@@ -110,6 +124,8 @@ class ArchImgFile(object):
     ratingI = '{http://ns.adobe.com/xap/1.0/}Rating'
     labelI = '{http://ns.adobe.com/xap/1.0/}Label'
     self.rating = desc.get(ratingI)
+    if self.rating is not None:
+      self.rating = int(self.rating)
     self.label = desc.get(labelI)
   def _query_exif(self):
     j = subprocess.run(["exiftool", "-json", "-Rating", "-Label", "-UserComment", self.filename],
@@ -121,13 +137,30 @@ class ArchImgFile(object):
   def _query_pp3(self):
     rank_exp = re.compile(r'Rank=(\d+)')
     label_exp = re.compile(r'ColorLabel=(\d+)')
+    found = 0
     for line in open(self.filename, 'r'):
-      m = rank_exp.match(r'Rank=(\d+)', line)
+      try:
+        m = rank_exp.match(r'Rank=(\d+)', line)
+      except TypeError:
+        m = None
+      except:
+        print('fail on "{}" from {}'.format(line, self.filename))
+        m = None
       if m:
         self.rating = int(m.group(1))
-      m = label_exp.match(line)
+        found += 1
+      try:
+        m = label_exp.match(line)
+      except TypeError:
+        m = None
+      except:
+        print('fail on "{}" from {}'.format(line, self.filename))
+        m = None
       if m:
         self.label = int(m.group(1))
+        found += 1
+      if found >= 2:
+        break
   def _initialize_rating(self):
     self.rating = None
     self.label = None
@@ -186,8 +219,10 @@ class ArchImgFile(object):
     return chain[-2]
 
   def __str__(self):
-    return '.../{}: rating {}, arch to {}'.format(os.path.basename(self.filename),
-                                                  self.rating, self.destination_dir)
+    return '.../{}: {:.2f} MB, rating {}, arch to {}'.format(
+      os.path.basename(self.filename),
+      self.nBytes/(1024*1024),
+          self.rating, self.destination_dir)
 
 
 #

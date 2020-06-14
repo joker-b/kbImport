@@ -4,9 +4,7 @@ Each ImgInfo object contains archive data about a single image
 """
 import os
 import sys
-import re
-import shutil
-from ArchImgFile import ArchImgFile
+from ArchImgFile import ArchImgFile, ArchFileType
 
 if sys.version_info > (3,):
   long = int
@@ -19,43 +17,102 @@ class ArchRec(object):
   An image may have multiple representations, of varying formats and sizes.
 
   '''
-  def __init__(self ):
-    self.versions = [ ]
+  def __init__(self):
+    "the versions array is a list of ArchImagFiles all with matching origin_name"
+    self.versions = []
+
   def add_img_file(self, ArchImg):
+    'Add ArchImageFile'
+    if ArchImg.type is ArchFileType.IGNORE:
+      return
+    if len(self.versions) > 0 and ArchImg.origin_name != self.origin_name():
+      print("ERROR: Can't add '{}'' image to '{}' record".format(
+          ArchImg.origin_name, self.origin_name()))
+      return
     self.versions.append(ArchImg)
+
   def add_file(self, Filename):
     '''
     returns origin_name
     '''
     img = ArchImgFile(Filename)
-    o = img.origin_name()
     self.add_img_file(img)
-    return o
+    return self.origin_name()
+
+  def origin_name(self):
+    if len(self.versions) < 1:
+      return None
+    return self.versions[0].origin_name
 
   def archive_locations(self):
     archLocs = {}
     for v in self.versions:
-      archLocs[v.archive_location()] = 1
+      archLocs[v.destination_dir] = 1
     return list(archLocs.keys())
 
+  def has_been_edited(self):
+    for v in self.versions:
+      if v.type is ArchFileType.EDITOR:
+        return True
+    # TODO: multiple outputs, varying sizes? Also true
+    return False
+
+  def max_rank(self):
+    rank = 0
+    for v in self.versions:
+      if v.rating is not None:
+        try:
+          rank = max(rank, v.rating)
+        except TypeError:
+          print('hmmm, {} vs {} in {}'.format(rank, v.rating, v.filename))
+    return rank
+
+  def should_archive_raw(self):
+    'the real optimizer - ignore unused raw files'
+    if self.has_been_edited():
+      return True
+    if self.max_rank() > 0:
+      return True
+    return False
+
+  def archive_size(self):
+    include_raw = self.should_archive_raw()
+    total = 0
+    # TODO: watch for duplications
+    for v in self.versions:
+      if v.type is ArchFileType.RAW and not include_raw:
+        continue
+      total += v.nBytes
+    return total
+
+  def source_size(self):
+    "includes all files, regardless"
+    total = 0
+    for v in self.versions:
+      total += v.nBytes
+    return total
+
   def __str__(self):
-    n = self.versions[0].origin_name()
-    return '{}: {} edition(s)'.format(n, len(self.versions))
+    return '{}: {} edition(s)'.format(self.origin_name(), len(self.versions))
+
   def print_stats(self):
     print(self)
     for v in self.versions:
       print(v)
+    print("Archived size: {:.2f}MB of {:.4}MB".format(
+        self.archive_size() / (1024*1024), self.source_size() / (1024*1024)))
 
 #
 # Unit Tests, itegration w/ArchImgFile
 #
 if __name__ == '__main__':
   print("testing time")
-  f = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-05-May/2020_05_31_BLM/bjorke_BLM_KBXF8642.RAF'
+  test_dir = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-05-May/2020_05_31_BLM'
+  jpg = os.path.join(test_dir, 'bjorke_BLM_KBXF8642.RAF')
+  raf = os.path.join(test_dir, 'bjorke_BLM_KBXF8642.JPG')
   ar = ArchRec()
-  o = ar.add_file(f)
+  o = ar.add_file(raf)
+  o = ar.add_file(jpg)
   ar.print_stats()
   print("Archive Locations from {}".format(o))
   print(ar.archive_locations())
-
-
