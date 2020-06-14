@@ -12,6 +12,7 @@ import sys
 import re
 import subprocess
 import json
+import xml.etree.ElementTree as ET
 
 # never needed?
 if sys.version_info > (3,):
@@ -22,6 +23,14 @@ EXIF Tags we care about
 Rating: 0
 UserComment: ""
 
+pp3 fields: (grep)
+Rank=2
+ColorLabel=0
+
+xmp fields:
+xmp:Rating="3"
+
+(xmp files can be general or for specific JPG/RAF files... by DarkTable?)
 '''
 
 class ArchImgFile(object):
@@ -81,12 +90,23 @@ class ArchImgFile(object):
     else:
       self.archDir = self.folder()
     return self.archDir
+  def query_xmp(self):
+    'only if the file is xmp'
+    tree = ET.parse(self.filename)
+    root = tree.getroot()
+    desc = root[0][0] # risky?
+    ratingI = '{http://ns.adobe.com/xap/1.0/}Rating'
+    labelI = '{http://ns.adobe.com/xap/1.0/}Label'
+    self.rating = desc.get(ratingI)
+    self.label = desc.get(labelI)
+    return self.rating
   def query_rating(self):
-    j = subprocess.run(["exiftool", "-json", "-Rating", "-UserComment", self.filename],
+    j = subprocess.run(["exiftool", "-json", "-Rating", "-Label", "-UserComment", self.filename],
           capture_output=True)
     exif = json.loads(j.stdout)[0]
     print(exif)
     self.rating = exif.get('Rating')
+    self.label = exif.get('Label')
     return self.rating
 
   def __str__(self):
