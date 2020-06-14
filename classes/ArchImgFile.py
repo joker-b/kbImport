@@ -42,6 +42,8 @@ class ArchImgFile(object):
     self.orig = None
     self.archived = False
     self.archDir = None
+    self.rating = None
+    self.label = None
   def origin_name(self):
     "try to match camera standard naming patterns"
     if self.filename is None:
@@ -90,8 +92,11 @@ class ArchImgFile(object):
     else:
       self.archDir = self.folder()
     return self.archDir
-  def query_xmp(self):
-    'only if the file is xmp'
+
+  def _query_xmp(self):
+    '''
+    only if the file is xmp... could also use exiftool!
+    '''
     tree = ET.parse(self.filename)
     root = tree.getroot()
     desc = root[0][0] # risky?
@@ -99,16 +104,36 @@ class ArchImgFile(object):
     labelI = '{http://ns.adobe.com/xap/1.0/}Label'
     self.rating = desc.get(ratingI)
     self.label = desc.get(labelI)
-    return self.rating
-  def query_rating(self):
+  def _query_exif(self):
     j = subprocess.run(["exiftool", "-json", "-Rating", "-Label", "-UserComment", self.filename],
           capture_output=True)
     exif = json.loads(j.stdout)[0]
     print(exif)
     self.rating = exif.get('Rating')
     self.label = exif.get('Label')
+  def _query_pp3(self):
+    rank_exp = re.compile(r'Rank=(\d+)')
+    label_exp = re.compile(r'ColorLabel=(\d+)')
+    for line in open(self.filename, 'r'):
+      m = rank_exp.match(r'Rank=(\d+)', line)
+      if m:
+        self.rating = int(m.group(1))
+      m = label_exp.match(line)
+      if m:
+        self.label = int(m.group(1))
+  def query_rating(self):
+    if not os.path.exists(self.filename):
+      return None
+    ext = os.path.splitext(self.filename)[1].lower()
+    if ext == '.pp3':
+      self._query_pp3()
+    elif ext == '.xmp':
+      self._query_xmp()
+    elif ext == '.jpg':
+      self._query_exif()
+    else:
+      self._query_exif()
     return self.rating
-
   def __str__(self):
     return '.../{}: rating {}, arch to {}'.format(os.path.basename(self.filename),
       self.query_rating(), self.archive_location())
@@ -118,9 +143,16 @@ class ArchImgFile(object):
 # Unit Test
 #
 if __name__ == '__main__':
-  f = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-05-May/2020_05_31_BLM/bjorke_BLM_KBXF8642.RAF'
   #H = os.environ['HOME']
   #f = H+'/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_13_XE/bjorke_XE_ESCF4060.JPG'
-  aif = ArchImgFile(f) 
-  print("Archive Location {}".format(aif.archive_location()))
-  print(aif)
+  H = '/home/kevinbjorke/pix/kbImport/Pix/2020'
+  samples = [
+    H+'/2020-05-May/2020_05_31_BLM/bjorke_BLM_KBXF8642.RAF',
+    H+'/2020-06-May/2020_06_06_WoodX/bjorke_Wood_DSCF6121.JPG',
+    H+'/2020-06-May/2020_06_06_WoodX/bjorke_Wood_DSCF6121.RAF',
+    H+'/2020-06-May/2020_06_06_WoodX/bjorke_Wood_DSCF6121.xmp',
+  ]
+  for f in samples:
+    aif = ArchImgFile(f) 
+    print("Archive Location {}".format(aif.archive_location()))
+    print(aif)
