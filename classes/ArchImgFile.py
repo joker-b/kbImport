@@ -123,8 +123,10 @@ class ArchImgFile(object):
         self.label = int(m.group(1))
   def query_rating(self):
     if not os.path.exists(self.filename):
+      print("query_rating({}) no file".format(self.filename))
       return None
     ext = os.path.splitext(self.filename)[1].lower()
+    print(ext)
     if ext == '.pp3':
       self._query_pp3()
     elif ext == '.xmp':
@@ -148,11 +150,15 @@ if __name__ == '__main__':
   H = '/home/kevinbjorke/pix/kbImport/Pix/2020'
   samples = [
     H+'/2020-05-May/2020_05_31_BLM/bjorke_BLM_KBXF8642.RAF',
-    H+'/2020-06-May/2020_06_06_WoodX/bjorke_Wood_DSCF6121.JPG',
-    H+'/2020-06-May/2020_06_06_WoodX/bjorke_Wood_DSCF6121.RAF',
-    H+'/2020-06-May/2020_06_06_WoodX/bjorke_Wood_DSCF6121.xmp',
+    H+'/2020-06-Jun/2020_06_06_WoodX/bjorke_Wood_DSCF6121.JPG',
+    H+'/2020-06-Jun/2020_06_06_WoodX/bjorke_Wood_DSCF6121.RAF',
+    H+'/2020-06-Jun/2020_06_06_WoodX/bjorke_Wood_DSCF6121.xmp',
   ]
   for f in samples:
+    if not os.path.exists(f):
+      print('skipping {} no file'.format(f))
+      continue
+    print('----- {} -----'.format(f))
     aif = ArchImgFile(f) 
     print("Archive Location {}".format(aif.archive_location()))
     print(aif)
