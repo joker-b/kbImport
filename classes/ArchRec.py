@@ -103,13 +103,39 @@ class ArchRec(object):
         self.archive_size() / (1024*1024), self.source_size() / (1024*1024)))
 
 #
+# Test fixtures
+#
+def get_test_folder():
+  for f in [
+      '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-05-May/2020_05_31_BLM',
+      '/Volumes/pix20s/kbImport/Pix/2020/2020-05-May/2020_05_31_PetaBLM']:
+    if os.path.exists(f):
+      return f
+  return '.'
+
+def get_test_pair(Folder):
+  raf = os.path.join(Folder, 'bjorke_BLM_KBXF8642.RAF')
+  jpg = os.path.join(Folder, 'bjorke_BLM_KBXF8642.JPG')
+  if os.path.exists(raf) and os.path.exists(jpg):
+    return (jpg, raf)
+  for some_file in os.listdir(Folder):
+    sp = os.path.splitext(some_file)
+    if sp[-1] == '.RAF':
+      jpg = os.path.join(Folder, sp[0]+'.JPG')
+      if os.path.exists(jpg):
+        raf = os.path.join(Folder, some_file)
+        return (jpg, raf)
+  return('bad.JPG', 'bad.RAF')
+
+
+
+#
 # Unit Tests, itegration w/ArchImgFile
 #
 if __name__ == '__main__':
   print("testing time")
-  test_dir = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-05-May/2020_05_31_BLM'
-  jpg = os.path.join(test_dir, 'bjorke_BLM_KBXF8642.RAF')
-  raf = os.path.join(test_dir, 'bjorke_BLM_KBXF8642.JPG')
+  test_dir = get_test_folder()
+  (jpg, raf) = get_test_pair(test_dir)
   ar = ArchRec()
   o = ar.add_file(raf)
   o = ar.add_file(jpg)

@@ -37,8 +37,11 @@ class ArchDB(object):
     rec.add_img_file(img)
 
   def add_folder(self, Folder):
+    if not os.path.exists(Folder):
+      return
     for item in os.listdir(Folder):
-      # TODO: ignore dotfiles
+      if item[0] == '.':
+        continue
       full = os.path.join(Folder, item)
       if os.path.isdir(full):
         self.add_folder(full)
@@ -64,15 +67,28 @@ class ArchDB(object):
 #
 # Basic tests
 #
+
+def get_test_pic():
+  return '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-05-May/2020_05_31_BLM/bjorke_BLM_KBXF8642.RAF'
+
+def get_test_folder():
+  # f2 = '/home/kevinbjorke/pix/kbImport/Pix/'
+  # f2 = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun'
+  for f2 in [
+      '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_06_WoodX/',
+      '/Volumes/pix20s/kbImport/Pix/2020/2020-06-Jun/2020_06_06_Wood/']:
+    if os.path.exists(f2):
+      return f2
+  return '.' # less-awkward fail
+
 if __name__ == '__main__':
-  f = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-05-May/2020_05_31_BLM/bjorke_BLM_KBXF8642.RAF'
-  f2 = '/home/kevinbjorke/pix/kbImport/Pix/'
-  f2 = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun'
-  f2 = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_06_WoodX/'
-  # f2 = '/home/kevinbjorke/pix/'
+  test_pic = get_test_pic()
+  test_folder = get_test_folder()
+  # test_folder = '/home/kevinbjorke/pix/'
   db = ArchDB()
   # d.add_file(f)
-  db.add_folder(f2)
+  print("let's test {}".format(test_folder))
+  db.add_folder(test_folder)
   # d.add_folder(os.path.split(f)[0])
   print(db)
   n = 0

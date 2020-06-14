@@ -117,7 +117,14 @@ class ArchImgFile(object):
     '''
     only if the file is xmp... could also use exiftool!
     '''
-    tree = ET.parse(self.filename)
+    try:
+      tree = ET.parse(self.filename)
+    except ET.ParseError:
+      print("ParseError for '{}'".format(self.filename))
+      return
+    except:
+      print("_query_xmp({}) error: {}".format(self.filename, sys.exc_info()[0]))
+      return None
     root = tree.getroot()
     desc = root[0][0] # risky?
     ratingI = '{http://ns.adobe.com/xap/1.0/}Rating'
@@ -223,21 +230,35 @@ class ArchImgFile(object):
         self.nBytes/(1024*1024),
         self.rating, self.destination_dir)
 
+#
+# Test Fixtures
+#
+
+def get_test_samples():
+  #H = os.environ['HOME']
+  #f = H+'/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_13_XE/bjorke_XE_ESCF4060.JPG'
+  yDir = '.'
+  for v in [
+    '/home/kevinbjorke/pix/kbImport/Pix/2020',
+    '/Volumes/pix20s/kbImport/Pix/2020']:
+    if os.path.exists(v):
+      yDir = v
+  files = [W for W in [
+      yDir+'/2020-05-May/2020_05_31_BLM/bjorke_BLM_KBXF8642.RAF',
+      yDir+'/2020-06-Jun/2020_06_06_WoodX/bjorke_Wood_DSCF6121.JPG',
+      yDir+'/2020-06-Jun/2020_06_06_WoodX/bjorke_Wood_DSCF6121.RAF',
+      yDir+'/2020-06-Jun/2020_06_06_WoodX/bjorke_Wood_DSCF6121.xmp',
+      yDir+'/2020-06-Jun/2020_06_06_Wood/bjorke_Wood_DSCF6121.JPG',
+      yDir+'/2020-06-Jun/2020_06_06_Wood/bjorke_Wood_DSCF6121.RAF',
+      yDir+'/2020-06-Jun/2020_06_06_Wood/bjorke_Wood_DSCF6121.xmp',
+  ] if os.path.exists(W) ]
+  return files
 
 #
 # Unit Test
 #
 if __name__ == '__main__':
-  #H = os.environ['HOME']
-  #f = H+'/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_13_XE/bjorke_XE_ESCF4060.JPG'
-  H = '/home/kevinbjorke/pix/kbImport/Pix/2020'
-  samples = [
-      H+'/2020-05-May/2020_05_31_BLM/bjorke_BLM_KBXF8642.RAF',
-      H+'/2020-06-Jun/2020_06_06_WoodX/bjorke_Wood_DSCF6121.JPG',
-      H+'/2020-06-Jun/2020_06_06_WoodX/bjorke_Wood_DSCF6121.RAF',
-      H+'/2020-06-Jun/2020_06_06_WoodX/bjorke_Wood_DSCF6121.xmp',
-  ]
-  for sample_f in samples:
+  for sample_f in get_test_samples():
     if not os.path.exists(sample_f):
       print('skipping {} no file'.format(sample_f))
       continue
