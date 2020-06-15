@@ -11,6 +11,7 @@ import os
 import sys
 import re
 import subprocess
+import platform
 import json
 import xml.etree.ElementTree as ET
 from enum import Enum
@@ -46,6 +47,15 @@ class ArchFileType(Enum):
   ERROR = 8
   IGNORE = 9
 
+class HostType(Enum):
+  "File types that the archiver may handle in special ways"
+  MAC = 1
+  WINDOWS = 2
+  CROSTINI = 3
+  UBUNTU = 4
+  LINUX = 5
+  UNKNOWN = 6
+
 #pylint: disable=too-many-instance-attributes
 # Nine is reasonable in this case.
 
@@ -58,17 +68,53 @@ class ArchImgFile(object):
   RawTypes = ['.RAF', '.DNG', '.CRW', '.CR2']
   IgnoreTypes = ['.SWP', '.LOG']
   EditorTypes = ['.PSD', '.XCF', '.TIFF', '.TIF']
+  Platform = HostType.UNKNOWN
+  MediaRoot = ''
+
+
+  @classmethod
+  def _initialize_platform(cls):
+    if ArchImgFile.Platform is not HostType.UNKNOWN:
+      return
+    if os.name == 'posix': # mac?
+      if platform.uname()[0] == 'Linux':
+        ArchImgFile.Platform = HostType.LINUX
+        if os.path.exists('/mnt/chromeos'):
+          ArchImgFile.Platform = HostType.CROSTINI
+          ArchImgFile.MediaRoot = '/mnt/chromeos/removable'
+        else:
+          ubuRoot = os.path.join('/media/', os.environ['USER'])
+          if os.path.exists(ubuRoot):
+            ArchImgFile.Platform = HostType.UBUNTU
+            ArchImgFile.MediaRoot = ubuRoot
+          else:
+            ArchImgFile.MediaRoot = '/mnt'
+      else: # mac
+        ArchImgFile.Platform = HostType.MAC
+        ArchImgFile.MediaRoot = '/Volumes'
+    elif os.name == "nt":     # or self.opt.win32:
+        ArchImgFile.Platform = HostType.WINDOWS
+        print("Unsupported: Windows")
+        sys.exit()
+    else:
+      print("Unrecognized OS '{}'".format(os.name))
+      sys.exit()
+
+
   def __init__(self, Filename=None):
     '''
     basics
     '''
+    ArchImgFile._initialize_platform()
     self.filename = Filename
     self.src_volume = None
     self.was_archived = False
+    self.is_wip = False
     self._initialize_type() # first
     self._initialize_size() # second
     # others can arrive in arbitrary order
     self._initialize_origin_name()
+    self._initialize_work_state()
     self._initialize_rating()
     self._determine_archive_location_()
 
@@ -110,6 +156,16 @@ class ArchImgFile(object):
       self.type = ArchFileType.ERROR
       return
     self.nBytes += s.st_size
+
+  def _initialize_work_state(self):
+    if self.type is ArchFileType.EDITOR:
+      self.is_wip = True
+      return
+    for part in self.filename.split(os.path.sep):
+      if part[:4] == 'Work':
+        self.is_wip = True
+        return
+
 
 #pylint: disable=attribute-defined-outside-init
 #   linter is just confused by the function indirection

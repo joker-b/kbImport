@@ -23,11 +23,25 @@ class ArchDB(object):
       # if it fails, print an error and continue empty
       print("get db from storage")
     self.archRecs = {}
+    self.allFiles = {}
+
+  def was_already_scanned(self, Filename):
+    """
+    TODO: unravel just the volume name, compare to THAT
+    ...and keep a list indexed that way
+    """
+    if self.allFiles.get(Filename): # TODO: this is way too simple
+      return True
+    return False
 
   def add_file(self, Filename):
     '''
     TODO: does this know too much about ArchImgFile/ArchRec internals?
+    TODO: avoid adding files we already have
     '''
+    if self.was_already_scanned(Filename):
+      return
+    self.allFiles[Filename] = 1 # TODO: wrong, this can be better
     img = ArchImgFile(Filename)
     o = img.origin_name
     rec = self.archRecs.get(o)
@@ -46,7 +60,7 @@ class ArchDB(object):
       if os.path.isdir(full):
         self.add_folder(full)
       else:
-        self.add_file(full) # TODO: only images
+        self.add_file(full)
 
   def archive_size(self):
     total = 0
@@ -76,6 +90,7 @@ def get_test_folder():
   # f2 = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun'
   for f2 in [
       '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_06_WoodX/',
+      '/Volumes/pix20s/kbImport/Pix/',
       '/Volumes/pix20s/kbImport/Pix/2020/2020-06-Jun/2020_06_06_Wood/']:
     if os.path.exists(f2):
       return f2
@@ -104,6 +119,6 @@ if __name__ == '__main__':
   print("{} Archive Locations".format(len(archLocs)))
   for dest in list(archLocs.keys()):
     print(dest)
-  print("Archive Size: {:.4f}MB from {:.6}MB".format(
+  print("Archive Size: {:.6f}MB from {:.8}MB".format(
       db.archive_size()/(1024*1024),
       db.source_size()/(1024*1024)))

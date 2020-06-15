@@ -54,6 +54,8 @@ class ArchRec(object):
     for v in self.versions:
       if v.type is ArchFileType.EDITOR:
         return True
+      if v.is_wip:
+        return True
     # TODO: multiple outputs, varying sizes? Also true
     return False
 
