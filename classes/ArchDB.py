@@ -89,7 +89,7 @@ def get_test_folder():
       return f2
   return '.' # less-awkward fail
 
-if __name__ == '__main__':
+def build_test_db():
   test_pic = get_test_pic()
   test_folder = get_test_folder()
   # test_folder = '/home/kevinbjorke/pix/'
@@ -97,7 +97,20 @@ if __name__ == '__main__':
   # d.add_file(f)
   print("let's test {}".format(test_folder))
   db.add_folder(test_folder)
-  # d.add_folder(os.path.split(f)[0])
+  return db
+
+def load_test_db(Filename):
+  jf = open(Filename, 'rb')
+  db = pickle.load(jf)
+  jf.close()
+  return db
+
+def save_test(Bbj, Filename):
+  jf = open(Filename, 'wb')
+  pickle.dump(db, jf)
+  jf.close()
+
+def describe_test_db(db):
   print(db)
   n = 0
   archLocs = {}
@@ -115,7 +128,11 @@ if __name__ == '__main__':
   print("Archive Size: {:.6f}MB from {:.8}MB".format(
       db.archive_size()/(1024*1024),
       db.source_size()/(1024*1024)))
-  jf = open('pix20s-db.pkl', 'wb')
-  pickle.dump(db, jf)
-  jf.close()
+
+if __name__ == '__main__':
+  #test_db = build_test_db()
+  test_db = load_test_db('pix20s-db.pkl')
+  # d.add_folder(os.path.split(f)[0])
+  describe_test_db(test_db)
+  #save_test(test_db, 'pix20s-db.pkl')
 
