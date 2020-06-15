@@ -100,6 +100,14 @@ class ArchImgFile(object):
       print("Unrecognized OS '{}'".format(os.name))
       sys.exit()
 
+  @classmethod
+  def get_relative_name(cls, Filename):
+    ArchImgFile._initialize_platform()
+    l = len(ArchImgFile.MediaRoot)
+    if Filename[:l] != ArchImgFile.MediaRoot:
+      print("Error: get_relative_name({}):\n    not in {}".format(Filename, ArchImgFile.MediaRoot))
+      sys.exit()
+    return Filename[(l+1):]
 
   def __init__(self, Filename=None):
     '''
@@ -107,12 +115,14 @@ class ArchImgFile(object):
     '''
     ArchImgFile._initialize_platform()
     self.filename = Filename
+    self.relative_name = None
     self.src_volume = None
     self.was_archived = False
     self.is_wip = False
     self._initialize_type() # first
     self._initialize_size() # second
     # others can arrive in arbitrary order
+    self._find_src_volume()
     self._initialize_origin_name()
     self._initialize_work_state()
     self._initialize_rating()
@@ -166,6 +176,14 @@ class ArchImgFile(object):
         self.is_wip = True
         return
 
+  def _find_src_volume(self):
+    l = len(ArchImgFile.MediaRoot)
+    if self.filename[:l] != ArchImgFile.MediaRoot:
+      print("Error: {}\n   s not in {}".format(self.filename, ArchImgFile.MediaRoot))
+      sys.exit()
+    self.relative_name = ArchImgFile.get_relative_name(self.filename)
+    paths = self.relative_name.split(os.path.sep, 1)
+    self.volume = paths[0]
 
 #pylint: disable=attribute-defined-outside-init
 #   linter is just confused by the function indirection
@@ -286,6 +304,15 @@ class ArchImgFile(object):
         self.nBytes/(1024*1024),
         self.rating, self.destination_dir)
 
+  def print_stats(self):
+    print('{}:\n  {:.2f} MB, rating {}\n  arch to {}\n  volume {}\n  relative name {}'.format(
+        self.filename,
+        self.nBytes/(1024*1024),
+        self.rating,
+        self.destination_dir,
+        self.volume,
+        self.relative_name))
+
 #
 # Test Fixtures
 #
@@ -321,4 +348,4 @@ if __name__ == '__main__':
     print('----- {}'.format(sample_f))
     aif = ArchImgFile(sample_f)
     # print("Archive Location {}".format(aif._determine_archive_location_()))
-    print(aif)
+    aif.print_stats()

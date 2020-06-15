@@ -6,6 +6,7 @@ import os
 import sys
 from ArchImgFile import ArchImgFile
 from ArchRec import ArchRec
+import pickle
 
 if sys.version_info > (3,):
   long = int
@@ -25,23 +26,15 @@ class ArchDB(object):
     self.archRecs = {}
     self.allFiles = {}
 
-  def was_already_scanned(self, Filename):
-    """
-    TODO: unravel just the volume name, compare to THAT
-    ...and keep a list indexed that way
-    """
-    if self.allFiles.get(Filename): # TODO: this is way too simple
-      return True
-    return False
-
   def add_file(self, Filename):
     '''
     TODO: does this know too much about ArchImgFile/ArchRec internals?
     TODO: avoid adding files we already have
     '''
-    if self.was_already_scanned(Filename):
+    trimmed = ArchImgFile.get_relative_name(Filename)
+    if self.allFiles.get(trimmed):
       return
-    self.allFiles[Filename] = 1 # TODO: wrong, this can be better
+    self.allFiles[trimmed] = 1
     img = ArchImgFile(Filename)
     o = img.origin_name
     rec = self.archRecs.get(o)
@@ -122,3 +115,7 @@ if __name__ == '__main__':
   print("Archive Size: {:.6f}MB from {:.8}MB".format(
       db.archive_size()/(1024*1024),
       db.source_size()/(1024*1024)))
+  jf = open('pix20s-db.pkl', 'wb')
+  pickle.dump(db, jf)
+  jf.close()
+
