@@ -1,6 +1,9 @@
 #! /bin/python
 """
 Each ImgInfo object contains archive data about a single image
+TODO: Identify doppelgangers - based on size rather than date?
+TODO: how to best handle images like DCSF4940 - 9 editions, probably
+     at least three different photos from 2014/2019/2020?
 """
 import os
 import sys
@@ -94,6 +97,26 @@ class ArchRec(object):
       total += v.nBytes
     return total
 
+  def spot_doppels(self):
+    nver = len(self.versions)
+    dop = [False] * nver
+    base = []
+    for i in range(nver):
+      base[i] = os.path.basename(self.versions[i].filename)
+    for i in range(nver):
+      isize = self.versions[i].nBytes
+      for j in range(i+nver):
+        if dop[j]:
+          continue
+        if base[i] == base[j]:
+          jsize = self.versions[j].nBytes
+          if isize == jsize:
+            dop[j] = True
+    # TODO now what? how to report this usefully, and act on the results when
+    #    archiving
+    return(dop) # TODO wrong
+
+
   def __str__(self):
     return '{}: {} edition(s)'.format(self.origin_name(), len(self.versions))
 
@@ -144,3 +167,4 @@ if __name__ == '__main__':
   ar.print_stats()
   print("Archive Locations from {}".format(o))
   print(ar.archive_locations())
+  print(ar.spot_doppels())

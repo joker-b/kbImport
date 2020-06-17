@@ -33,7 +33,7 @@ class ArchDB(object):
     '''
     trimmed = ArchImgFile.get_relative_name(Filename)
     if self.allFiles.get(trimmed):
-      return
+      return 0
     self.allFiles[trimmed] = 1
     img = ArchImgFile(Filename)
     o = img.origin_name
@@ -42,18 +42,21 @@ class ArchDB(object):
       rec = ArchRec()
       self.archRecs[o] = rec
     rec.add_img_file(img)
+    return 1
 
   def add_folder(self, Folder):
+    nFiles = 0
     if not os.path.exists(Folder):
-      return
+      return nFiles
     for item in os.listdir(Folder):
       if item[0] == '.':
         continue
       full = os.path.join(Folder, item)
       if os.path.isdir(full):
-        self.add_folder(full)
+        nFiles += self.add_folder(full)
       else:
-        self.add_file(full)
+        nFiles += self.add_file(full)
+    return nFiles
 
   def archive_size(self):
     total = 0
@@ -68,7 +71,7 @@ class ArchDB(object):
     return total
 
   def __str__(self):
-    return '{} Images:\n'.format(len(self.archRecs))
+    return '{} Images ({} files):\n'.format(len(self.archRecs), len(self.allFiles))
     # '\n'.join([self.archRecs[a].__str__() for a in self.archRecs]))
 
 #
@@ -82,21 +85,30 @@ def get_test_folder():
   # f2 = '/home/kevinbjorke/pix/kbImport/Pix/'
   # f2 = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun'
   for f2 in [
-      '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_06_WoodX/',
+      # '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_06_WoodX/',
       '/Volumes/pix20s/kbImport/Pix/',
-      '/Volumes/pix20s/kbImport/Pix/2020/2020-06-Jun/2020_06_06_Wood/']:
+      '/Volumes/pix18/kbImport/Pix/',
+      '/Volumes/pix18/Pix/',
+      '/Volumes/pix17/Pix/',
+      '/Volumes/pix20/Pix/',
+      '/Volumes/Sept2013/Pix/',
+      '/Volumes/CameraWork/Pix/']:
     if os.path.exists(f2):
       return f2
   return '.' # less-awkward fail
 
-def build_test_db():
+def build_test_db(Filename = None):
   test_pic = get_test_pic()
   test_folder = get_test_folder()
   # test_folder = '/home/kevinbjorke/pix/'
-  db = ArchDB()
+  if Filename is None:
+    db = ArchDB()
+  else:
+    db = load_test_db(Filename)
   # d.add_file(f)
-  print("let's test {}".format(test_folder))
-  db.add_folder(test_folder)
+  print("let's scan {}".format(test_folder))
+  nf = db.add_folder(test_folder)
+  print('Added {} new files'.format(nf))
   return db
 
 def load_test_db(Filename):
@@ -107,7 +119,7 @@ def load_test_db(Filename):
 
 def save_test(Bbj, Filename):
   jf = open(Filename, 'wb')
-  pickle.dump(db, jf)
+  pickle.dump(Bbj, jf)
   jf.close()
 
 def describe_test_db(db):
@@ -122,17 +134,21 @@ def describe_test_db(db):
     n += 1
     for loc in ar.archive_locations():
       archLocs[loc] = 1
-  print("{} Archive Locations".format(len(archLocs)))
+  print("{} Archive Locations:".format(len(archLocs)))
+  n = 0
   for dest in list(archLocs.keys()):
     print(dest)
-  print("Archive Size: {:.6f}MB from {:.8}MB".format(
-      db.archive_size()/(1024*1024),
-      db.source_size()/(1024*1024)))
+    if n >= 3:
+      print('...etc')
+      break
+    n += 1
+  print("Archive Size: {:.6g}GB from {:.8g}GB".format(
+      db.archive_size()/(1024*1024*1024),
+      db.source_size()/(1024*1024*1024)))
 
 if __name__ == '__main__':
-  #test_db = build_test_db()
-  test_db = load_test_db('pix20s-db.pkl')
-  # d.add_folder(os.path.split(f)[0])
+  #test_db = build_test_db('pix18-20s-db.pkl')
+  test_db = load_test_db('pix18-20s-db.pkl')
   describe_test_db(test_db)
-  #save_test(test_db, 'pix20s-db.pkl')
+  # save_test(test_db, 'pix18-20s-db.pkl')
 
