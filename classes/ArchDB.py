@@ -146,9 +146,22 @@ def describe_test_db(db):
       db.archive_size()/(1024*1024*1024),
       db.source_size()/(1024*1024*1024)))
 
+def dop_hunt(db):
+  n = 0
+  for k in db.archRecs:
+    ar = db.archRecs[k]
+    if ar.spot_doppels().count(True) > 0:
+      n += 1
+  print("{} of {} records contained doppelgangers".format(n, len(db.archRecs)))
+
+#
+# #######################
+#
+
 if __name__ == '__main__':
   #test_db = build_test_db('pix18-20s-db.pkl')
   test_db = load_test_db('pix18-20s-db.pkl')
   describe_test_db(test_db)
+  dop_hunt(test_db)
   # save_test(test_db, 'pix18-20s-db.pkl')
 

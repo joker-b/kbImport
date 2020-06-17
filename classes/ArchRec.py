@@ -83,11 +83,14 @@ class ArchRec(object):
   def archive_size(self):
     include_raw = self.should_archive_raw()
     total = 0
+    dops = self.spot_doppels()
     # TODO: watch for duplications
-    for v in self.versions:
-      if v.type is ArchFileType.RAW and not include_raw:
-        continue
-      total += v.nBytes
+    for i in range(len(self.versions)):
+      if not dops[i]:
+        v = self.versions[i]
+        if v.type is ArchFileType.RAW and not include_raw:
+          continue
+        total += v.nBytes
     return total
 
   def source_size(self):
@@ -100,12 +103,10 @@ class ArchRec(object):
   def spot_doppels(self):
     nver = len(self.versions)
     dop = [False] * nver
-    base = []
-    for i in range(nver):
-      base[i] = os.path.basename(self.versions[i].filename)
-    for i in range(nver):
+    base = [os.path.basename(self.versions[i].filename) for i in range(nver)]
+    for i in range(nver-1):
       isize = self.versions[i].nBytes
-      for j in range(i+nver):
+      for j in range(i+1, nver):
         if dop[j]:
           continue
         if base[i] == base[j]:
@@ -114,16 +115,26 @@ class ArchRec(object):
             dop[j] = True
     # TODO now what? how to report this usefully, and act on the results when
     #    archiving
-    return(dop) # TODO wrong
+    '''
+    if dop.count(True) > 1 and self.source_size() > 10000: # size guess to avoid tiny files 0:
+      print("doppel {} in {} bytes".format(self.origin_name(), self.source_size()))
+      self.print_versions()
+      print(dop)
+      sys.exit()
+    '''
+    return dop # TODO: review
 
 
   def __str__(self):
     return '{}: {} edition(s)'.format(self.origin_name(), len(self.versions))
 
-  def print_stats(self):
+  def print_versions(self):
     print(self)
     for v in self.versions:
       print(v)
+
+  def print_stats(self):
+    self.print_versions()
     print("Archived size: {:.2f}MB of {:.4}MB".format(
         self.archive_size() / (1024*1024), self.source_size() / (1024*1024)))
 
