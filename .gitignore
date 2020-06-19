@@ -1,6 +1,7 @@
 *.py[cod]
 # misc sketches etc
 scratch
+logs
 
 # C extensions
 *.so

@@ -80,11 +80,22 @@ class ArchRec(object):
       return True
     return False
 
+  def archive_to(self, DestinationRoot):
+    include_raw = self.should_archive_raw()
+    dops = self.spot_doppels()
+    nArchived = 0
+    for i in range(len(self.versions)):
+      if not dops[i]:
+        v = self.versions[i]
+        if v.type is ArchFileType.RAW and not include_raw:
+          continue
+        nArchived += v.archive_to(DestinationRoot)
+    return nArchived
+
   def archive_size(self):
     include_raw = self.should_archive_raw()
     total = 0
     dops = self.spot_doppels()
-    # TODO: watch for duplications
     for i in range(len(self.versions)):
       if not dops[i]:
         v = self.versions[i]

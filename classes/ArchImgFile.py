@@ -12,6 +12,7 @@ import sys
 import re
 import subprocess
 import platform
+import shutil
 import json
 import xml.etree.ElementTree as ET
 from enum import Enum
@@ -65,12 +66,22 @@ class ArchImgFile(object):
   TODO: precompile regex's
   add archive() method
   '''
-  RawTypes = ['.RAF', '.DNG', '.CRW', '.CR2']
+  RawTypes = ['.RAF', '.DNG', '.CRW', '.CR2'] # TODO: others?
   IgnoreTypes = ['.SWP', '.LOG']
   EditorTypes = ['.PSD', '.XCF', '.TIFF', '.TIF']
   Platform = HostType.UNKNOWN
   MediaRoot = ''
+  _mountedSrcVols = {} # TODO try to avoid pickling this...
+  _mountedDestVols = {} # TODO try to avoid pickling this...
+  _createdDirs = {} # same
+  _copyCount = 0 # again
 
+  @classmethod
+  def describe_created_dirs(cls):
+    print("Created {} folders:".format(len(ArchImgFile._createdDirs)))
+    for f in sorted(ArchImgFile._createdDirs.keys()):
+      print(f)
+    print('..while copying {} files'.format(ArchImgFile._copyCount))
 
   @classmethod
   def _initialize_platform(cls):
@@ -108,6 +119,58 @@ class ArchImgFile(object):
       print("Error: get_relative_name({}):\n    not in {}".format(Filename, ArchImgFile.MediaRoot))
       sys.exit()
     return Filename[(l+1):]
+
+  @classmethod
+  def create_destination_dir(cls, DestinationDir):
+    print("Need {}".format(DestinationDir))
+    dl = DestinationDir.split(os.path.sep)
+    for i in range(len(dl)):
+      partial_dir = os.path.sep.join(dl[:i+1])
+      if partial_dir != '':
+        if not os.path.exists(partial_dir):
+          # print("make '{}'".format(partial_dir))
+          try:
+            os.mkdir(partial_dir)
+          except AttributeError:
+            print('mkdir({}) failed: {}'.format(partial_dir, sys.exc_info()))
+          except:
+            print('mkdir({}) failed: {}'.format(partial_dir, sys.exc_info()[0]))
+            return False
+          if not os.path.exists(partial_dir):
+            print('mkdir({}) failed mysteriously'.format(partial_dir))
+            return False
+          ArchImgFile._createdDirs[partial_dir] = 1
+        else:
+          if not os.path.isdir(partial_dir):
+            print("ERROR: '{}' exists, but NOT a directory".format(partial_dir))
+            return False
+    return True
+
+  @classmethod
+  def volume_path(cls, VolumeName):
+    return os.path.join('/Volumes', VolumeName)
+
+  @classmethod
+  def dest_volume_ready(cls, DestinationRoot):
+    m = ArchImgFile._mountedDestVols.get(DestinationRoot)
+    if m is not None:
+      return m
+    volname = ArchImgFile.volume_path(DestinationRoot)
+    ArchImgFile._mountedDestVols[DestinationRoot] = os.path.exists(volname)
+    return ArchImgFile._mountedDestVols[DestinationRoot]
+
+  @classmethod
+  def source_volume_ready(cls, VolumeName):
+    m = ArchImgFile._mountedSrcVols.get(VolumeName)
+    if m is not None:
+      return m
+    volname = ArchImgFile.volume_path(VolumeName)
+    ArchImgFile._mountedSrcVols[VolumeName] = os.path.exists(volname)
+    if ArchImgFile._mountedSrcVols[VolumeName]:
+      print("Source volume {} ready".format(VolumeName))
+    else:
+      print("Source volume {} missing".format(VolumeName))
+    return ArchImgFile._mountedSrcVols[VolumeName]
 
   def __init__(self, Filename=None):
     '''
@@ -291,6 +354,34 @@ class ArchImgFile(object):
     self.destination_dir = self.folder()
 
   # END OF INITIALIZERS
+
+  def archive_to(self, DestinationRoot):
+    'TODO archive stuff'
+    if not ArchImgFile.source_volume_ready(self.volume):
+      return 0 # not here
+    if not ArchImgFile.dest_volume_ready(DestinationRoot):
+      print("Destination {} not mounted".format(DestinationRoot))
+      return 0 # not here
+    destDir = os.path.join(DestinationRoot, self.destination_dir)
+    base = os.path.basename(self.filename)
+    destFile = os.path.join(destDir, base)
+    if os.path.exists(destFile):
+      # print("Exists: {}".format(destFile))
+      return 0 # already done
+    if not os.path.exists(destDir):
+      if not ArchImgFile.create_destination_dir(destDir):
+        return 0 # no destination
+    try:
+      shutil.copyfile(self.filename, destFile)
+      # shutil.copy2(self.filename, destFile)
+    except:
+      print("ERR: copy({}, {}) got {}".format(self.filename, destFile, sys.exc_info()))
+      return 0
+    ArchImgFile._copyCount += 1
+    if (ArchImgFile._copyCount % 500) == 0:
+      print("{} files copied".format(ArchImgFile._copyCount))
+    return 1
+
 
   def folder(self):
     chain = self.filename.split(os.path.sep)

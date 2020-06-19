@@ -58,6 +58,17 @@ class ArchDB(object):
         nFiles += self.add_file(full)
     return nFiles
 
+  def archive_to(self, DestinationDir):
+    total = 0
+    i = 0
+    for kn in self.archRecs:
+      total += self.archRecs[kn].archive_to(DestinationDir)
+      i += 1
+      # TODO remove this...
+      #if i > 10000:
+      #  break
+    return total
+
   def archive_size(self):
     total = 0
     for kn in self.archRecs:
@@ -154,6 +165,11 @@ def dop_hunt(db):
       n += 1
   print("{} of {} records contained doppelgangers".format(n, len(db.archRecs)))
 
+def test_archiving(db, DestDir):
+  print("sending to {}".format(DestDir))
+  total = db.archive_to(DestDir)
+  print("Archived {} files".format(total))
+
 #
 # #######################
 #
@@ -161,7 +177,9 @@ def dop_hunt(db):
 if __name__ == '__main__':
   #test_db = build_test_db('pix18-20s-db.pkl')
   test_db = load_test_db('pix18-20s-db.pkl')
-  describe_test_db(test_db)
-  dop_hunt(test_db)
+  #describe_test_db(test_db)
+  #dop_hunt(test_db)
   # save_test(test_db, 'pix18-20s-db.pkl')
+  test_archiving(test_db, '/Volumes/Legacy20/Pix')
+  ArchImgFile.describe_created_dirs()
 
