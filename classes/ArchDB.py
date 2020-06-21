@@ -55,7 +55,7 @@ class ArchDB(object):
     TODO: does this know too much about ArchImgFile/ArchRec internals?
     TODO: avoid adding files we already have
     '''
-    trimmed = ArchImgFile.get_relative_name(Filename)
+    trimmed = ArchImgFile.get_media_name(Filename)
     if self.allFiles.get(trimmed):
       return 0
     self.allFiles[trimmed] = 1
@@ -155,7 +155,7 @@ def get_test_folder():
   # f2 = '/home/kevinbjorke/pix/kbImport/Pix/'
   # f2 = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun'
   for f2 in [
-      # '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_06_WoodX/',
+      '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_06_WoodX/',
       '/Volumes/pix20s/kbImport/Pix/',
       '/Volumes/pix18/kbImport/Pix/',
       '/Volumes/pix18/Pix/',
@@ -191,8 +191,9 @@ def test_archiving(db, DestDir):
 #
 
 if __name__ == '__main__':
-  #test_db = build_test_db('pix18-20s-db.pkl')
-  test_db = ArchDB.load('pix18-20s-db.pkl')
+  test_db = build_test_db()
+  # test_db = build_test_db('pix18-20s-db.pkl')
+  # test_db = ArchDB.load('pix18-20s-db.pkl')
   # test_db.describe()
   # test_db.dop_hunt()
   # save_test(test_db, 'pix18-20s-db.pkl')

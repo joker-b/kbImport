@@ -75,36 +75,42 @@ class ArchImgFile(object):
   _mountedDestVols = {} # TODO try to avoid pickling this...
   _createdDirs = {} # same
   _copyCount = 0 # again
+  _alreadyArchivedCount = 0
+  _pretending = False # TODO: when _pretending, all mkdirs and exists and copys pretend to work
+
+  @classmethod
+  def pretend(cls, Pretending=True):
+    cls._pretending = Pretending
 
   @classmethod
   def describe_created_dirs(cls):
-    print("Created {} folders:".format(len(ArchImgFile._createdDirs)))
-    for f in sorted(ArchImgFile._createdDirs.keys()):
+    print("Created {} folders:".format(len(cls._createdDirs)))
+    for f in sorted(cls._createdDirs.keys()):
       print(f)
-    print('..while copying {} files'.format(ArchImgFile._copyCount))
+    print('..while copying {} files'.format(cls._copyCount))
 
   @classmethod
   def _initialize_platform(cls):
-    if ArchImgFile.Platform is not HostType.UNKNOWN:
+    if cls.Platform is not HostType.UNKNOWN:
       return
     if os.name == 'posix': # mac?
       if platform.uname()[0] == 'Linux':
-        ArchImgFile.Platform = HostType.LINUX
+        cls.Platform = HostType.LINUX
         if os.path.exists('/mnt/chromeos'):
-          ArchImgFile.Platform = HostType.CROSTINI
-          ArchImgFile.MediaRoot = '/mnt/chromeos/removable'
+          cls.Platform = HostType.CROSTINI
+          cls.MediaRoot = '/mnt/chromeos/removable'
         else:
           ubuRoot = os.path.join('/media/', os.environ['USER'])
           if os.path.exists(ubuRoot):
-            ArchImgFile.Platform = HostType.UBUNTU
-            ArchImgFile.MediaRoot = ubuRoot
+            cls.Platform = HostType.UBUNTU
+            cls.MediaRoot = ubuRoot
           else:
-            ArchImgFile.MediaRoot = '/mnt'
+            cls.MediaRoot = '/mnt'
       else: # mac
-        ArchImgFile.Platform = HostType.MAC
-        ArchImgFile.MediaRoot = '/Volumes'
+        cls.Platform = HostType.MAC
+        cls.MediaRoot = '/Volumes'
     elif os.name == "nt":     # or self.opt.win32:
-        ArchImgFile.Platform = HostType.WINDOWS
+        cls.Platform = HostType.WINDOWS
         print("Unsupported: Windows")
         sys.exit()
     else:
@@ -112,11 +118,11 @@ class ArchImgFile(object):
       sys.exit()
 
   @classmethod
-  def get_relative_name(cls, Filename):
-    ArchImgFile._initialize_platform()
-    l = len(ArchImgFile.MediaRoot)
-    if Filename[:l] != ArchImgFile.MediaRoot:
-      print("Error: get_relative_name({}):\n    not in {}".format(Filename, ArchImgFile.MediaRoot))
+  def get_media_name(cls, Filename):
+    cls._initialize_platform()
+    l = len(cls.MediaRoot)
+    if Filename[:l] != cls.MediaRoot:
+      print("Error: get_media_name({}):\n    not in {}".format(Filename, cls.MediaRoot))
       sys.exit()
     return Filename[(l+1):]
 
@@ -128,20 +134,22 @@ class ArchImgFile(object):
       partial_dir = os.path.sep.join(dl[:i+1])
       if partial_dir != '':
         if not os.path.exists(partial_dir):
-          # print("make '{}'".format(partial_dir))
-          try:
-            os.mkdir(partial_dir)
-          except AttributeError:
-            print('mkdir({}) failed: {}'.format(partial_dir, sys.exc_info()))
-          except:
-            print('mkdir({}) failed: {}'.format(partial_dir, sys.exc_info()[0]))
-            return False
-          if not os.path.exists(partial_dir):
-            print('mkdir({}) failed mysteriously'.format(partial_dir))
-            return False
-          ArchImgFile._createdDirs[partial_dir] = 1
+          if cls._pretending:
+            print("pretend to make '{}'".format(partial_dir))
+          else:
+            try:
+              os.mkdir(partial_dir)
+            except AttributeError:
+              print('mkdir({}) failed: {}'.format(partial_dir, sys.exc_info()))
+            except:
+              print('mkdir({}) failed: {}'.format(partial_dir, sys.exc_info()[0]))
+              return False
+            if not os.path.exists(partial_dir):
+              print('mkdir({}) failed mysteriously'.format(partial_dir))
+              return False
+          cls._createdDirs[partial_dir] = 1
         else:
-          if not os.path.isdir(partial_dir):
+          if not os.path.isdir(partial_dir): # even if pretending, fail on this
             print("ERROR: '{}' exists, but NOT a directory".format(partial_dir))
             return False
     return True
@@ -152,25 +160,29 @@ class ArchImgFile(object):
 
   @classmethod
   def dest_volume_ready(cls, DestinationRoot):
-    m = ArchImgFile._mountedDestVols.get(DestinationRoot)
+    m = cls._mountedDestVols.get(DestinationRoot)
     if m is not None:
       return m
-    volname = ArchImgFile.volume_path(DestinationRoot)
-    ArchImgFile._mountedDestVols[DestinationRoot] = os.path.exists(volname)
-    return ArchImgFile._mountedDestVols[DestinationRoot]
+    volname = cls.volume_path(DestinationRoot)
+    cls._mountedDestVols[DestinationRoot] = os.path.exists(volname)
+    return cls._mountedDestVols[DestinationRoot]
 
   @classmethod
   def source_volume_ready(cls, VolumeName):
-    m = ArchImgFile._mountedSrcVols.get(VolumeName)
+    m = cls._mountedSrcVols.get(VolumeName)
     if m is not None:
       return m
-    volname = ArchImgFile.volume_path(VolumeName)
-    ArchImgFile._mountedSrcVols[VolumeName] = os.path.exists(volname)
-    if ArchImgFile._mountedSrcVols[VolumeName]:
+    volname = cls.volume_path(VolumeName)
+    cls._mountedSrcVols[VolumeName] = os.path.exists(volname)
+    if cls._mountedSrcVols[VolumeName]:
       print("Source volume {} ready".format(VolumeName))
     else:
       print("Source volume {} missing".format(VolumeName))
-    return ArchImgFile._mountedSrcVols[VolumeName]
+    return cls._mountedSrcVols[VolumeName]
+
+  #
+  # INSTANCE METHODS BEGIN
+  #
 
   def __init__(self, Filename=None):
     '''
@@ -241,12 +253,21 @@ class ArchImgFile(object):
 
   def _find_src_volume(self):
     l = len(ArchImgFile.MediaRoot)
-    if self.filename[:l] != ArchImgFile.MediaRoot:
-      print("Error: {}\n   s not in {}".format(self.filename, ArchImgFile.MediaRoot))
-      sys.exit()
-    self.relative_name = ArchImgFile.get_relative_name(self.filename)
-    paths = self.relative_name.split(os.path.sep, 1)
-    self.volume = paths[0]
+    if self.filename[:l] == ArchImgFile.MediaRoot:
+      self.relative_name = ArchImgFile.get_media_name(self.filename)
+      paths = self.relative_name.split(os.path.sep, 1)
+      self.volume = paths[0]
+      return
+    h = os.environ['HOME']
+    l = len(h)
+    if self.filename[:l] == h:
+      print('home volume')
+      self.volume = h #TODO: could be much better
+      self.relative_name = '.' # TODO: wrong!
+      return
+    # TODO: this test should also accept local folders, e.g. ~/pix/kbImport/xxx...
+    print("Error: _find_src_volume({}) unknown".format(self.filename))
+    sys.exit()
 
 #pylint: disable=attribute-defined-outside-init
 #   linter is just confused by the function indirection
@@ -366,17 +387,19 @@ class ArchImgFile(object):
     base = os.path.basename(self.filename)
     destFile = os.path.join(destDir, base)
     if os.path.exists(destFile):
+      ArchImgFile._alreadyArchivedCount += 1
       # print("Exists: {}".format(destFile))
       return 0 # already done
     if not os.path.exists(destDir):
       if not ArchImgFile.create_destination_dir(destDir):
         return 0 # no destination
-    try:
-      shutil.copyfile(self.filename, destFile)
-      # shutil.copy2(self.filename, destFile)
-    except:
-      print("ERR: copy({}, {}) got {}".format(self.filename, destFile, sys.exc_info()))
-      return 0
+    if not ArchImgFile._pretending:
+      try:
+        shutil.copyfile(self.filename, destFile)
+        # shutil.copy2(self.filename, destFile)
+      except:
+        print("ERR: copy({}, {}) got {}".format(self.filename, destFile, sys.exc_info()))
+        return 0
     ArchImgFile._copyCount += 1
     if (ArchImgFile._copyCount % 500) == 0:
       print("{} files copied".format(ArchImgFile._copyCount))
