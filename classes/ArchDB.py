@@ -101,6 +101,7 @@ def get_test_folder():
       '/Volumes/pix18/kbImport/Pix/',
       '/Volumes/pix18/Pix/',
       '/Volumes/pix17/Pix/',
+      '/Volumes/pix15/Pix/',
       '/Volumes/pix20/Pix/',
       '/Volumes/Sept2013/Pix/',
       '/Volumes/CameraWork/Pix/']:
@@ -175,11 +176,11 @@ def test_archiving(db, DestDir):
 #
 
 if __name__ == '__main__':
-  #test_db = build_test_db('pix18-20s-db.pkl')
-  test_db = load_test_db('pix18-20s-db.pkl')
+  test_db = build_test_db('pix18-20s-db.pkl')
+  # test_db = load_test_db('pix18-20s-db.pkl')
   #describe_test_db(test_db)
   #dop_hunt(test_db)
-  # save_test(test_db, 'pix18-20s-db.pkl')
-  test_archiving(test_db, '/Volumes/Legacy20/Pix')
-  ArchImgFile.describe_created_dirs()
+  save_test(test_db, 'pix18-20s-db.pkl')
+  # test_archiving(test_db, '/Volumes/Legacy20/Pix')
+  # ArchImgFile.describe_created_dirs()
 
