@@ -18,6 +18,30 @@ class ArchDB(object):
   TODO: debug messages, sizes, etc
   TODO: archive
   '''
+  @classmethod
+  def load(cls, Filename):
+    try:
+      jf = open(Filename, 'rb')
+    except:
+      print('Sorry, no "{}"'.format(Filename))
+      return None
+    db = pickle.load(jf)
+    jf.close()
+    # TODO: verify this is the right object
+    return db
+
+  @classmethod
+  def save(cls, Bbj, Filename):
+    "TODO: verify object"
+    jf = open(Filename, 'wb')
+    pickle.dump(Bbj, jf)
+    jf.close()
+
+
+  @classmethod
+  def describe_created_dirs(cls):
+    ArchImgFile.describe_created_dirs()
+
   def __init__(self, dbFile=None):
     if dbFile is not None:
       # TODO load that file
@@ -44,7 +68,7 @@ class ArchDB(object):
     rec.add_img_file(img)
     return 1
 
-  def add_folder(self, Folder):, TotalFiles=0
+  def add_folder(self, Folder, TotalFiles=0):
     nFiles = 0
     if not os.path.exists(Folder):
       return nFiles
@@ -83,9 +107,42 @@ class ArchDB(object):
       total += self.archRecs[kn].source_size()
     return total
 
+  def dop_hunt(self):
+    n = 0
+    for k in self.archRecs:
+      ar = self.archRecs[k]
+      if ar.spot_doppels().count(True) > 0:
+        n += 1
+    print("{} of {} records contained doppelgangers".format(n, len(self.archRecs)))
+
   def __str__(self):
     return '{} Images ({} files):\n'.format(len(self.archRecs), len(self.allFiles))
     # '\n'.join([self.archRecs[a].__str__() for a in self.archRecs]))
+
+  def describe(self):
+    print(self)
+    n = 0
+    archLocs = {}
+    for k in self.archRecs:
+      ar = self.archRecs[k]
+      if n < 3:
+        k = list(self.archRecs.keys())[n]
+        ar.print_stats()
+      n += 1
+      for loc in ar.archive_locations():
+        archLocs[loc] = 1
+    print("{} Archive Locations:".format(len(archLocs)))
+    n = 0
+    for dest in list(archLocs.keys()):
+      print(dest)
+      if n >= 3:
+        print('...etc')
+        break
+      n += 1
+    print("Archive Size: {:.6g}GB from {:.8g}GB".format(
+        self.archive_size()/(1024*1024*1024),
+        self.source_size()/(1024*1024*1024)))
+
 
 #
 # Basic tests
@@ -117,55 +174,12 @@ def build_test_db(Filename = None):
   if Filename is None:
     db = ArchDB()
   else:
-    db = load_test_db(Filename)
+    db = ArchDB.load(Filename)
   # d.add_file(f)
   print("let's scan {}".format(test_folder))
   nf = db.add_folder(test_folder)
   print('Added {} new files'.format(nf))
   return db
-
-def load_test_db(Filename):
-  jf = open(Filename, 'rb')
-  db = pickle.load(jf)
-  jf.close()
-  return db
-
-def save_test(Bbj, Filename):
-  jf = open(Filename, 'wb')
-  pickle.dump(Bbj, jf)
-  jf.close()
-
-def describe_test_db(db):
-  print(db)
-  n = 0
-  archLocs = {}
-  for k in db.archRecs:
-    ar = db.archRecs[k]
-    if n < 3:
-      k = list(db.archRecs.keys())[n]
-      ar.print_stats()
-    n += 1
-    for loc in ar.archive_locations():
-      archLocs[loc] = 1
-  print("{} Archive Locations:".format(len(archLocs)))
-  n = 0
-  for dest in list(archLocs.keys()):
-    print(dest)
-    if n >= 3:
-      print('...etc')
-      break
-    n += 1
-  print("Archive Size: {:.6g}GB from {:.8g}GB".format(
-      db.archive_size()/(1024*1024*1024),
-      db.source_size()/(1024*1024*1024)))
-
-def dop_hunt(db):
-  n = 0
-  for k in db.archRecs:
-    ar = db.archRecs[k]
-    if ar.spot_doppels().count(True) > 0:
-      n += 1
-  print("{} of {} records contained doppelgangers".format(n, len(db.archRecs)))
 
 def test_archiving(db, DestDir):
   print("sending to {}".format(DestDir))
@@ -178,10 +192,10 @@ def test_archiving(db, DestDir):
 
 if __name__ == '__main__':
   #test_db = build_test_db('pix18-20s-db.pkl')
-  test_db = load_test_db('pix18-20s-db.pkl')
-  #describe_test_db(test_db)
-  #dop_hunt(test_db)
+  test_db = ArchDB.load('pix18-20s-db.pkl')
+  # test_db.describe()
+  # test_db.dop_hunt()
   # save_test(test_db, 'pix18-20s-db.pkl')
-  test_archiving(test_db, '/Volumes/Legacy20/Pix')
-  ArchImgFile.describe_created_dirs()
+  #test_archiving(test_db, '/Volumes/Legacy20/Pix')
+  #ArchDB.describe_created_dirs()
 
