@@ -44,7 +44,7 @@ class ArchDB(object):
     rec.add_img_file(img)
     return 1
 
-  def add_folder(self, Folder):
+  def add_folder(self, Folder):, TotalFiles=0
     nFiles = 0
     if not os.path.exists(Folder):
       return nFiles
@@ -53,9 +53,11 @@ class ArchDB(object):
         continue
       full = os.path.join(Folder, item)
       if os.path.isdir(full):
-        nFiles += self.add_folder(full)
+        nFiles += self.add_folder(full, nFiles+TotalFiles)
       else:
         nFiles += self.add_file(full)
+        if ((nFiles+TotalFiles) % 500) == 0:
+          print('Identified {} files soe far'.format(nFiles+TotalFiles))
     return nFiles
 
   def archive_to(self, DestinationDir):
