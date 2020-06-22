@@ -81,7 +81,7 @@ class ArchDB(object):
       else:
         nFiles += self.add_file(full)
         if ((nFiles+TotalFiles) % 500) == 0:
-          print('Identified {} files soe far'.format(nFiles+TotalFiles))
+          print('Identified {} files so far'.format(nFiles+TotalFiles))
     return nFiles
 
   def archive_to(self, DestinationDir):
@@ -155,7 +155,8 @@ def get_test_folder():
   # f2 = '/home/kevinbjorke/pix/kbImport/Pix/'
   # f2 = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun'
   for f2 in [
-      '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_06_WoodX/',
+      '/home/kevinbjorke/pix/kbImport/Pix',
+      # '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_06_WoodX/',
       '/Volumes/pix20s/kbImport/Pix/',
       '/Volumes/pix18/kbImport/Pix/',
       '/Volumes/pix18/Pix/',
@@ -168,37 +169,19 @@ def get_test_folder():
       return f2
   return '.' # less-awkward fail
 
-def build_test_db(Filename = None):
-  test_pic = get_test_pic()
-  test_folder = get_test_folder()
-  # test_folder = '/home/kevinbjorke/pix/'
-  if Filename is None:
-    db = ArchDB()
-  else:
-    db = ArchDB.load(Filename)
-  # d.add_file(f)
-  print("let's scan {}".format(test_folder))
-  nf = db.add_folder(test_folder)
-  print('Added {} new files'.format(nf))
-  return db
-
-def test_archiving(db, DestDir):
-  print("sending to {}".format(DestDir))
-  total = db.archive_to(DestDir)
-  print("Archived {} files".format(total))
-
 #
-# #######################
+# ############# TESTS
 #
 
 if __name__ == '__main__':
-  test_db = build_test_db('pix18-20s-db.pkl')
-  # test_db = build_test_db('pix18-20s-db.pkl')
-  # test_db = ArchDB.load('pix18-20s-db.pkl')
-  # test_db.describe()
-  # test_db.dop_hunt()
-  # save_test(test_db, 'pix18-20s-db.pkl')
+  test_db = ArchDB()
+  test_pic = get_test_pic()
+  test_folder = get_test_folder()
+  print("Add test folder: {}".format(test_folder))
+  nf = test_db.add_folder(test_folder)
+  print('Added {} new files'.format(nf))
+  test_db.describe()
+  test_db.dop_hunt()
   #test_archiving(test_db, '/Volumes/Legacy20/Pix')
-  save_test(test_db, 'pix18-20s-db.pkl')
+  # save_test(test_db, 'pix18-20s-db.pkl')
   #ArchDB.describe_created_dirs()
-

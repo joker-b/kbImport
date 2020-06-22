@@ -110,21 +110,27 @@ class ArchImgFile(object):
         cls.Platform = HostType.MAC
         cls.MediaRoot = '/Volumes'
     elif os.name == "nt":     # or self.opt.win32:
-        cls.Platform = HostType.WINDOWS
-        print("Unsupported: Windows")
-        sys.exit()
+      cls.Platform = HostType.WINDOWS
+      print("Unsupported: Windows")
+      sys.exit()
     else:
       print("Unrecognized OS '{}'".format(os.name))
       sys.exit()
 
   @classmethod
   def get_media_name(cls, Filename):
+    'return the name with MediaRoot or local folder stripped off'
     cls._initialize_platform()
     l = len(cls.MediaRoot)
-    if Filename[:l] != cls.MediaRoot:
-      print("Error: get_media_name({}):\n    not in {}".format(Filename, cls.MediaRoot))
-      sys.exit()
-    return Filename[(l+1):]
+    if Filename[:l] == cls.MediaRoot:
+      return Filename[(l+1):]
+    home = os.environ['HOME']
+    l = len(home)
+    if Filename[:l] == home:
+      return Filename[(l+1):]
+    print("Error: get_media_name({}):\n    not in {} or {}".format(Filename,
+                                                                   cls.MediaRoot, home))
+    sys.exit()
 
   @classmethod
   def create_destination_dir(cls, DestinationDir):
@@ -261,9 +267,9 @@ class ArchImgFile(object):
     h = os.environ['HOME']
     l = len(h)
     if self.filename[:l] == h:
-      print('home volume')
       self.volume = h #TODO: could be much better
-      self.relative_name = '.' # TODO: wrong!
+      self.relative_name = ArchImgFile.get_media_name(self.filename)
+      print('_find_src_volume({}): home volume'.format(self.relative_name))
       return
     # TODO: this test should also accept local folders, e.g. ~/pix/kbImport/xxx...
     print("Error: _find_src_volume({}) unknown".format(self.filename))
@@ -282,7 +288,7 @@ class ArchImgFile(object):
       return
     except:
       print("_query_xmp({}) error: {}".format(self.filename, sys.exc_info()[0]))
-      return None
+      return
     root = tree.getroot()
     desc = root[0][0] # risky?
     ratingI = '{http://ns.adobe.com/xap/1.0/}Rating'
@@ -293,7 +299,7 @@ class ArchImgFile(object):
     self.label = desc.get(labelI)
   def _query_exif(self):
     j = subprocess.run(["exiftool", "-json", "-Rating", "-Label", "-UserComment", self.filename],
-          capture_output=True)
+                       capture_output=True)
     exif = json.loads(j.stdout)[0]
     # print(exif)
     self.rating = exif.get('Rating')
@@ -436,8 +442,8 @@ def get_test_samples():
   #f = H+'/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_13_XE/bjorke_XE_ESCF4060.JPG'
   yDir = '.'
   for v in [
-    '/home/kevinbjorke/pix/kbImport/Pix/2020',
-    '/Volumes/pix20s/kbImport/Pix/2020']:
+      '/home/kevinbjorke/pix/kbImport/Pix/2020',
+      '/Volumes/pix20s/kbImport/Pix/2020']:
     if os.path.exists(v):
       yDir = v
   files = [W for W in [
@@ -448,7 +454,7 @@ def get_test_samples():
       yDir+'/2020-06-Jun/2020_06_06_Wood/bjorke_Wood_DSCF6121.JPG',
       yDir+'/2020-06-Jun/2020_06_06_Wood/bjorke_Wood_DSCF6121.RAF',
       yDir+'/2020-06-Jun/2020_06_06_Wood/bjorke_Wood_DSCF6121.xmp',
-  ] if os.path.exists(W) ]
+  ] if os.path.exists(W)]
   return files
 
 #
