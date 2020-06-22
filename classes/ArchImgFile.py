@@ -180,6 +180,12 @@ class ArchImgFile(object):
       return m
     volname = cls.volume_path(VolumeName)
     cls._mountedSrcVols[VolumeName] = os.path.exists(volname)
+    if not cls._mountedSrcVols[VolumeName]:
+      '''
+      # okay, what about raw name (e.g., home directory)?
+      Check this *after* trying the volume name
+      '''
+      cls._mountedSrcVols[VolumeName] = os.path.exists(VolumeName)
     if cls._mountedSrcVols[VolumeName]:
       print("Source volume {} ready".format(VolumeName))
     else:
@@ -267,9 +273,9 @@ class ArchImgFile(object):
     h = os.environ['HOME']
     l = len(h)
     if self.filename[:l] == h:
-      self.volume = h #TODO: could be much better
+      self.volume = h
       self.relative_name = ArchImgFile.get_media_name(self.filename)
-      print('_find_src_volume({}): home volume'.format(self.relative_name))
+      # print('_find_src_volume({}): home volume'.format(self.relative_name))
       return
     # TODO: this test should also accept local folders, e.g. ~/pix/kbImport/xxx...
     print("Error: _find_src_volume({}) unknown".format(self.filename))
@@ -437,15 +443,15 @@ class ArchImgFile(object):
 # Test Fixtures
 #
 
-def get_test_samples():
-  #H = os.environ['HOME']
-  #f = H+'/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_13_XE/bjorke_XE_ESCF4060.JPG'
-  yDir = '.'
+def get_test_folder():
   for v in [
       '/home/kevinbjorke/pix/kbImport/Pix/2020',
       '/Volumes/pix20s/kbImport/Pix/2020']:
     if os.path.exists(v):
-      yDir = v
+      return v
+  return '.'
+
+def get_test_samples(yDir = '.'):
   files = [W for W in [
       yDir+'/2020-05-May/2020_05_31_BLM/bjorke_BLM_KBXF8642.RAF',
       yDir+'/2020-06-Jun/2020_06_06_WoodX/bjorke_Wood_DSCF6121.JPG',
@@ -461,7 +467,8 @@ def get_test_samples():
 # Unit Test
 #
 if __name__ == '__main__':
-  for sample_f in get_test_samples():
+  v = get_test_folder()
+  for sample_f in get_test_samples(v):
     if not os.path.exists(sample_f):
       print('skipping {} no file'.format(sample_f))
       continue
@@ -469,3 +476,5 @@ if __name__ == '__main__':
     aif = ArchImgFile(sample_f)
     # print("Archive Location {}".format(aif._determine_archive_location_()))
     aif.print_stats()
+  print("TODO - add '{}'' to the relative-path calculation".format(v))
+  print("TODO - add dates to 'loose' files?")
