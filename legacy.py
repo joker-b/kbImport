@@ -49,7 +49,7 @@ def test_archiving(db, DestDir):
 #
 
 if __name__ == '__main__':
-  test_db = ArchDB.ArchDB.load('pix18-20s-db.pkl')
+  test_db = ArchDB.ArchDB.load('classes/pix18-20s-db-L.pkl')
   if test_db is None:
     sys.exit()
   if len(sys.argv) > 1:

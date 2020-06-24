@@ -25,7 +25,11 @@ class ArchDB(object):
     except:
       print('Sorry, no "{}"'.format(Filename))
       return None
-    db = pickle.load(jf)
+    try:
+      db = pickle.load(jf)
+    except:
+      print("oops {}".format(jf))
+      sys.exit()
     jf.close()
     # TODO: verify this is the right object
     return db
@@ -164,6 +168,9 @@ def get_test_folder():
       '/Volumes/pix15/Pix/',
       '/Volumes/pix20/Pix/',
       '/Volumes/Sept2013/Pix/',
+      # '/Users/kevinbjorke/Pictures/kbImport/Pix/2020/2020-01-Jan/2020_01_02_Putnam/',
+      # '/Users/kevinbjorke/Pictures/kbImport/Pix/',
+      '/Users/kevinbjorke/Google Drive/kbImport/Pix/',
       '/Volumes/CameraWork/Pix/']:
     if os.path.exists(f2):
       return f2
@@ -174,14 +181,16 @@ def get_test_folder():
 #
 
 if __name__ == '__main__':
-  test_db = ArchDB()
+  # test_db = ArchDB()
+  test_db = ArchDB.load('pix18-20s-db-L.pkl')
   test_pic = get_test_pic()
   test_folder = get_test_folder()
+  ArchImgFile.pretend(True)
   print("Add test folder: {}".format(test_folder))
   nf = test_db.add_folder(test_folder)
   print('Added {} new files'.format(nf))
   test_db.describe()
   test_db.dop_hunt()
-  #test_archiving(test_db, '/Volumes/Legacy20/Pix')
-  # save_test(test_db, 'pix18-20s-db.pkl')
-  #ArchDB.describe_created_dirs()
+  test_db.archive_to('/Volumes/Legacy20/Pix')
+  ArchDB.save(test_db, 'pix18-20s-db-L2.pkl')
+  ArchDB.describe_created_dirs()

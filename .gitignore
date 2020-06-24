@@ -2,6 +2,8 @@
 # misc sketches etc
 scratch
 logs
+# pickle data
+*.pkl
 
 # C extensions
 *.so

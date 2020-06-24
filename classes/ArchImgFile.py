@@ -134,14 +134,15 @@ class ArchImgFile(object):
 
   @classmethod
   def create_destination_dir(cls, DestinationDir):
-    print("Need {}".format(DestinationDir))
+    # print("Need {}".format(DestinationDir))
     dl = DestinationDir.split(os.path.sep)
     for i in range(len(dl)):
       partial_dir = os.path.sep.join(dl[:i+1])
       if partial_dir != '':
         if not os.path.exists(partial_dir):
           if cls._pretending:
-            print("pretend to make '{}'".format(partial_dir))
+            if not cls._createdDirs.get(partial_dir):
+              print("pretend to make '{}'".format(partial_dir))
           else:
             try:
               os.mkdir(partial_dir)
@@ -405,7 +406,9 @@ class ArchImgFile(object):
     if not os.path.exists(destDir):
       if not ArchImgFile.create_destination_dir(destDir):
         return 0 # no destination
-    if not ArchImgFile._pretending:
+    if ArchImgFile._pretending:
+      print('pretend copy {} -> {}'.format(self.filename, destFile))
+    else:
       try:
         shutil.copyfile(self.filename, destFile)
         # shutil.copy2(self.filename, destFile)
