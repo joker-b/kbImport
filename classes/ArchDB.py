@@ -182,15 +182,15 @@ def get_test_folder():
 
 if __name__ == '__main__':
   # test_db = ArchDB()
-  test_db = ArchDB.load('pix18-20s-db-L.pkl')
+  test_db = ArchDB.load('pix18-20s-db-L2.pkl')
   test_pic = get_test_pic()
   test_folder = get_test_folder()
-  ArchImgFile.pretend(True)
+  ArchImgFile.pretend(False)
   print("Add test folder: {}".format(test_folder))
   nf = test_db.add_folder(test_folder)
   print('Added {} new files'.format(nf))
   test_db.describe()
   test_db.dop_hunt()
   test_db.archive_to('/Volumes/Legacy20/Pix')
-  ArchDB.save(test_db, 'pix18-20s-db-L2.pkl')
+  #ArchDB.save(test_db, 'pix18-20s-db-L2.pkl')
   ArchDB.describe_created_dirs()
