@@ -170,7 +170,7 @@ def get_test_folder():
       '/Volumes/Sept2013/Pix/',
       # '/Users/kevinbjorke/Pictures/kbImport/Pix/2020/2020-01-Jan/2020_01_02_Putnam/',
       # '/Users/kevinbjorke/Pictures/kbImport/Pix/',
-      '/Users/kevinbjorke/Google Drive/kbImport/Pix/',
+      #'/Users/kevinbjorke/Google Drive/kbImport/Pix/',
       '/Volumes/CameraWork/Pix/']:
     if os.path.exists(f2):
       return f2
@@ -192,5 +192,5 @@ if __name__ == '__main__':
   test_db.describe()
   test_db.dop_hunt()
   test_db.archive_to('/Volumes/Legacy20/Pix')
-  #ArchDB.save(test_db, 'pix18-20s-db-L2.pkl')
+  ArchDB.save(test_db, 'pix18-20s-db-L3.pkl')
   ArchDB.describe_created_dirs()
