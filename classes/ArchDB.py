@@ -93,7 +93,7 @@ class ArchDB(object):
     for kn in self.archRecs:
       ar = self.archRecs[kn]
       if not ar.exists_at(DestinationDir):
-        missing.append("{} {}".format(ar.archive_locations(), ar.origin_name()))
+        missing.append("{} {}\n".format(ar.archive_locations(), ar.origin_name()))
     return missing
 
   def archive_to(self, DestinationDir):
@@ -197,6 +197,11 @@ def validate():
   test_db.describe()
   missing = test_db.exists_at('/Volumes/Legacy20/Pix')
   print("Identified {} unarchived records".format(len((missing))))
+  f = open('missing.log')
+  for m in missing:
+    f.write(m)
+  f.close()
+  print('logged names')
 
 def update_from_available_drives():
   # test_db = ArchDB()
