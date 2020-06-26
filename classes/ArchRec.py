@@ -80,6 +80,20 @@ class ArchRec(object):
       return True
     return False
 
+  def exists_at(self, DestinationRoot):
+    include_raw = self.should_archive_raw()
+    dops = self.spot_doppels()
+    n = 0
+    for i in range(len(self.versions)):
+      if not dops[i]:
+        v = self.versions[i]
+        if v.type is ArchFileType.RAW and not include_raw:
+          continue
+        if not v.exists_at(DestinationRoot):
+          return False
+        n += 1
+    return (n > 0)
+
   def archive_to(self, DestinationRoot):
     include_raw = self.should_archive_raw()
     dops = self.spot_doppels()

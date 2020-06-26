@@ -88,6 +88,14 @@ class ArchDB(object):
           print('Identified {} files so far'.format(nFiles+TotalFiles))
     return nFiles
 
+  def exists_at(self, DestinationDir):
+    missing = []
+    for kn in self.archRecs:
+      ar = self.archRecs[kn]
+      if not ar.exists_at(DestinationDir):
+        missing.append("{} {}".format(ar.archive_locations(), ar.origin_name()))
+    return missing
+
   def archive_to(self, DestinationDir):
     total = 0
     i = 0
@@ -180,7 +188,17 @@ def get_test_folder():
 # ############# TESTS
 #
 
-if __name__ == '__main__':
+def validate():
+  # test_db = ArchDB()
+  test_db = ArchDB.load('pix18-20s-db-L3.pkl')
+  if test_db is None:
+    print("sorry")
+    return
+  test_db.describe()
+  missing = test_db.exists_at('/Volumes/Legacy20/Pix')
+  print("Identified {} unarchived records".format(len((missing))))
+
+def update_from_available_drives():
   # test_db = ArchDB()
   test_db = ArchDB.load('pix18-20s-db-L2.pkl')
   test_pic = get_test_pic()
@@ -194,3 +212,8 @@ if __name__ == '__main__':
   test_db.archive_to('/Volumes/Legacy20/Pix')
   ArchDB.save(test_db, 'pix18-20s-db-L3.pkl')
   ArchDB.describe_created_dirs()
+
+if __name__ == '__main__':
+  validate()
+  sys.exit()
+  # update_from_available_drives()

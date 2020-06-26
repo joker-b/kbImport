@@ -389,8 +389,18 @@ class ArchImgFile(object):
 
   # END OF INITIALIZERS
 
+  def exists_at(self, DestinationRoot):
+    'already stored?'
+    if not ArchImgFile.dest_volume_ready(DestinationRoot):
+      print("Archive Volume {} not mounted".format(DestinationRoot))
+      return False
+    destDir = os.path.join(DestinationRoot, self.destination_dir)
+    base = os.path.basename(self.filename)
+    destFile = os.path.join(destDir, base)
+    return os.path.exists(destFile)
+
   def archive_to(self, DestinationRoot):
-    'TODO archive stuff'
+    'archive stuff'
     if not ArchImgFile.source_volume_ready(self.volume):
       return 0 # not here
     if not ArchImgFile.dest_volume_ready(DestinationRoot):
