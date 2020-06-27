@@ -196,12 +196,14 @@ def validate():
     return
   test_db.describe()
   missing = test_db.exists_at('/Volumes/Legacy20/Pix')
-  print("Identified {} unarchived records".format(len((missing))))
-  f = open('missing.log')
+  print("Identified {} unarchived records, such as:".format(len((missing))))
+  print(missing[:3])
+  f = open('missing.log', 'w')
   for m in missing:
     f.write(m)
   f.close()
   print('logged names')
+  return test_db
 
 def update_from_available_drives():
   # test_db = ArchDB()

@@ -43,6 +43,7 @@ class ArchRec(object):
     return self.origin_name()
 
   def origin_name(self):
+    'e.g. KBXF8163'
     if len(self.versions) < 1:
       return None
     return self.versions[0].origin_name
