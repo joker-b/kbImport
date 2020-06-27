@@ -198,7 +198,7 @@ def validate():
   missing = test_db.exists_at('/Volumes/Legacy20/Pix')
   print("Identified {} unarchived records, such as:".format(len((missing))))
   print(missing[:3])
-  f = open('missing.log', 'w')
+  f = open('missing_files.log', 'w')
   for m in missing:
     f.write(m)
   f.close()

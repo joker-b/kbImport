@@ -51,7 +51,7 @@ class ArchRec(object):
   def archive_locations(self):
     archLocs = {}
     for v in self.versions:
-      archLocs[v.destination_dir] = 1
+      archLocs[v.dest()] = 1
     return list(archLocs.keys())
 
   def has_been_edited(self):

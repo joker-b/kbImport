@@ -69,6 +69,18 @@ class ArchImgFile(object):
   RawTypes = ['.RAF', '.DNG', '.CRW', '.CR2'] # TODO: others?
   IgnoreTypes = ['.SWP', '.LOG']
   EditorTypes = ['.PSD', '.XCF', '.TIFF', '.TIF']
+  month_folder = {'01': '01-Jan',
+                  '02': '02-Feb',
+                  '03': '03-Mar',
+                  '04': '04-Apr',
+                  '05': '05-May',
+                  '06': '06-Jun',
+                  '07': '07-Jul',
+                  '08': '08-Aug',
+                  '09': '09-Sep',
+                  '10': '10-Oct',
+                  '11': '11-Nov',
+                  '12': '12-Dec'}
   Platform = HostType.UNKNOWN
   MediaRoot = ''
   _mountedSrcVols = {} # TODO try to avoid pickling this...
@@ -194,7 +206,7 @@ class ArchImgFile(object):
     return cls._mountedSrcVols[VolumeName]
 
   #
-  # INSTANCE METHODS BEGIN
+  # INSTANCE METHODS BEGIN ####################################################################
   #
 
   def __init__(self, Filename=None):
@@ -214,7 +226,7 @@ class ArchImgFile(object):
     self._initialize_origin_name()
     self._initialize_work_state()
     self._initialize_rating()
-    self._determine_archive_location_()
+    # self._determine_archive_location_() redundant
 
   def _initialize_type(self):
     '''
@@ -376,25 +388,45 @@ class ArchImgFile(object):
       yearDir = chain[-4]
       monthDir = chain[-3]
       dayDir = chain[-2]
-      self.destination_dir = os.path.join(yearDir, monthDir, dayDir)
-      return
+      return os.path.join(yearDir, monthDir, dayDir)
     if len(chain) >= 2:
       look = 2
       while look <= len(chain):
         if re.match(r'\d{4}$', chain[-look]):
-          self.destination_dir = os.path.sep.join(chain[-look:-1])
-          return
+          return os.path.sep.join(chain[-look:-1])
         look = look + 1
-    self.destination_dir = self.folder()
+    # didn't find a year folder, so let's try to be more clever
+    m = re.match(r'^(\d{4})[-_](\d{2})[_-](\d{2})', self.folder())
+    if m:
+      yearDir = m.group(1)
+      monthDir = '{}-{}'.format(m.group(1), ArchImgFile.month_folder[m.group(2)])
+      return os.path.join(yearDir, monthDir, self.folder())
+    m = re.match(r'Work(\d{4})', self.folder())
+    if m:
+      yearDir = m.group(1)
+      return os.path.join(yearDir, self.folder())
+    # last chance, look in the filename
+    m = re.match(r'^(\d{4})[-_](\d{2})[_-](\d{2})', os.path.basename(self.filename))
+    if m:
+      yearDir = m.group(1)
+      monthDir = m.group(2)
+      dayDir = m.group(3)
+      return os.path.join(yearDir, monthDir, dayDir)
+    # no idea so let's just file it in 'Misc'
+    return os.path.join('Misc', self.folder())
+
+  def dest(self):
+    'we cannot trust stored destination values, but all they are is string manipulation so...'
+    return self._determine_archive_location_()
 
   # END OF INITIALIZERS
 
   def exists_at(self, DestinationRoot):
     'already stored?'
     if not ArchImgFile.dest_volume_ready(DestinationRoot):
-      print("Archive Volume {} not mounted".format(DestinationRoot))
+      print("<{}>.exists_at({}): not mounted".format(self.origin_name, DestinationRoot))
       return False
-    destDir = os.path.join(DestinationRoot, self.destination_dir)
+    destDir = os.path.join(DestinationRoot, self.dest())
     base = os.path.basename(self.filename)
     destFile = os.path.join(destDir, base)
     return os.path.exists(destFile)
@@ -404,9 +436,9 @@ class ArchImgFile(object):
     if not ArchImgFile.source_volume_ready(self.volume):
       return 0 # not here
     if not ArchImgFile.dest_volume_ready(DestinationRoot):
-      print("Destination {} not mounted".format(DestinationRoot))
+      print("<{}>.archive_to({}): not mounted".format(self.origin_name, DestinationRoot))
       return 0 # not here
-    destDir = os.path.join(DestinationRoot, self.destination_dir)
+    destDir = os.path.join(DestinationRoot, self.dest())
     base = os.path.basename(self.filename)
     destFile = os.path.join(destDir, base)
     if os.path.exists(destFile):
@@ -441,14 +473,14 @@ class ArchImgFile(object):
     return '.../{}: {:.2f} MB, rating {}, arch to {}'.format(
         os.path.basename(self.filename),
         self.nBytes/(1024*1024),
-        self.rating, self.destination_dir)
+        self.rating, self.dest())
 
   def print_stats(self):
     print('{}:\n  {:.2f} MB, rating {}\n  arch to {}\n  volume {}\n  relative name {}'.format(
         self.filename,
         self.nBytes/(1024*1024),
         self.rating,
-        self.destination_dir,
+        self.dest(),
         self.volume,
         self.relative_name))
 
@@ -487,7 +519,7 @@ if __name__ == '__main__':
       continue
     print('----- {}'.format(sample_f))
     aif = ArchImgFile(sample_f)
-    # print("Archive Location {}".format(aif._determine_archive_location_()))
+    # print("Archive Location {}".format(aif.dest()))
     aif.print_stats()
   print("TODO - add '{}'' to the relative-path calculation".format(v))
   print("TODO - add dates to 'loose' files?")
