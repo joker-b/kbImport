@@ -438,6 +438,20 @@ class ArchImgFile(object):
     destFile = os.path.join(destDir, base)
     return os.path.exists(destFile)
 
+  def archived_unknown(self, DestinationRoot):
+    'if unknown, return the path to the archive'
+    if self.type != ArchFileType.UNKNOWN:
+      return None
+    if not ArchImgFile.dest_volume_ready(DestinationRoot):
+      print("<{}>.exists_at({}): not mounted".format(self.origin(), DestinationRoot))
+      return None
+    destDir = os.path.join(DestinationRoot, self.dest())
+    base = os.path.basename(self.filename)
+    destFile = os.path.join(destDir, base)
+    if os.path.exists(destFile):
+      return destFile
+    return None
+
   def archive_to(self, DestinationRoot):
     'archive stuff'
     if not ArchImgFile.source_volume_ready(self.volume):

@@ -138,6 +138,10 @@ class ArchRec(object):
     d = [v for v in self.versions if v.type == ArchFileType.UNKNOWN]
     return len(d)
 
+  def find_archived_unknowns(self, ArchDir='/Volumes/Legacy20/Pix'):
+    u = [v.archived_unknown(ArchDir) for v in self.versions]
+    return [b for b in u if b is not None]
+
   def spot_doppels(self):
     nver = len(self.versions)
     dop = [False] * nver
