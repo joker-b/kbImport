@@ -243,6 +243,8 @@ def mini_validate(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legacy20/Pix')
   return test_db
 
 if __name__ == '__main__':
-  mini_validate()
-  sys.exit()
+  # mini_validate()
+  update_from_available_drives('pix18-20s-db-L3.pkl', '/Volumes/Drobo/Pix',
+              '/Volumes/Legacy20/Pix', 'pix18-20s-db-L4.pkl')
+  # sys.exit()
   # update_from_available_drives()

@@ -28,7 +28,7 @@ class ArchRec(object):
     'Add ArchImageFile'
     if ArchImg.type is ArchFileType.IGNORE:
       return
-    if len(self.versions) > 0 and ArchImg.origin() != self.origin()():
+    if len(self.versions) > 0 and ArchImg.origin() != self.origin_name():
       print("ERROR: Can't add '{}'' image to '{}' record".format(
           ArchImg.origin(), self.origin()()))
       return
