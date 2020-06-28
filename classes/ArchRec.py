@@ -28,15 +28,15 @@ class ArchRec(object):
     'Add ArchImageFile'
     if ArchImg.type is ArchFileType.IGNORE:
       return
-    if len(self.versions) > 0 and ArchImg.origin_name != self.origin_name():
+    if len(self.versions) > 0 and ArchImg.origin() != self.origin()():
       print("ERROR: Can't add '{}'' image to '{}' record".format(
-          ArchImg.origin_name, self.origin_name()))
+          ArchImg.origin(), self.origin()()))
       return
     self.versions.append(ArchImg)
 
   def add_file(self, Filename):
     '''
-    returns origin_name
+    returns origin()
     '''
     img = ArchImgFile(Filename)
     self.add_img_file(img)
@@ -46,7 +46,7 @@ class ArchRec(object):
     'e.g. KBXF8163'
     if len(self.versions) < 1:
       return None
-    return self.versions[0].origin_name
+    return self.versions[0].origin()
 
   def archive_locations(self):
     archLocs = {}
@@ -163,6 +163,24 @@ class ArchRec(object):
     self.print_versions()
     print("Archived size: {:.2f}MB of {:.4}MB".format(
         self.archive_size() / (1024*1024), self.source_size() / (1024*1024)))
+
+  def print_arch_status(self, ArchDir='/Volumes/Legacy20/Pix'):
+    for v in self.versions:
+      v.print_arch_status(ArchDir)
+
+  def print_arch_status2(self, ArchDir='/Volumes/Legacy20/Pix'):
+    include_raw = self.should_archive_raw()
+    d = self.spot_doppels()
+    i = 0
+    for v in self.versions:
+      if d[i]:
+        print('Doppel: {}'.format(v.filename))
+      else:
+        if v.type is ArchFileType.RAW and not include_raw:
+          print('Skipped RAW: {}'.format(os.path.basename(v.filename)))
+        else:
+          v.print_arch_status()
+      i = i + 1
 
 #
 # Test fixtures

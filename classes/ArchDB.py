@@ -64,7 +64,7 @@ class ArchDB(object):
       return 0
     self.allFiles[trimmed] = 1
     img = ArchImgFile(Filename)
-    o = img.origin_name
+    o = img.origin()
     rec = self.archRecs.get(o)
     if not rec:
       rec = ArchRec()
@@ -188,14 +188,16 @@ def get_test_folder():
 # ############# TESTS
 #
 
-def validate():
+def validate(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legacy20/Pix'):
+  'remember to assign when testing interactively!'
   # test_db = ArchDB()
-  test_db = ArchDB.load('pix18-20s-db-L3.pkl')
+  test_db = ArchDB.load(DBFile)
   if test_db is None:
     print("sorry")
-    return
+    return None
   test_db.describe()
-  missing = test_db.exists_at('/Volumes/Legacy20/Pix')
+  print('\nVerifying archive at {}:'.format(ArchDir))
+  missing = test_db.exists_at(ArchDir)
   print("Identified {} unarchived records, such as:".format(len((missing))))
   print(missing[:3])
   f = open('missing_files.log', 'w')
@@ -205,22 +207,42 @@ def validate():
   print('logged names')
   return test_db
 
-def update_from_available_drives():
+def update_from_available_drives(SrcDBFile='pix18-20s-db-L3.pkl', SrcFolder=None,
+              ArchDir='/Volumes/Legacy20/Pix', DestDBFile=None):
   # test_db = ArchDB()
-  test_db = ArchDB.load('pix18-20s-db-L2.pkl')
-  test_pic = get_test_pic()
-  test_folder = get_test_folder()
+  test_db = ArchDB.load(SrcDBFile)
+  # test_pic = get_test_pic()
+  if SrcFolder is None:
+    test_folder = get_test_folder()
+  else:
+    test_folder = SrcFolder
   ArchImgFile.pretend(False)
   print("Add test folder: {}".format(test_folder))
   nf = test_db.add_folder(test_folder)
   print('Added {} new files'.format(nf))
   test_db.describe()
   test_db.dop_hunt()
-  test_db.archive_to('/Volumes/Legacy20/Pix')
-  ArchDB.save(test_db, 'pix18-20s-db-L3.pkl')
+  test_db.archive_to(ArchDir)
+  if DestDBFile is None:
+    updated_db = SrcDBFile
+  else:
+    updated_db = DestDBFile
+  ArchDB.save(test_db, updated_db)
   ArchDB.describe_created_dirs()
 
+def mini_validate(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legacy20/Pix'):
+  test_db = ArchDB.load(DBFile)
+  if test_db is None:
+    print("sorry")
+    return None
+  # test_db.describe()
+  for id in ['DSCF5603', 'P1090125', 'KBXP1022', 'KBXP1023', 'bjorke_Cuba_XT1A5922', 'KEVT2922']:
+    print('-------- {} ---------'.format(id))
+    ar = test_db.archRecs[id]
+    ar.print_arch_status2(ArchDir)
+  return test_db
+
 if __name__ == '__main__':
-  validate()
+  mini_validate()
   sys.exit()
   # update_from_available_drives()

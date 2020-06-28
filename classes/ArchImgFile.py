@@ -223,7 +223,7 @@ class ArchImgFile(object):
     self._initialize_size() # second
     # others can arrive in arbitrary order
     self._find_src_volume()
-    self._initialize_origin_name()
+    # self._initialize_origin_name() # redundant
     self._initialize_work_state()
     self._initialize_rating()
     # self._determine_archive_location_() redundant
@@ -233,6 +233,7 @@ class ArchImgFile(object):
     simplify file types for this use
     TODO: GIF and PNG
     '''
+    base = os.path.basename(self.filename)
     ext = os.path.splitext(self.filename)[1].upper()
     if ext == '.PP3':
       self.type = ArchFileType.PP3
@@ -245,6 +246,8 @@ class ArchImgFile(object):
     elif ArchImgFile.EditorTypes.__contains__(ext):
       self.type = ArchFileType.EDITOR
     elif ArchImgFile.IgnoreTypes.__contains__(ext):
+      self.type = ArchFileType.IGNORE
+    elif base == 'Thumbs':
       self.type = ArchFileType.IGNORE
     else:
       self.type = ArchFileType.UNKNOWN
@@ -371,7 +374,7 @@ class ArchImgFile(object):
       return
     b = os.path.basename(self.filename)
     b = os.path.splitext(b)[0]
-    m = re.search(r'[A-Za-z_][A-Za-z_]{3}\d{4}', b)
+    m = re.search(r'[A-Za-z_][A-Za-z0-9_]{3}\d{4}', b)
     if not m:
       self.origin_name = b
     else:
@@ -419,12 +422,16 @@ class ArchImgFile(object):
     'we cannot trust stored destination values, but all they are is string manipulation so...'
     return self._determine_archive_location_()
 
+  def origin(self):
+    self._initialize_origin_name()
+    return self.origin_name
+
   # END OF INITIALIZERS
 
   def exists_at(self, DestinationRoot):
     'already stored?'
     if not ArchImgFile.dest_volume_ready(DestinationRoot):
-      print("<{}>.exists_at({}): not mounted".format(self.origin_name, DestinationRoot))
+      print("<{}>.exists_at({}): not mounted".format(self.origin(), DestinationRoot))
       return False
     destDir = os.path.join(DestinationRoot, self.dest())
     base = os.path.basename(self.filename)
@@ -436,7 +443,7 @@ class ArchImgFile(object):
     if not ArchImgFile.source_volume_ready(self.volume):
       return 0 # not here
     if not ArchImgFile.dest_volume_ready(DestinationRoot):
-      print("<{}>.archive_to({}): not mounted".format(self.origin_name, DestinationRoot))
+      print("<{}>.archive_to({}): not mounted".format(self.origin(), DestinationRoot))
       return 0 # not here
     destDir = os.path.join(DestinationRoot, self.dest())
     base = os.path.basename(self.filename)
@@ -483,6 +490,11 @@ class ArchImgFile(object):
         self.dest(),
         self.volume,
         self.relative_name))
+
+  def print_arch_status(self, ArchDir='/Volumes/Legacy20/Pix'):
+    'what is the state of this file? (called within ArchRec)'
+    print("{} -> {}: {}".format(os.path.basename(self.filename), self.dest(), self.exists_at(ArchDir)))
+
 
 #
 # Test Fixtures
