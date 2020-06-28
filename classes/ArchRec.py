@@ -63,6 +63,12 @@ class ArchRec(object):
     # TODO: multiple outputs, varying sizes? Also true
     return False
 
+  def has_no_jpg(self):
+    for v in self.versions:
+      if v.type is ArchFileType.JPG:
+        return False
+    return True
+
   def max_rank(self):
     rank = 0
     for v in self.versions:
@@ -79,6 +85,8 @@ class ArchRec(object):
       return True
     if self.max_rank() > 0:
       return True
+    if self.has_no_jpg():
+      return True
     return False
 
   def exists_at(self, DestinationRoot):
@@ -93,7 +101,7 @@ class ArchRec(object):
         if not v.exists_at(DestinationRoot):
           return False
         n += 1
-    return (n > 0)
+    return n > 0
 
   def archive_to(self, DestinationRoot):
     include_raw = self.should_archive_raw()
@@ -125,6 +133,10 @@ class ArchRec(object):
     for v in self.versions:
       total += v.nBytes
     return total
+
+  def count_unknowns(self):
+    d = [v for v in self.versions if v.type == ArchFileType.UNKNOWN]
+    return len(d)
 
   def spot_doppels(self):
     nver = len(self.versions)

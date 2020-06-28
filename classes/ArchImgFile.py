@@ -66,7 +66,7 @@ class ArchImgFile(object):
   TODO: precompile regex's
   add archive() method
   '''
-  RawTypes = ['.RAF', '.DNG', '.CRW', '.CR2'] # TODO: others?
+  RawTypes = ['.RAF', '.DNG', '.CRW', '.CR2', '.XMP', '.PP3', '.RAW', '.RWL'] # TODO: others?
   IgnoreTypes = ['.SWP', '.LOG']
   EditorTypes = ['.PSD', '.XCF', '.TIFF', '.TIF']
   month_folder = {'01': '01-Jan',
@@ -445,12 +445,14 @@ class ArchImgFile(object):
     if not ArchImgFile.dest_volume_ready(DestinationRoot):
       print("<{}>.archive_to({}): not mounted".format(self.origin(), DestinationRoot))
       return 0 # not here
+    if self.type == ArchFileType.UNKNOWN:
+      # "don't copy what you don't know"
+      return 0
     destDir = os.path.join(DestinationRoot, self.dest())
     base = os.path.basename(self.filename)
     destFile = os.path.join(destDir, base)
     if os.path.exists(destFile):
       ArchImgFile._alreadyArchivedCount += 1
-      # print("Exists: {}".format(destFile))
       return 0 # already done
     if not os.path.exists(destDir):
       if not ArchImgFile.create_destination_dir(destDir):
@@ -460,7 +462,6 @@ class ArchImgFile(object):
     else:
       try:
         shutil.copyfile(self.filename, destFile)
-        # shutil.copy2(self.filename, destFile)
       except:
         print("ERR: copy({}, {}) got {}".format(self.filename, destFile, sys.exc_info()))
         return 0

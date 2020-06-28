@@ -96,7 +96,7 @@ class Volumes(object):
   #
 
   def seek_named_source_dir(self, ParentDir, FindDir, Level=0, MaxLevels=6):
-    """∏
+    """
     Recursively look in 'ParentDir' for a directory of the 'FindDir'.
     Return full path or None.
     Don't dig more than MaxLevels deep.

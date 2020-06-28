@@ -4,9 +4,9 @@ Each ImgInfo object contains archive data about a single image
 """
 import os
 import sys
+import pickle
 from ArchImgFile import ArchImgFile
 from ArchRec import ArchRec
-import pickle
 
 if sys.version_info > (3,):
   long = int
@@ -119,6 +119,12 @@ class ArchDB(object):
       total += self.archRecs[kn].source_size()
     return total
 
+  def count_unknowns(self):
+    total = 0
+    for kn in self.archRecs:
+      total += self.archRecs[kn].count_unknowns()
+    return total
+
   def dop_hunt(self):
     n = 0
     for k in self.archRecs:
@@ -208,7 +214,7 @@ def validate(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legacy20/Pix'):
   return test_db
 
 def update_from_available_drives(SrcDBFile='pix18-20s-db-L3.pkl', SrcFolder=None,
-              ArchDir='/Volumes/Legacy20/Pix', DestDBFile=None):
+                                 ArchDir='/Volumes/Legacy20/Pix', DestDBFile=None):
   # test_db = ArchDB()
   test_db = ArchDB.load(SrcDBFile)
   # test_pic = get_test_pic()
@@ -236,15 +242,24 @@ def mini_validate(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legacy20/Pix')
     print("sorry")
     return None
   # test_db.describe()
-  for id in ['DSCF5603', 'P1090125', 'KBXP1022', 'KBXP1023', 'bjorke_Cuba_XT1A5922', 'KEVT2922']:
-    print('-------- {} ---------'.format(id))
-    ar = test_db.archRecs[id]
+  for iid in ['DSCF5603', 'P1090125', 'KBXP1022', 'KBXP1023', 'bjorke_Cuba_XT1A5922', 'KEVT2922']:
+    print('-------- {} ---------'.format(iid))
+    ar = test_db.archRecs[iid]
     ar.print_arch_status2(ArchDir)
+  return test_db
+
+def find_unknowns(DBFile='pix18-20s-db-L3.pkl'):
+  test_db = ArchDB.load(DBFile)
+  if test_db is None:
+    print("sorry")
+    return None
+  print('found {} unknown files'.format(test_db.count_unknowns()))
   return test_db
 
 if __name__ == '__main__':
   # mini_validate()
-  update_from_available_drives('pix18-20s-db-L3.pkl', '/Volumes/Drobo/Pix',
-              '/Volumes/Legacy20/Pix', 'pix18-20s-db-L4.pkl')
+  find_unknowns()
+  #update_from_available_drives('pix18-20s-db-L3.pkl', '/Volumes/Drobo/Pix',
+  #            '/Volumes/Legacy20/Pix', 'pix18-20s-db-L4.pkl')
   # sys.exit()
   # update_from_available_drives()
