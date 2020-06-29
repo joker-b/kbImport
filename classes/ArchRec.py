@@ -26,7 +26,7 @@ class ArchRec(object):
 
   def add_img_file(self, ArchImg):
     'Add ArchImageFile'
-    if ArchImg.type is ArchFileType.IGNORE:
+    if ArchImg.get_type() is ArchFileType.IGNORE:
       return
     if len(self.versions) > 0 and ArchImg.origin() != self.origin_name():
       print("ERROR: Can't add '{}'' image to '{}' record".format(
@@ -56,7 +56,7 @@ class ArchRec(object):
 
   def has_been_edited(self):
     for v in self.versions:
-      if v.type is ArchFileType.EDITOR:
+      if v.get_type() is ArchFileType.EDITOR:
         return True
       if v.is_wip:
         return True
@@ -65,7 +65,7 @@ class ArchRec(object):
 
   def has_no_jpg(self):
     for v in self.versions:
-      if v.type is ArchFileType.JPG:
+      if v.get_type() is ArchFileType.JPG:
         return False
     return True
 
@@ -96,7 +96,7 @@ class ArchRec(object):
     for i in range(len(self.versions)):
       if not dops[i]:
         v = self.versions[i]
-        if v.type is ArchFileType.RAW and not include_raw:
+        if v.get_type() is ArchFileType.RAW and not include_raw:
           continue
         if not v.exists_at(DestinationRoot):
           return False
@@ -110,7 +110,7 @@ class ArchRec(object):
     for i in range(len(self.versions)):
       if not dops[i]:
         v = self.versions[i]
-        if v.type is ArchFileType.RAW and not include_raw:
+        if v.get_type() is ArchFileType.RAW and not include_raw:
           continue
         nArchived += v.archive_to(DestinationRoot)
     return nArchived
@@ -122,7 +122,7 @@ class ArchRec(object):
     for i in range(len(self.versions)):
       if not dops[i]:
         v = self.versions[i]
-        if v.type is ArchFileType.RAW and not include_raw:
+        if v.get_type() is ArchFileType.RAW and not include_raw:
           continue
         total += v.nBytes
     return total
@@ -135,7 +135,7 @@ class ArchRec(object):
     return total
 
   def count_unknowns(self):
-    d = [v for v in self.versions if v.type == ArchFileType.UNKNOWN]
+    d = [v for v in self.versions if v.get_type() == ArchFileType.UNKNOWN]
     return len(d)
 
   def find_archived_unknowns(self, ArchDir='/Volumes/Legacy20/Pix'):
@@ -192,7 +192,7 @@ class ArchRec(object):
       if d[i]:
         print('Doppel: {}'.format(v.filename))
       else:
-        if v.type is ArchFileType.RAW and not include_raw:
+        if v.get_type() is ArchFileType.RAW and not include_raw:
           print('Skipped RAW: {}'.format(os.path.basename(v.filename)))
         else:
           v.print_arch_status()

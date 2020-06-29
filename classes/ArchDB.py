@@ -133,6 +133,7 @@ class ArchDB(object):
       total += len(ul)
       for u in ul:
         f.write(u)
+        f.write('\n')
     f.close()
     return total
 
@@ -278,7 +279,7 @@ def find_archived_unknowns(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legac
 if __name__ == '__main__':
   # mini_validate()
   # find_unknowns()
-  find_archived_unknowns()
+  find_archived_unknowns('pix18-20s-db-L4.pkl')
   #update_from_available_drives('pix18-20s-db-L3.pkl', '/Volumes/Drobo/Pix',
   #            '/Volumes/Legacy20/Pix', 'pix18-20s-db-L4.pkl')
   # sys.exit()

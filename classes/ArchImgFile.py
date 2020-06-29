@@ -47,6 +47,8 @@ class ArchFileType(Enum):
   MISSING = 7
   ERROR = 8
   IGNORE = 9
+  PNG = 10
+  VID = 11
 
 class HostType(Enum):
   "File types that the archiver may handle in special ways"
@@ -66,9 +68,10 @@ class ArchImgFile(object):
   TODO: precompile regex's
   add archive() method
   '''
-  RawTypes = ['.RAF', '.DNG', '.CRW', '.CR2', '.XMP', '.PP3', '.RAW', '.RWL'] # TODO: others?
+  RawTypes = ['.RAF', '.DNG', '.CRW', '.CR2', '.XMP', '.PP3', '.RAW', '.RW2', '.RWL'] # TODO: others?
   IgnoreTypes = ['.SWP', '.LOG']
-  EditorTypes = ['.PSD', '.XCF', '.TIFF', '.TIF']
+  EditorTypes = ['.PSD', '.XCF', '.TIFF', '.TIF', '.PDF']
+  PlayTypes = ['.MP3', '.MP4', '.MOV']
   month_folder = {'01': '01-Jan',
                   '02': '02-Feb',
                   '03': '03-Mar',
@@ -215,6 +218,7 @@ class ArchImgFile(object):
     '''
     ArchImgFile._initialize_platform()
     self.filename = Filename
+    self.type = ArchImgFileType.UNKNOWN
     self.relative_name = None
     self.src_volume = None
     self.was_archived = False
@@ -228,34 +232,42 @@ class ArchImgFile(object):
     self._initialize_rating()
     # self._determine_archive_location_() redundant
 
-  def _initialize_type(self):
+  def get_type(self):
     '''
     simplify file types for this use
     TODO: GIF and PNG
     '''
+    if self.type == ArchFileType.MISSING or self.type == ArchFileType.ERROR:
+      return self.type
     base = os.path.basename(self.filename)
     ext = os.path.splitext(self.filename)[1].upper()
     if ext == '.PP3':
-      self.type = ArchFileType.PP3
+      return ArchFileType.PP3
     elif ext == '.XMP':
-      self.type = ArchFileType.XMP
+      return ArchFileType.XMP
     elif ext == '.JPG':
-      self.type = ArchFileType.JPG
+      return ArchFileType.JPG
+    elif ext == '.PNG':
+      return ArchFileType.PNG
+    elif ArchImgFile.PlayTypes.__contains__(ext):
+      return ArchFileType.VID
     elif ArchImgFile.RawTypes.__contains__(ext):
-      self.type = ArchFileType.RAW
+      return ArchFileType.RAW
     elif ArchImgFile.EditorTypes.__contains__(ext):
-      self.type = ArchFileType.EDITOR
+      return ArchFileType.EDITOR
     elif ArchImgFile.IgnoreTypes.__contains__(ext):
-      self.type = ArchFileType.IGNORE
+      return ArchFileType.IGNORE
     elif base == 'Thumbs':
-      self.type = ArchFileType.IGNORE
-    else:
-      self.type = ArchFileType.UNKNOWN
+      return ArchFileType.IGNORE
+    return ArchFileType.UNKNOWN
+
+  def _initialize_type(self):
+    self.type = self.get_type()
 
   def _initialize_size(self):
     "calls stat()"
     self.nBytes = 0 # long
-    if self.type is ArchFileType.IGNORE:
+    if self.get_type() is ArchFileType.IGNORE:
       return
     try:
       s = os.stat(self.filename)
@@ -271,7 +283,7 @@ class ArchImgFile(object):
     self.nBytes += s.st_size
 
   def _initialize_work_state(self):
-    if self.type is ArchFileType.EDITOR:
+    if self.get_type() is ArchFileType.EDITOR:
       self.is_wip = True
       return
     for part in self.filename.split(os.path.sep):
@@ -362,7 +374,7 @@ class ArchImgFile(object):
         ArchFileType.JPG: self._query_exif,
         ArchFileType.RAW: self._query_exif
     }
-    fn = queries.get(self.type)
+    fn = queries.get(self.get_type())
     if fn is not None:
       fn()
     return self.rating
@@ -376,7 +388,12 @@ class ArchImgFile(object):
     b = os.path.splitext(b)[0]
     m = re.search(r'[A-Za-z_][A-Za-z0-9_]{3}\d{4}', b)
     if not m:
-      self.origin_name = b
+      'try P1090086'
+      m = re.search(r'P\d{7}', b)
+      if not m:
+        self.origin_name = b
+      else:
+        self.origin_name = m.group()
     else:
       self.origin_name = m.group()
 
@@ -440,7 +457,7 @@ class ArchImgFile(object):
 
   def archived_unknown(self, DestinationRoot):
     'if unknown, return the path to the archive'
-    if self.type != ArchFileType.UNKNOWN:
+    if self.get_type() != ArchFileType.UNKNOWN:
       return None
     if not ArchImgFile.dest_volume_ready(DestinationRoot):
       print("<{}>.exists_at({}): not mounted".format(self.origin(), DestinationRoot))
@@ -459,7 +476,7 @@ class ArchImgFile(object):
     if not ArchImgFile.dest_volume_ready(DestinationRoot):
       print("<{}>.archive_to({}): not mounted".format(self.origin(), DestinationRoot))
       return 0 # not here
-    if self.type == ArchFileType.UNKNOWN:
+    if self.get_type() == ArchFileType.UNKNOWN:
       # "don't copy what you don't know"
       return 0
     destDir = os.path.join(DestinationRoot, self.dest())
