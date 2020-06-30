@@ -142,6 +142,12 @@ class ArchRec(object):
     u = [v.archived_unknown(ArchDir) for v in self.versions]
     return [b for b in u if b is not None]
 
+  def unarchived_raw(self, ArchDir='/Volumes/Legacy20/Pix'):
+    if not self.should_archive_raw():
+      return []
+    u = [v.unarchived_raw(ArchDir) for v in self.versions]
+    return [b for b in u if b is not None]
+
   def spot_doppels(self):
     nver = len(self.versions)
     dop = [False] * nver

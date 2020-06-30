@@ -137,6 +137,18 @@ class ArchDB(object):
     f.close()
     return total
 
+  def find_unarchived_raw(self, listfile='unarchived-raw.log', ArchDir='/Volumes/Legacy20/Pix'):
+    total = 0
+    f = open(listfile, 'w')
+    for k in self.archRecs:
+      ul = self.archRecs[k].unarchived_raw(ArchDir)
+      total += len(ul)
+      for u in ul:
+        f.write(u)
+        f.write('\n')
+    f.close()
+    return total
+
   def dop_hunt(self):
     n = 0
     for k in self.archRecs:
@@ -276,10 +288,19 @@ def find_archived_unknowns(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legac
   print('found {} archived unknown files'.format(test_db.find_archived_unknowns('unknowns.log', ArchDir)))
   return test_db
 
+def find_unarchived_raws(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legacy20/Pix'):
+  test_db = ArchDB.load(DBFile)
+  if test_db is None:
+    print("sorry")
+    return None
+  print('found {} archived unknown files'.format(test_db.find_unarchived_raw('unarchived-raw.log', ArchDir)))
+  return test_db
+
 if __name__ == '__main__':
   # mini_validate()
   # find_unknowns()
-  find_archived_unknowns('pix18-20s-db-L4.pkl')
+  # find_archived_unknowns('pix18-20s-db-L4.pkl')
+  find_unarchived_raws('pix18-20s-db-L4.pkl')
   #update_from_available_drives('pix18-20s-db-L3.pkl', '/Volumes/Drobo/Pix',
   #            '/Volumes/Legacy20/Pix', 'pix18-20s-db-L4.pkl')
   # sys.exit()

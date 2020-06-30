@@ -218,7 +218,7 @@ class ArchImgFile(object):
     '''
     ArchImgFile._initialize_platform()
     self.filename = Filename
-    self.type = ArchImgFileType.UNKNOWN
+    self.type = ArchFileType.UNKNOWN
     self.relative_name = None
     self.src_volume = None
     self.was_archived = False
@@ -460,12 +460,26 @@ class ArchImgFile(object):
     if self.get_type() != ArchFileType.UNKNOWN:
       return None
     if not ArchImgFile.dest_volume_ready(DestinationRoot):
-      print("<{}>.exists_at({}): not mounted".format(self.origin(), DestinationRoot))
+      print("<{}>.archived_unknown({}): not mounted".format(self.origin(), DestinationRoot))
       return None
     destDir = os.path.join(DestinationRoot, self.dest())
     base = os.path.basename(self.filename)
     destFile = os.path.join(destDir, base)
     if os.path.exists(destFile):
+      return destFile
+    return None
+
+  def unarchived_raw(self, DestinationRoot):
+    'if unknown, return the path to the archive'
+    if self.get_type() != ArchFileType.RAW:
+      return None
+    if not ArchImgFile.dest_volume_ready(DestinationRoot):
+      print("<{}>.unarchived_raw({}): not mounted".format(self.origin(), DestinationRoot))
+      return None
+    destDir = os.path.join(DestinationRoot, self.dest())
+    base = os.path.basename(self.filename)
+    destFile = os.path.join(destDir, base)
+    if not os.path.exists(destFile):
       return destFile
     return None
 
