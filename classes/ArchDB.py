@@ -297,6 +297,24 @@ def find_unarchived_raws(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legacy2
   return test_db
 
 def complex_record(DBFile='L3.pkl', RecName='DSCF4743'):
+  ''''
+  others: KEVT2897 DSCF5754
+  /Volumes/Legacy20/Pix/2004/300D/2004-04-April/2004_04_24/175_7515.CRW
+  /Volumes/Legacy20/Pix/2003/300D/2003-11-Nov/2003_11_16-London/VSMD0052.CRW
+  /Volumes/Legacy20/Pix/2006/Digi/2006_08/2006_08_07-Negs/534_3470.DNG
+  /Volumes/Legacy20/Pix/2007/Reb/2007_07_29/647CANON/CRW_4704.CRW
+  /Volumes/Legacy20/Pix/2007/Reb/2007_07_29/647CANON/CRW_4744.CRW
+/Volumes/Legacy20/Pix/2011/2011-03-Mar/2011_03_09/P1000016_1.dng
+/Volumes/Legacy20/Pix/2011/2011-03-Mar/2011_03_09_LX5/test.dng
+/Volumes/Legacy20/Pix/2014/2014-09-Sep/2014_09_24_City/JOKR9972.RAF
+/Volumes/Legacy20/Pix/2014/2014-09-Sep/2014_09_26_CityIsaac/f10590080.raf
+/Volumes/Legacy20/Pix/2014/2014-09-Sep/2014_09_26_CityIsaac/f11696064.raf
+/Volumes/Legacy20/Pix/2014/2014-09-Sep/2014_09_26_CityIsaac/f8935744.raf
+/Volumes/Legacy20/Pix/2014/2014-10-Oct/2014_10_08_Pizza/PICS0750.RAF
+/Volumes/Legacy20/Pix/2015/2015-09-Sep/2015_09_06_FineArts/bjorke_FineArts_P1080536.DNG
+/Volumes/Legacy20/Pix/2006/Digi/2006_06/2006_06_24-hockey/502_0282.DNG
+/Volumes/Legacy20/Pix/2006/Digi/2006_06/2006_06_26_slapPractice/502_0298.DNG
+  '''
   test_db = ArchDB.load(DBFile)
   ar = test_db.archRecs[RecName]
   ar.print_stats()
