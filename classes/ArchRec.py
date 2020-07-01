@@ -58,7 +58,7 @@ class ArchRec(object):
     for v in self.versions:
       if v.get_type() is ArchFileType.EDITOR:
         return True
-      if v.is_wip:
+      if v.has_been_edited():
         return True
     # TODO: multiple outputs, varying sizes? Also true
     return False
@@ -146,7 +146,11 @@ class ArchRec(object):
     if not self.should_archive_raw():
       return []
     u = [v.unarchived_raw(ArchDir) for v in self.versions]
-    return [b for b in u if b is not None]
+    d = self.spot_doppels()
+    if len(u) != len(d):
+      print("find_archived_unknowns({}) size error".format(self.origin_name()))
+
+    return [u[i] for i in range(len(u)) if u[i] is not None and not d[i]]
 
   def spot_doppels(self):
     nver = len(self.versions)

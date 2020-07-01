@@ -283,13 +283,16 @@ class ArchImgFile(object):
     self.nBytes += s.st_size
 
   def _initialize_work_state(self):
+    'Look for editor files, or enclosing "Work" folder'
     if self.get_type() is ArchFileType.EDITOR:
-      self.is_wip = True
-      return
+      #self.is_wip = True
+      return True
     for part in self.filename.split(os.path.sep):
       if part[:4] == 'Work':
-        self.is_wip = True
-        return
+        #self.is_wip = True
+        return True
+  def has_been_edited(self):
+    return self._initialize_work_state()
 
   def _find_src_volume(self):
     l = len(ArchImgFile.MediaRoot)
@@ -539,7 +542,7 @@ class ArchImgFile(object):
 
   def print_arch_status(self, ArchDir='/Volumes/Legacy20/Pix'):
     'what is the state of this file? (called within ArchRec)'
-    print("{} -> {}: {}".format(os.path.basename(self.filename), self.dest(), self.exists_at(ArchDir)))
+    print("{} -> {}: Archived {}".format(os.path.basename(self.filename), self.dest(), self.exists_at(ArchDir)))
 
 
 #

@@ -296,6 +296,8 @@ def find_unarchived_raws(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legacy2
   print('found {} archived unknown files'.format(test_db.find_unarchived_raw('unarchived-raw.log', ArchDir)))
   return test_db
 
+# problem archive: DSCF4743.RAF - multiple camera versions!
+
 if __name__ == '__main__':
   # mini_validate()
   # find_unknowns()
