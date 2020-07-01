@@ -489,6 +489,7 @@ class ArchImgFile(object):
   def archive_to(self, DestinationRoot):
     'archive stuff'
     if not ArchImgFile.source_volume_ready(self.volume):
+      print('Cannot get {} data'.format(self.basename()))
       return 0 # not here
     if not ArchImgFile.dest_volume_ready(DestinationRoot):
       print("<{}>.archive_to({}): not mounted".format(self.origin(), DestinationRoot))
@@ -525,8 +526,11 @@ class ArchImgFile(object):
       return '.'
     return chain[-2]
 
+  def basename(self):
+    return os.path.basename(self.filename)
+
   def __str__(self):
-    return '.../{}: {:.2f} MB, rating {}, arch to {}'.format(
+    return '{}: {:.2f}MB, {}*, dest {}'.format(
         os.path.basename(self.filename),
         self.nBytes/(1024*1024),
         self.rating, self.dest())

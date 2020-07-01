@@ -156,15 +156,20 @@ class ArchRec(object):
     nver = len(self.versions)
     dop = [False] * nver
     base = [os.path.basename(self.versions[i].filename) for i in range(nver)]
+    sizes = []
     for i in range(nver-1):
       isize = self.versions[i].nBytes
-      for j in range(i+1, nver):
-        if dop[j]:
-          continue
-        if base[i] == base[j]:
-          jsize = self.versions[j].nBytes
-          if isize == jsize:
-            dop[j] = True
+      if sizes.__contains__(isize):
+        dop[i] = True
+      else:
+        sizes.append(isize)
+        for j in range(i+1, nver):
+          if dop[j]:
+            continue
+          if base[i] == base[j]:
+            jsize = self.versions[j].nBytes
+            if isize == jsize:
+              dop[j] = True
     # TODO now what? how to report this usefully, and act on the results when
     #    archiving
     '''
@@ -182,8 +187,13 @@ class ArchRec(object):
 
   def print_versions(self):
     print(self)
-    for v in self.versions:
-      print(v)
+    d = self.spot_doppels()
+    for i in range(len(self.versions)):
+      v = self.versions[i]
+      if d[i]:
+        print('dop: {}'.format(v))
+      else:
+        print(v)
 
   def print_stats(self):
     self.print_versions()

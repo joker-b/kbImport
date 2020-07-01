@@ -296,6 +296,11 @@ def find_unarchived_raws(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legacy2
   print('found {} archived unknown files'.format(test_db.find_unarchived_raw('unarchived-raw.log', ArchDir)))
   return test_db
 
+def complex_record(DBFile='L3.pkl', RecName='DSCF4743'):
+  test_db = ArchDB.load(DBFile)
+  ar = test_db.archRecs[RecName]
+  ar.print_stats()
+  return ar
 # problem archive: DSCF4743.RAF - multiple camera versions!
 
 if __name__ == '__main__':
