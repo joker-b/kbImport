@@ -191,7 +191,7 @@ class ArchRec(object):
     for i in range(len(self.versions)):
       v = self.versions[i]
       if d[i]:
-        print('dop: {}'.format(v))
+        print('-doppel- [{} {}]'.format(v.src_drive(), v.basename()))
       else:
         print(v)
 

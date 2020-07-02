@@ -30,7 +30,7 @@ def get_test_folder():
   return '.' # less-awkward fail
 
 
-def validate(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legacy20/Pix'):
+def validate(DBFile='L4.pkl', ArchDir='/Volumes/Legacy20/Pix'):
   'remember to assign when testing interactively!'
   # test_db = ArchDB()
   test_db = ArchDB.load(DBFile)
@@ -49,7 +49,7 @@ def validate(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legacy20/Pix'):
   print('logged names')
   return test_db
 
-def update_from_available_drives(SrcDBFile='pix18-20s-db-L3.pkl', SrcFolder=None,
+def update_from_available_drives(SrcDBFile='L4.pkl', SrcFolder=None,
                                  ArchDir='/Volumes/Legacy20/Pix', DestDBFile=None):
   # test_db = ArchDB()
   test_db = ArchDB.load(SrcDBFile)
@@ -72,7 +72,7 @@ def update_from_available_drives(SrcDBFile='pix18-20s-db-L3.pkl', SrcFolder=None
   ArchDB.save(test_db, updated_db)
   ArchDB.describe_created_dirs()
 
-def mini_validate(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legacy20/Pix'):
+def mini_validate(DBFile='L4.pkl', ArchDir='/Volumes/Legacy20/Pix'):
   test_db = ArchDB.load(DBFile)
   if test_db is None:
     print("sorry")
@@ -84,7 +84,7 @@ def mini_validate(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legacy20/Pix')
     ar.print_arch_status2(ArchDir)
   return test_db
 
-def find_unknowns(DBFile='pix18-20s-db-L3.pkl'):
+def find_unknowns(DBFile='L4.pkl'):
   test_db = ArchDB.load(DBFile)
   if test_db is None:
     print("sorry")
@@ -92,7 +92,7 @@ def find_unknowns(DBFile='pix18-20s-db-L3.pkl'):
   print('found {} unknown files'.format(test_db.count_unknowns()))
   return test_db
 
-def find_archived_unknowns(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legacy20/Pix'):
+def find_archived_unknowns(DBFile='L4.pkl', ArchDir='/Volumes/Legacy20/Pix'):
   test_db = ArchDB.load(DBFile)
   if test_db is None:
     print("sorry")
@@ -100,7 +100,7 @@ def find_archived_unknowns(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legac
   print('found {} archived unknown files'.format(test_db.find_archived_unknowns('unknowns.log', ArchDir)))
   return test_db
 
-def find_unarchived_raws(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legacy20/Pix'):
+def find_unarchived_raws(DBFile='L4.pkl', ArchDir='/Volumes/Legacy20/Pix'):
   test_db = ArchDB.load(DBFile)
   if test_db is None:
     print("sorry")
@@ -108,7 +108,7 @@ def find_unarchived_raws(DBFile='pix18-20s-db-L3.pkl', ArchDir='/Volumes/Legacy2
   print('found {} archived unknown files'.format(test_db.find_unarchived_raw('unarchived-raw.log', ArchDir)))
   return test_db
 
-def complex_record(DBFile='L3.pkl', RecName='DSCF4743'):
+def complex_records(DBFile='L4.pkl', RecName='DSCF4743'):
   ''''
   others: KEVT2897 DSCF5754
   /Volumes/Legacy20/Pix/2004/300D/2004-04-April/2004_04_24/175_7515.CRW
@@ -128,8 +128,10 @@ def complex_record(DBFile='L3.pkl', RecName='DSCF4743'):
 /Volumes/Legacy20/Pix/2006/Digi/2006_06/2006_06_26_slapPractice/502_0298.DNG
   '''
   test_db = ArchDB.load(DBFile)
-  ar = test_db.archRecs[RecName]
-  ar.print_stats()
+  for RecName in [ 'DSCF4743', 'KEVT2897', 'DSCF5754']:
+    print("--------   {} --------".format(RecName))
+    ar = test_db.archRecs[RecName]
+    ar.print_stats()
   return ar
   # problem archive: DSCF4743.RAF - multiple camera versions!
 
@@ -137,10 +139,10 @@ def complex_record(DBFile='L3.pkl', RecName='DSCF4743'):
 if __name__ == '__main__':
   # mini_validate()
   # find_unknowns()
-  # find_archived_unknowns('pix18-20s-db-L4.pkl')
-  complex_record('pix18-20s-db-L4.pkl')
-  # find_unarchived_raws('pix18-20s-db-L4.pkl')
-  #update_from_available_drives('pix18-20s-db-L3.pkl', '/Volumes/Drobo/Pix',
-  #            '/Volumes/Legacy20/Pix', 'pix18-20s-db-L4.pkl')
+  # find_archived_unknowns('L4.pkl')
+  complex_records('L4.pkl')
+  # find_unarchived_raws('L4.pkl')
+  #update_from_available_drives('L4.pkl', '/Volumes/Drobo/Pix',
+  #            '/Volumes/Legacy20/Pix', 'L4.pkl')
   # sys.exit()
   # update_from_available_drives()

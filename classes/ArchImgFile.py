@@ -390,15 +390,19 @@ class ArchImgFile(object):
     b = os.path.basename(self.filename)
     b = os.path.splitext(b)[0]
     m = re.search(r'[A-Za-z_][A-Za-z0-9_]{3}\d{4}', b)
-    if not m:
-      'try P1090086'
-      m = re.search(r'P\d{7}', b)
-      if not m:
-        self.origin_name = b
-      else:
-        self.origin_name = m.group()
-    else:
+    if m:
       self.origin_name = m.group()
+      return
+    # 'try P1090086'
+    m = re.search(r'[PF]\d{6}\d*', b)
+    if m:
+      self.origin_name = m.group()
+      return
+    m = re.search(r'[0-9A-Z]{3}_\d{4}', b)
+    if m:
+      self.origin_name = m.group()
+      return
+    self.origin_name = b
 
   def _determine_archive_location_(self):
     '''
@@ -442,6 +446,9 @@ class ArchImgFile(object):
     'we cannot trust stored destination values, but all they are is string manipulation so...'
     return self._determine_archive_location_()
 
+  def src_drive(self):
+    return self.relative_name.split(os.path.sep)[0]
+
   def origin(self):
     self._initialize_origin_name()
     return self.origin_name
@@ -483,7 +490,7 @@ class ArchImgFile(object):
     base = os.path.basename(self.filename)
     destFile = os.path.join(destDir, base)
     if not os.path.exists(destFile):
-      return destFile
+      return "{} # {}".format(destFile, self.src_drive())
     return None
 
   def archive_to(self, DestinationRoot):
@@ -530,10 +537,12 @@ class ArchImgFile(object):
     return os.path.basename(self.filename)
 
   def __str__(self):
-    return '{}: {:.2f}MB, {}*, dest {}'.format(
+    return '{}: {:.2f}MB, {}*, {} -> {}'.format(
         os.path.basename(self.filename),
         self.nBytes/(1024*1024),
-        self.rating, self.dest())
+        self.rating,
+        self.src_drive(),
+        self.dest())
 
   def print_stats(self):
     print('{}:\n  {:.2f} MB, rating {}\n  arch to {}\n  volume {}\n  relative name {}'.format(
