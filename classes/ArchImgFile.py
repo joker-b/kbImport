@@ -389,12 +389,12 @@ class ArchImgFile(object):
       return
     b = os.path.basename(self.filename)
     b = os.path.splitext(b)[0]
-    m = re.search(r'[A-Za-z_][A-Za-z0-9_]{3}\d{4}', b)
+    # 'try P1090086'
+    m = re.search(r'[PF]\d{6}\d*', b)
     if m:
       self.origin_name = m.group()
       return
-    # 'try P1090086'
-    m = re.search(r'[PF]\d{6}\d*', b)
+    m = re.search(r'[A-Za-z_][A-Za-z0-9_]{3}\d{4}', b)
     if m:
       self.origin_name = m.group()
       return
@@ -493,7 +493,7 @@ class ArchImgFile(object):
       if IndexName is None or ( IndexName == self.origin() ):
         return "{} # {} {}".format(os.path.join(self.dest(),base), self.src_drive(), self.origin())
       else:
-        return "{} # {} {}/{}".format(self.dest(), self.src_drive(), self.origin(), IndexName)
+        return "{} # {} {}:{}".format(os.path.join(self.dest(),base), self.src_drive(), self.origin(), IndexName)
     return None
 
   def archive_to(self, DestinationRoot):
