@@ -142,10 +142,10 @@ class ArchRec(object):
     u = [v.archived_unknown(ArchDir) for v in self.versions]
     return [b for b in u if b is not None]
 
-  def unarchived_raw(self, ArchDir='/Volumes/Legacy20/Pix'):
+  def unarchived_raw(self, ArchDir='/Volumes/Legacy20/Pix', IndexName=None):
     if not self.should_archive_raw():
       return []
-    u = [v.unarchived_raw(ArchDir) for v in self.versions]
+    u = [v.unarchived_raw(ArchDir, IndexName) for v in self.versions]
     d = self.spot_doppels()
     if len(u) != len(d):
       print("find_archived_unknowns({}) size error".format(self.origin_name()))

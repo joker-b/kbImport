@@ -141,7 +141,7 @@ class ArchDB(object):
     total = 0
     f = open(listfile, 'w')
     for k in self.archRecs:
-      ul = self.archRecs[k].unarchived_raw(ArchDir)
+      ul = self.archRecs[k].unarchived_raw(ArchDir, k)
       total += len(ul)
       for u in ul:
         f.write(u)

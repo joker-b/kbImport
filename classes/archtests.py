@@ -135,13 +135,33 @@ def complex_records(DBFile='L4.pkl', RecName='DSCF4743'):
   return ar
   # problem archive: DSCF4743.RAF - multiple camera versions!
 
+'''
+some lines from the latest.....
+/Volumes/Legacy20/Pix/2020/2020-05-May/2020_05_21_AZ/bjorke_AZ_DSCF5603.RAF # pix20s
+/Volumes/Legacy20/Pix/2019/2019-05-May/2019_05_07_PDX/bjorke_PDX_DSCF5603.RAF # pix18
+/Volumes/Legacy20/Pix/2014/2014-12-Dec/2014_12_02_Cixt1/DSCF5603.RAF # Sept2013
+/Volumes/Legacy20/Pix/2017/2017-02-Feb/2017_02_12_CatWalk/bjorke_CatWalk_KBXP5498.RAF # CameraWork
+/Volumes/Legacy20/Pix/2014/2014-09-Sep/2014_09_26_CityIsaac/f11348544.raf # Drobo
+/Volumes/Legacy20/Pix/2017/2017-06-Jun/2017_06_11_Banff/bjorke_Banff_KBXP2855.RAF # pix17
+/Volumes/Legacy20/Pix/2018/2018-02-Feb/2018_02_24_FairCNY/FairCNY_KBXP2881.RAF # pix18
+/Volumes/Legacy20/Pix/2018/2018-02-Feb/2018_02_24_FairCNY/FairCNY_KBXP2882.RAF # pix18
+/Volumes/Legacy20/Pix/2019/2019-04-Apr/2019_04_13_EarthDay/bjorke_EarthDay_DSCF4884.RAF # pix18
+/Volumes/Legacy20/Pix/2014/2014-10-Oct/2014_10_31_Parade/DSCF4884.RAF # Sept2013
+/Volumes/Legacy20/Pix/2019/2019-04-Apr/2019_04_13_EarthDay/bjorke_EarthDay_DSCF4783.RAF # pix18
+/Volumes/Legacy20/Pix/2014/2014-10-Oct/2014_10_31_Parade/DSCF4783.RAF # Sept2013
+/Volumes/Legacy20/Pix/2020/2020-05-May/2020_05_21_AZ/bjorke_AZ_DSCF5603.RAF # pix20s
+/Volumes/Legacy20/Pix/2019/2019-05-May/2019_05_07_PDX/bjorke_PDX_DSCF5603.RAF # pix18
+/Volumes/Legacy20/Pix/2016/2016-11-Nov/2016_11_09_MeikeBoysPlusIsaac/bjorke_HK_KBXP8983.RAF # CameraWork
+/Volumes/Legacy20/Pix/2017/2017-02-Feb/2017_02_25_RioMar/bjorke_Cuba_KBXP8983.RAF # CameraWork
+
+'''
 
 if __name__ == '__main__':
   # mini_validate()
   # find_unknowns()
   # find_archived_unknowns('L4.pkl')
-  complex_records('L4.pkl')
-  # find_unarchived_raws('L4.pkl')
+  # complex_records('L4.pkl')
+  find_unarchived_raws('L4.pkl')
   #update_from_available_drives('L4.pkl', '/Volumes/Drobo/Pix',
   #            '/Volumes/Legacy20/Pix', 'L4.pkl')
   # sys.exit()

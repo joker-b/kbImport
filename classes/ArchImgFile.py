@@ -479,7 +479,7 @@ class ArchImgFile(object):
       return destFile
     return None
 
-  def unarchived_raw(self, DestinationRoot):
+  def unarchived_raw(self, DestinationRoot, IndexName=None):
     'if unknown, return the path to the archive'
     if self.get_type() != ArchFileType.RAW:
       return None
@@ -490,7 +490,10 @@ class ArchImgFile(object):
     base = os.path.basename(self.filename)
     destFile = os.path.join(destDir, base)
     if not os.path.exists(destFile):
-      return "{} # {}".format(destFile, self.src_drive())
+      if IndexName is None or ( IndexName == self.origin() ):
+        return "{} # {} {}".format(os.path.join(self.dest(),base), self.src_drive(), self.origin())
+      else:
+        return "{} # {} {}/{}".format(self.dest(), self.src_drive(), self.origin(), IndexName)
     return None
 
   def archive_to(self, DestinationRoot):
