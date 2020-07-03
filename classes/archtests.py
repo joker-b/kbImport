@@ -16,6 +16,7 @@ def get_test_folder():
       # '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_06_WoodX/',
       '/Volumes/pix20s/kbImport/Pix/',
       '/Volumes/pix18/kbImport/Pix/',
+      '/Volumes/KBWIFI/kbImport/Pix/',
       '/Volumes/pix18/Pix/',
       '/Volumes/pix17/Pix/',
       '/Volumes/pix15/Pix/',
@@ -50,7 +51,7 @@ def validate(DBFile='L4.pkl', ArchDir='/Volumes/Legacy20/Pix'):
   return test_db
 
 def update_from_available_drives(SrcDBFile='L4.pkl', SrcFolder=None,
-                                 ArchDir='/Volumes/Legacy20/Pix', DestDBFile=None):
+                                 ArchDir='/Volumes/Legacy20/Pix', DestDBFile='L5.pkl'):
   # test_db = ArchDB()
   test_db = ArchDB.load(SrcDBFile)
   # test_pic = get_test_pic()
@@ -161,8 +162,7 @@ if __name__ == '__main__':
   # find_unknowns()
   # find_archived_unknowns('L4.pkl')
   # complex_records('L4.pkl')
-  find_unarchived_raws('L4.pkl')
-  #update_from_available_drives('L4.pkl', '/Volumes/Drobo/Pix',
-  #            '/Volumes/Legacy20/Pix', 'L4.pkl')
+  find_unarchived_raws('L5.pkl')
+  #update_from_available_drives('L4.pkl', '/Volumes/KBWIFI/kbImport/Pix', '/Volumes/Legacy20/Pix', 'L5.pkl')
   # sys.exit()
   # update_from_available_drives()
