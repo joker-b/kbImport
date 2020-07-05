@@ -71,7 +71,7 @@ class ArchImgFile(object):
   add archive() method
   '''
   RawTypes = ['.RAF', '.DNG', '.CRW', '.CR2', '.XMP', '.PP3', '.RAW', '.RW2', '.RWL'] # TODO: others?
-  IgnoreTypes = ['.SWP', '.LOG']
+  IgnoreTypes = ['.SWP', '.LOG', '.CACHE']
   EditorTypes = ['.PSD', '.XCF', '.TIFF', '.TIF']
   PlayTypes = ['.MP3', '.MP4', '.MOV']
   month_folder = {'01': '01-Jan',

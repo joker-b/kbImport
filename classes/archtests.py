@@ -12,31 +12,28 @@ if sys.version_info < (3,):
 
 from ArchDB import *
 
-def get_test_pic():
-  return '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-05-May/2020_05_31_BLM/bjorke_BLM_KBXF8642.RAF'
-
-def get_test_folder():
-  # f2 = '/home/kevinbjorke/pix/kbImport/Pix/'
-  # f2 = '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun'
-  for f2 in [
-      '/home/kevinbjorke/pix/kbImport/Pix',
-      # '/home/kevinbjorke/pix/kbImport/Pix/2020/2020-06-Jun/2020_06_06_WoodX/',
-      '/Volumes/pix20s/kbImport/Pix/',
-      '/Volumes/pix18/kbImport/Pix/',
-      '/Volumes/KBWIFI/kbImport/Pix/',
-      '/Volumes/pix18/Pix/',
-      '/Volumes/pix17/Pix/',
-      '/Volumes/pix15/Pix/',
-      '/Volumes/pix20/Pix/',
-      '/Volumes/Sept2013/Pix/',
-      # '/Users/kevinbjorke/Pictures/kbImport/Pix/2020/2020-01-Jan/2020_01_02_Putnam/',
-      # '/Users/kevinbjorke/Pictures/kbImport/Pix/',
-      #'/Users/kevinbjorke/Google Drive/kbImport/Pix/',
-      '/Volumes/CameraWork/Pix/']:
+def get_available_source_folder():
+  'look for avaiilable source drives'
+  root = '/Volumes'
+  if not os.path.exists(root):
+    root = '/mnt/chromeos/removeable'
+  possible = [os.path.join(root, f) for f in [
+      'pix20s/kbImport/Pix/',
+      'pix18/kbImport/Pix/',
+      'KBWIFI/kbImport/Pix/',
+      'pix18/Pix/',
+      'pix17/Pix/',
+      'pix15/Pix/',
+      'pix20/Pix/',
+      'Sept2013/Pix/',
+      'CameraWork/Pix/' ] ]
+  possible.append('/home/kevinbjorke/pix/kbImport/Pix')
+  possible.append('/Users/kevinbjorke/Pictures/kbImport/Pix/')
+  possible.append('/Users/kevinbjorke/Google Drive/kbImport/Pix/')
+  for f2 in possible:
     if os.path.exists(f2):
       return f2
   return '.' # less-awkward fail
-
 
 def validate(DBFile='L4.pkl', ArchDir='/Volumes/Legacy20/Pix'):
   'remember to assign when testing interactively!'
@@ -57,13 +54,14 @@ def validate(DBFile='L4.pkl', ArchDir='/Volumes/Legacy20/Pix'):
   print('logged names')
   return test_db
 
-def update_from_available_drives(SrcDBFile='L4.pkl', SrcFolder=None,
-                                 ArchDir='/Volumes/Legacy20/Pix', DestDBFile='L5.pkl'):
+def update_from_available_drives(SrcDBFile='L6.pkl',
+                                 SrcFolder=None,
+                                 ArchDir='/Volumes/Legacy20/Pix',
+                                 DestDBFile=None):
   # test_db = ArchDB()
   test_db = ArchDB.load(SrcDBFile)
-  # test_pic = get_test_pic()
   if SrcFolder is None:
-    test_folder = get_test_folder()
+    test_folder = get_available_source_folder()
   else:
     test_folder = SrcFolder
   ArchImgFile.pretend(False)
@@ -109,6 +107,7 @@ def find_archived_unknowns(DBFile='L4.pkl', ArchDir='/Volumes/Legacy20/Pix'):
   return test_db
 
 def find_unarchived_raws(DBFile='L4.pkl', ArchDir='/Volumes/Legacy20/Pix'):
+  # 531  sed -e 's/.*# //' -e 's/ .*//' unarchived-raw.log | sort | uniq -c
   test_db = ArchDB.load(DBFile)
   if test_db is None:
     print("sorry")
@@ -179,8 +178,18 @@ if __name__ == '__main__':
   # find_unknowns()
   # find_archived_unknowns('L4.pkl')
   # complex_records('L4.pkl')
-  # find_unarchived_raws('L5.pkl')
-  reconcile_misfiled('L5.pkl', 'L6.pkl')
-  #update_from_available_drives('L4.pkl', '/Volumes/KBWIFI/kbImport/Pix', '/Volumes/Legacy20/Pix', 'L5.pkl')
+  #find_unarchived_raws('L6.pkl')
+  # reconcile_misfiled('L5.pkl', 'L6.pkl')
+  update_from_available_drives('L6.pkl', None, '/Volumes/Legacy20/Pix', 'L7.pkl')
   # sys.exit()
   # update_from_available_drives()
+'''
+1106 CameraWork
+   1 Pictures
+2654 Sept2013
+  36 pix15
+  49 pix17
+ 360 pix18
+  42 pix20
+  26 pix20s
+'''
