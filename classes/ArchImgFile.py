@@ -49,6 +49,8 @@ class ArchFileType(Enum):
   IGNORE = 9
   PNG = 10
   VID = 11
+  PDF = 12
+  GIF = 13
 
 class HostType(Enum):
   "File types that the archiver may handle in special ways"
@@ -70,7 +72,7 @@ class ArchImgFile(object):
   '''
   RawTypes = ['.RAF', '.DNG', '.CRW', '.CR2', '.XMP', '.PP3', '.RAW', '.RW2', '.RWL'] # TODO: others?
   IgnoreTypes = ['.SWP', '.LOG']
-  EditorTypes = ['.PSD', '.XCF', '.TIFF', '.TIF', '.PDF']
+  EditorTypes = ['.PSD', '.XCF', '.TIFF', '.TIF']
   PlayTypes = ['.MP3', '.MP4', '.MOV']
   month_folder = {'01': '01-Jan',
                   '02': '02-Feb',
@@ -249,6 +251,10 @@ class ArchImgFile(object):
       return ArchFileType.JPG
     elif ext == '.PNG':
       return ArchFileType.PNG
+    elif ext == '.PDF':
+      return ArchFileType.PDF
+    elif ext == '.GIF':
+      return ArchFileType.GIF
     elif ArchImgFile.PlayTypes.__contains__(ext):
       return ArchFileType.VID
     elif ArchImgFile.RawTypes.__contains__(ext):
@@ -284,7 +290,8 @@ class ArchImgFile(object):
 
   def _initialize_work_state(self):
     'Look for editor files, or enclosing "Work" folder'
-    if self.get_type() is ArchFileType.EDITOR:
+    t = self.get_type()
+    if t is ArchFileType.EDITOR or t is ArchFileType.PDF or t is ArchFileType.GIF:
       #self.is_wip = True
       return True
     for part in self.filename.split(os.path.sep):
@@ -389,14 +396,44 @@ class ArchImgFile(object):
       return
     b = os.path.basename(self.filename)
     b = os.path.splitext(b)[0]
+    t = self.get_type()
+    if t in [ArchFileType.PDF, ArchFileType.GIF, ArchFileType.UNKNOWN]:
+      self.origin_name = b
+      return
     # 'try P1090086'
-    m = re.search(r'[PF]\d{6}\d*', b)
+    m = re.search(r'_[mo]$', b)
+    if m:
+      self.origin_name = b
+      return
+    m = re.search(r'^\d+', b)
+    if m:
+      self.origin_name = b
+      return
+    if b[:2] == 'P_' or b[:3] == 'rps' or b[0] == '_':
+      self.origin_name = b
+      return
+    m = re.search(r'Gear360_.*', b)
     if m:
       self.origin_name = m.group()
       return
-    m = re.search(r'[A-Za-z_][A-Za-z0-9_]{3}\d{4}', b)
+    m = re.search(r'Hero\d_.*', b)
     if m:
       self.origin_name = m.group()
+      return
+    m = re.search(r'[PFR]\d{6}\d*', b)
+    if m:
+      self.origin_name = m.group()
+      return
+    m = re.search(r'_([A-Za-z_][A-Za-z0-9_]{3}\d{4})', b)
+    if m:
+      self.origin_name = m.group(1)
+      return
+    m = re.search(r'^([A-Za-z_][A-Za-z0-9_]{3}\d{4})$', b)
+    if m:
+      self.origin_name = m.group(1)
+      return
+    if t == ArchFileType.PNG:
+      self.origin_name = b
       return
     m = re.search(r'[0-9A-Z]{3}_\d{4}', b)
     if m:

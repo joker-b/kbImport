@@ -3,6 +3,13 @@
 Each ImgInfo object contains archive data about a single image
 """
 
+import sys
+
+if sys.version_info < (3,):
+  print("sorry, python3 required")
+  sys.exit()
+
+
 from ArchDB import *
 
 def get_test_pic():
@@ -109,12 +116,14 @@ def find_unarchived_raws(DBFile='L4.pkl', ArchDir='/Volumes/Legacy20/Pix'):
   print('found {} archived unknown files'.format(test_db.find_unarchived_raw('unarchived-raw.log', ArchDir)))
   return test_db
 
-def reconcile_misfiled(DBFile='L5.pkl'):
+def reconcile_misfiled(DBFile='L5.pkl', DestFile=None):
   test_db = ArchDB.load(DBFile)
   if test_db is None:
     print("sorry")
     return None
   test_db.reconcile_misfiled()
+  if DestFile is not None:
+    ArchDB.save(test_db, DestFile)
   return test_db
 
 def complex_records(DBFile='L4.pkl', RecName='DSCF4743'):
@@ -171,7 +180,7 @@ if __name__ == '__main__':
   # find_archived_unknowns('L4.pkl')
   # complex_records('L4.pkl')
   # find_unarchived_raws('L5.pkl')
-  reconcile_misfiled('L5.pkl')
+  reconcile_misfiled('L5.pkl', 'L6.pkl')
   #update_from_available_drives('L4.pkl', '/Volumes/KBWIFI/kbImport/Pix', '/Volumes/Legacy20/Pix', 'L5.pkl')
   # sys.exit()
   # update_from_available_drives()

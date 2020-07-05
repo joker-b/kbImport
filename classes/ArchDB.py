@@ -152,23 +152,49 @@ class ArchDB(object):
   def reconcile_misfiled(self):
     checked = 0
     found = 0
-    emptied = 0
+    empties = []
     added = {}
-    for k in self.archRecs:
-      ar = self.archRecs[k]
-      nv = len(ar.versions)
-      for v in ar.versions:
-        if k != v.origin():
-          # print("TODO refile {} as {}".format(k, v.origin()))
+    addList = []
+    for arch_key in self.archRecs:
+      ar = self.archRecs[arch_key]
+      for i in range(len(ar.versions)):
+        v = ar.versions[i]
+        vo = v.origin()
+        #if vo[0] == '_':
+        #  print("hmm, '{}' from {}".format(vo, v.filename))
+        if arch_key != vo:
+          # print("TODO refile {} as {}".format(arch_key, v.origin()))
           found += 1
-          nv -= 1
-          if nv < 1:
-            emptied += 1
-          if not self.archRecs.get(v.origin()) and not added.get(v.origin()):
-            added[v.origin()] = 1
+          destRec = self.archRecs.get(vo, added.get(vo))
+          if destRec is None:
+            added[vo] = ArchRec()
+            destRec = added[vo]
+            addList.append("{}\t{}".format(vo, v.basename()))
+          destRec.versions.append(v)
+          ar.versions[i] = None
         checked += 1
+      ar.versions = [a for a in ar.versions if a is not None]
+      if len(ar.versions) < 1:
+        empties.append(arch_key)
     print("checked {} images, {} mislabelled".format(checked, found))
-    print("need to remove {} records,add {}".format(emptied, len(added)))
+    print("emptied {} records,added {}".format(len(empties), len(added)))
+    logname = "additions.log"
+    f = open(logname, 'w')
+    for k in added:
+      if self.archRecs.get(k):
+        print("error, already had a '{}'".format(k))
+        f.write("error, already had a '{}'\n".format(k))
+        continue
+      self.archRecs[k] = added[k]
+      # f.write(k)
+      # f.write('\n')
+    f.write('----- ADDS -----\n')
+    f.write('\n'.join(addList))
+    f.write('\n\n----- EMPTIES -----\n')
+    f.write('\n'.join(empties))
+    f.write('\n')
+    f.close()
+    print("Added! see log at {}".format(logname))
 
   def dop_hunt(self):
     n = 0
