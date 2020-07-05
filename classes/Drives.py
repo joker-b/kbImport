@@ -73,6 +73,8 @@ class Drives(object):
     # TODO(kevin): choose a better local default?
     self.LocalArchiveList = [os.path.join(os.environ['HOME'], 'pix', 'kbImport')]
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
+    self.ForbiddenSources.append(os.path.join(mk, 'Legacy20'))
+    self.ForbiddenSources.append(os.path.join(mk, 'KBWIFI', 'kbImport'))
     self.ForbiddenSources.append("Storage")
     self.PossibleSources = self.available_source_vols(
         [os.path.join(mk, a) for a in os.listdir(mk) if not knownDrives.__contains__(a) and (len(a) <= 8)]) if \
@@ -97,6 +99,7 @@ class Drives(object):
     Vols = os.path.sep+'Volumes'
     self.PrimaryArchiveList = [os.path.join(Vols, D) for D in
                                [os.path.join('pix20s', 'kbImport'),
+                               os.path.join('KBWIFI', 'kbImport'),
                                'pix20', 'pix18', 'pix15',
                                 'CameraWork', 'Liq', 'Pix17', 'BJORKEBYTES',
                                 'T3', 'Sept2013']]
@@ -105,6 +108,8 @@ class Drives(object):
                              ['Macintosh HD',
                               'MobileBackups',
                               'pix20s',
+                              'Legacy20',
+                              'KBWIFI',
                               'Storage',
                               'Recovery',
                               'My Passport for Mac']]
