@@ -149,6 +149,27 @@ class ArchDB(object):
     f.close()
     return total
 
+  def reconcile_misfiled(self):
+    checked = 0
+    found = 0
+    emptied = 0
+    added = {}
+    for k in self.archRecs:
+      ar = self.archRecs[k]
+      nv = len(ar.versions)
+      for v in ar.versions:
+        if k != v.origin():
+          # print("TODO refile {} as {}".format(k, v.origin()))
+          found += 1
+          nv -= 1
+          if nv < 1:
+            emptied += 1
+          if not self.archRecs.get(v.origin()) and not added.get(v.origin()):
+            added[v.origin()] = 1
+        checked += 1
+    print("checked {} images, {} mislabelled".format(checked, found))
+    print("need to remove {} records,add {}".format(emptied, len(added)))
+
   def dop_hunt(self):
     n = 0
     for k in self.archRecs:

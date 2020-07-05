@@ -109,6 +109,14 @@ def find_unarchived_raws(DBFile='L4.pkl', ArchDir='/Volumes/Legacy20/Pix'):
   print('found {} archived unknown files'.format(test_db.find_unarchived_raw('unarchived-raw.log', ArchDir)))
   return test_db
 
+def reconcile_misfiled(DBFile='L5.pkl'):
+  test_db = ArchDB.load(DBFile)
+  if test_db is None:
+    print("sorry")
+    return None
+  test_db.reconcile_misfiled()
+  return test_db
+
 def complex_records(DBFile='L4.pkl', RecName='DSCF4743'):
   ''''
   others: KEVT2897 DSCF5754
@@ -162,7 +170,8 @@ if __name__ == '__main__':
   # find_unknowns()
   # find_archived_unknowns('L4.pkl')
   # complex_records('L4.pkl')
-  find_unarchived_raws('L5.pkl')
+  # find_unarchived_raws('L5.pkl')
+  reconcile_misfiled('L5.pkl')
   #update_from_available_drives('L4.pkl', '/Volumes/KBWIFI/kbImport/Pix', '/Volumes/Legacy20/Pix', 'L5.pkl')
   # sys.exit()
   # update_from_available_drives()
