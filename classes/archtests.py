@@ -180,7 +180,7 @@ if __name__ == '__main__':
   # complex_records('L4.pkl')
   #find_unarchived_raws('L6.pkl')
   # reconcile_misfiled('L5.pkl', 'L6.pkl')
-  update_from_available_drives('L6.pkl', None, '/Volumes/Legacy20/Pix', 'L7.pkl')
+  update_from_available_drives('L8.pkl', None, '/Volumes/Legacy20/Pix')
   # sys.exit()
   # update_from_available_drives()
 '''

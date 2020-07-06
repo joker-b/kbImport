@@ -71,7 +71,7 @@ class ArchImgFile(object):
   add archive() method
   '''
   RawTypes = ['.RAF', '.DNG', '.CRW', '.CR2', '.XMP', '.PP3', '.RAW', '.RW2', '.RWL'] # TODO: others?
-  IgnoreTypes = ['.SWP', '.LOG', '.CACHE']
+  IgnoreTypes = ['.SWP', '.LOG', '.CACHE', ".THUMB", ".SCREEN", ".DS_STORE"]
   EditorTypes = ['.PSD', '.XCF', '.TIFF', '.TIF']
   PlayTypes = ['.MP3', '.MP4', '.MOV']
   month_folder = {'01': '01-Jan',
@@ -535,11 +535,19 @@ class ArchImgFile(object):
 
   def archive_to(self, DestinationRoot):
     'archive stuff'
-    if not ArchImgFile.source_volume_ready(self.volume):
-      print('Cannot get {} data'.format(self.basename()))
-      return 0 # not here
+    if self.get_type() == ArchFileType.IGNORE:
+      # "don't copy what you don't want"
+      return 0
+    src = ArchImgFile.source_volume_ready(self.volume)
+    if not src:
+      # no need to print a message -- usually only one source might be
+      #   mounted, so this is a status, not a warning or error
+      #`print('Cannot get {} data from {} ({})'.format(self.basename(),
+      #                                          self.volume, src))
+      return 0
     if not ArchImgFile.dest_volume_ready(DestinationRoot):
-      print("<{}>.archive_to({}): not mounted".format(self.origin(), DestinationRoot))
+      print("<{}>.archive_to({}): not mounted".format(self.origin(),
+                                                DestinationRoot))
       return 0 # not here
     if self.get_type() == ArchFileType.UNKNOWN:
       # "don't copy what you don't know"

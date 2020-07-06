@@ -76,6 +76,8 @@ class ArchDB(object):
     nFiles = 0
     if not os.path.exists(Folder):
       return nFiles
+    nItems = 0
+    fname = Folder.split(os.path.sep)[-1]
     for item in os.listdir(Folder):
       if item[0] == '.':
         continue
@@ -84,8 +86,11 @@ class ArchDB(object):
         nFiles += self.add_folder(full, nFiles+TotalFiles)
       else:
         nFiles += self.add_file(full)
-        if ((nFiles+TotalFiles) % 500) == 0:
-          print('Identified {} files so far'.format(nFiles+TotalFiles))
+        nAll = nFiles + TotalFiles
+        if nAll % 500 == 0 and nAll > 0:
+          print('Identified {} files of {} from {} so far'.format(
+                nAll, nItems, fname))
+      nItems += 1
     return nFiles
 
   def exists_at(self, DestinationDir):
