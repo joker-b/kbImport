@@ -18,6 +18,7 @@ class ArchDB(object):
   TODO: debug messages, sizes, etc
   TODO: archive
   '''
+
   @classmethod
   def load(cls, Filename):
     try:
@@ -40,7 +41,6 @@ class ArchDB(object):
     jf = open(Filename, 'wb')
     pickle.dump(Bbj, jf)
     jf.close()
-
 
   @classmethod
   def describe_created_dirs(cls):
@@ -130,11 +130,12 @@ class ArchDB(object):
       total += self.archRecs[kn].count_unknowns()
     return total
 
-  def find_archived_unknowns(self, listfile='unknowns.log', ArchDir='/Volumes/Legacy20/Pix'):
+  def find_archived_unknowns(self, listfile='unknowns.log', ArchDir=None):
+    dest = ArchImgFile.dest(ArchDir)
     total = 0
     f = open(listfile, 'w')
     for k in self.archRecs:
-      ul = self.archRecs[k].find_archived_unknowns(ArchDir)
+      ul = self.archRecs[k].find_archived_unknowns(dest)
       total += len(ul)
       for u in ul:
         f.write(u)
@@ -142,11 +143,12 @@ class ArchDB(object):
     f.close()
     return total
 
-  def find_unarchived_raw(self, listfile='unarchived-raw.log', ArchDir='/Volumes/Legacy20/Pix'):
+  def find_unarchived_raw(self, listfile='unarchived-raw.log', ArchDir=None):
+    dest = ArchImgFile.dest(ArchDir)
     total = 0
     f = open(listfile, 'w')
     for k in self.archRecs:
-      ul = self.archRecs[k].unarchived_raw(ArchDir, k)
+      ul = self.archRecs[k].unarchived_raw(dest, k)
       total += len(ul)
       for u in ul:
         f.write(u)

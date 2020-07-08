@@ -94,6 +94,32 @@ class ArchImgFile(object):
   _copyCount = 0 # again
   _alreadyArchivedCount = 0
   _pretending = False # TODO: when _pretending, all mkdirs and exists and copys pretend to work
+  _knownDest = None
+  _preferredRoot = None
+
+  @classmethod
+  def removeable_root(cls):
+    if ArchImgFile._preferredRoot is not None:
+      return ArchImgFile._preferredRoot
+    for r in ['/Volumes', '/mnt/chromeos/removable']:
+      if os.path.exists(r):
+        ArchImgFile._preferredRoot = r
+        return r
+    print('unable to find the removeable root')
+    return None
+
+  @classmethod
+  def dest(cls, ArchDir=None):
+    if ArchDir is not None and os.path.exists(ArchDir):
+      ArchImgFile._knownDest = ArchDir
+      return ArchDir
+    if ArchImgFile._knownDest is not None:
+      return ArchImgFile._knownDest
+    d = os.path.join(cls.removeable_root(), 'Legacy20', 'Pix')
+    if os.path.exists(d):
+      ArchImgFile._knownDest = d
+      return d
+    return None
 
   @classmethod
   def pretend(cls, Pretending=True):
@@ -180,7 +206,7 @@ class ArchImgFile(object):
 
   @classmethod
   def volume_path(cls, VolumeName):
-    return os.path.join('/Volumes', VolumeName)
+    return os.path.join(cls.removeable_root(), VolumeName)
 
   @classmethod
   def dest_volume_ready(cls, DestinationRoot):
@@ -479,7 +505,7 @@ class ArchImgFile(object):
     # no idea so let's just file it in 'Misc'
     return os.path.join('Misc', self.folder())
 
-  def dest(self):
+  def dest_loc(self):
     'we cannot trust stored destination values, but all they are is string manipulation so...'
     return self._determine_archive_location_()
 
@@ -497,7 +523,7 @@ class ArchImgFile(object):
     if not ArchImgFile.dest_volume_ready(DestinationRoot):
       print("<{}>.exists_at({}): not mounted".format(self.origin(), DestinationRoot))
       return False
-    destDir = os.path.join(DestinationRoot, self.dest())
+    destDir = os.path.join(DestinationRoot, self.dest_loc())
     base = os.path.basename(self.filename)
     destFile = os.path.join(destDir, base)
     return os.path.exists(destFile)
@@ -509,7 +535,7 @@ class ArchImgFile(object):
     if not ArchImgFile.dest_volume_ready(DestinationRoot):
       print("<{}>.archived_unknown({}): not mounted".format(self.origin(), DestinationRoot))
       return None
-    destDir = os.path.join(DestinationRoot, self.dest())
+    destDir = os.path.join(DestinationRoot, self.dest_loc())
     base = os.path.basename(self.filename)
     destFile = os.path.join(destDir, base)
     if os.path.exists(destFile):
@@ -523,14 +549,14 @@ class ArchImgFile(object):
     if not ArchImgFile.dest_volume_ready(DestinationRoot):
       print("<{}>.unarchived_raw({}): not mounted".format(self.origin(), DestinationRoot))
       return None
-    destDir = os.path.join(DestinationRoot, self.dest())
+    destDir = os.path.join(DestinationRoot, self.dest_loc())
     base = os.path.basename(self.filename)
     destFile = os.path.join(destDir, base)
     if not os.path.exists(destFile):
       if IndexName is None or ( IndexName == self.origin() ):
-        return "{} # {} {}".format(os.path.join(self.dest(),base), self.src_drive(), self.origin())
+        return "{} # {} {}".format(os.path.join(self.dest_loc(),base), self.src_drive(), self.origin())
       else:
-        return "{} # {} {}:{}".format(os.path.join(self.dest(),base), self.src_drive(), self.origin(), IndexName)
+        return "{} # {} {}:{}".format(os.path.join(self.dest_loc(),base), self.src_drive(), self.origin(), IndexName)
     return None
 
   def archive_to(self, DestinationRoot):
@@ -552,7 +578,7 @@ class ArchImgFile(object):
     if self.get_type() == ArchFileType.UNKNOWN:
       # "don't copy what you don't know"
       return 0
-    destDir = os.path.join(DestinationRoot, self.dest())
+    destDir = os.path.join(DestinationRoot, self.dest_loc())
     base = os.path.basename(self.filename)
     destFile = os.path.join(destDir, base)
     if os.path.exists(destFile):
@@ -590,20 +616,20 @@ class ArchImgFile(object):
         self.nBytes/(1024*1024),
         self.rating,
         self.src_drive(),
-        self.dest())
+        self.dest_loc())
 
   def print_stats(self):
     print('{}:\n  {:.2f} MB, rating {}\n  arch to {}\n  volume {}\n  relative name {}'.format(
         self.filename,
         self.nBytes/(1024*1024),
         self.rating,
-        self.dest(),
+        self.dest_loc(),
         self.volume,
         self.relative_name))
 
-  def print_arch_status(self, ArchDir='/Volumes/Legacy20/Pix'):
+  def print_arch_status(self, ArchDir=None):
     'what is the state of this file? (called within ArchRec)'
-    print("{} -> {}: Archived {}".format(os.path.basename(self.filename), self.dest(), self.exists_at(ArchDir)))
+    print("{} -> {}: Archived {}".format(os.path.basename(self.filename), self.dest_loc(), self.exists_at(ArchImgFile.dest(ArchDir))))
 
 
 #
@@ -641,7 +667,7 @@ if __name__ == '__main__':
       continue
     print('----- {}'.format(sample_f))
     aif = ArchImgFile(sample_f)
-    # print("Archive Location {}".format(aif.dest()))
+    # print("Archive Location {}".format(aif.dest_loc()))
     aif.print_stats()
   print("TODO - add '{}'' to the relative-path calculation".format(v))
   print("TODO - add dates to 'loose' files?")

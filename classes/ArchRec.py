@@ -20,6 +20,7 @@ class ArchRec(object):
   An image may have multiple representations, of varying formats and sizes.
 
   '''
+
   def __init__(self):
     "the versions array is a list of ArchImagFiles all with matching origin_name"
     self.versions = []
@@ -51,7 +52,7 @@ class ArchRec(object):
   def archive_locations(self):
     archLocs = {}
     for v in self.versions:
-      archLocs[v.dest()] = 1
+      archLocs[v.dest_loc()] = 1
     return list(archLocs.keys())
 
   def has_been_edited(self):
@@ -138,14 +139,16 @@ class ArchRec(object):
     d = [v for v in self.versions if v.get_type() == ArchFileType.UNKNOWN]
     return len(d)
 
-  def find_archived_unknowns(self, ArchDir='/Volumes/Legacy20/Pix'):
-    u = [v.archived_unknown(ArchDir) for v in self.versions]
+  def find_archived_unknowns(self, ArchDir=None):
+    dest = ArchImgFile.dest(ArchDir)
+    u = [v.archived_unknown(dest) for v in self.versions]
     return [b for b in u if b is not None]
 
-  def unarchived_raw(self, ArchDir='/Volumes/Legacy20/Pix', IndexName=None):
+  def unarchived_raw(self, ArchDir=None, IndexName=None):
     if not self.should_archive_raw():
       return []
-    u = [v.unarchived_raw(ArchDir, IndexName) for v in self.versions]
+    dest = ArchImgFile.dest(ArchDir)
+    u = [v.unarchived_raw(dest, IndexName) for v in self.versions]
     d = self.spot_doppels()
     if len(u) != len(d):
       print("find_archived_unknowns({}) size error".format(self.origin_name()))
@@ -200,11 +203,12 @@ class ArchRec(object):
     print("Archived size: {:.2f}MB of {:.4}MB".format(
         self.archive_size() / (1024*1024), self.source_size() / (1024*1024)))
 
-  def print_arch_status(self, ArchDir='/Volumes/Legacy20/Pix'):
+  def print_arch_status(self, ArchDir=None):
+    dest = ArchImgFile.dest(ArchDir)
     for v in self.versions:
-      v.print_arch_status(ArchDir)
+      v.print_arch_status(dest)
 
-  def print_arch_status2(self, ArchDir='/Volumes/Legacy20/Pix'):
+  def print_arch_status2(self, ArchDir=None):
     include_raw = self.should_archive_raw()
     d = self.spot_doppels()
     i = 0
