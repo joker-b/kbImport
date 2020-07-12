@@ -126,21 +126,22 @@ class Drives(object):
     self.host = 'windows'
     self.PrimaryArchiveList = []
     self.ForbiddenSources = []
-    for ltr in [chr(a)+':' for a in range(70,76)]:
+    for ltr in [chr(a)+':' for a in range(68,76)]:
       v = os.path.join(ltr,'kbImport')
       if os.path.exists(v):
         self.PrimaryArchiveList.append(v)
         self.ForbiddenSources.append(ltr)
         self.ForbiddenSources.append(v)
-    self.LocalArchiveList = [r'~/Google'] # TODO(kevin) fix this!
+    self.LocalArchiveList = [r'C:\Users\kevin\Google Drive\kbImport'] # TODO(kevin) fix this!
     self.ForbiddenSources = self.ForbiddenSources + self.LocalArchiveList
     src_candidates = []
-    for ltr in [chr(a)+':' for a in range(70,76)]:
+    for ltr in [chr(a)+':' for a in range(68,76)]:
       if self.ForbiddenSources.__contains__(ltr):
         continue
       v = os.path.join(ltr,'DCIM')
       if os.path.exists(v):
-        src_candidates.append(v)
+        src_candidates.append(ltr)
+    # print(src_candidates)
     self.PossibleSources = self.available_source_vols(src_candidates)
     #if self.opt.win32:
     #  self.PossibleSources = [d for d in self.PossibleSources \
