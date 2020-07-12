@@ -174,13 +174,18 @@ some lines from the latest.....
 '''
 
 if __name__ == '__main__':
-  # mini_validate()
-  # find_unknowns()
-  # find_archived_unknowns('L4.pkl')
-  # complex_records('L4.pkl')
-  #find_unarchived_raws('L6.pkl')
+  ## mini_validate()
+  ## find_unknowns()
+  ## find_archived_unknowns('L4.pkl')
+  ## complex_records('L4.pkl')
+  #update_from_available_drives('L8.pkl', None, '/Volumes/Legacy20/Pix')
+  # find_unarchived_raws('L8.pkl')
+  #update_from_available_drives('L8.pkl', 'pix18/Pix/', '/Volumes/Legacy20/Pix')
+  #update_from_available_drives('L8.pkl', 'pix17/Pix/', '/Volumes/Legacy20/Pix')
+  #update_from_available_drives('L8.pkl', 'pix20/Pix/', '/Volumes/Legacy20/Pix')
+  update_from_available_drives('L8.pkl', '/Users/kevinbjorke/Pictures/kbImport/Pix/', '/Volumes/Legacy20/Pix')
+  update_from_available_drives('L8.pkl', '/Users/kevinbjorke/Google Drive/kbImport/Pix/', '/Volumes/Legacy20/Pix')
   # reconcile_misfiled('L5.pkl', 'L6.pkl')
-  update_from_available_drives('L8.pkl', None, '/Volumes/Legacy20/Pix')
   # sys.exit()
   # update_from_available_drives()
 '''
