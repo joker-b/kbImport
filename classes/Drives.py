@@ -119,14 +119,29 @@ class Drives(object):
     self.seekWDBackups()
 
   def init_drives_windows(self):
-    # Defaults for Windows
-    # TODO(kevin): this is a mess. Use the drive string name if possible...
-    #   and attend to ForbiddenSources
+    # 2020 approach: iterate through drive names, looking for for /kbImport/
+    #    if not found, look for Pix & Vid
+    #    if not found, fall back on local drive
+    # then go through sources again looking for DCIM. Don't delve deeply.
     self.host = 'windows'
-    self.PrimaryArchiveList = [r'I:\kbImport'] # , 'F:', 'R:']
-    self.LocalArchiveList = [r'I:\kbImport']
-    self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
-    self.PossibleSources = self.available_source_vols(['G:']) # , 'J:', 'I:', 'H:', 'K:','G:'])
+    self.PrimaryArchiveList = []
+    self.ForbiddenSources = []
+    for ltr in [chr(a)+':' for a in range(70,76)]:
+      v = os.path.join(ltr,'kbImport')
+      if os.path.exists(v):
+        self.PrimaryArchiveList.append(v)
+        self.ForbiddenSources.append(ltr)
+        self.ForbiddenSources.append(v)
+    self.LocalArchiveList = [r'~/Google'] # TODO(kevin) fix this!
+    self.ForbiddenSources = self.ForbiddenSources + self.LocalArchiveList
+    src_candidates = []
+    for ltr in [chr(a)+':' for a in range(70,76)]:
+      if self.ForbiddenSources.__contains__(ltr):
+        continue
+      v = os.path.join(ltr,'DCIM')
+      if os.path.exists(v):
+        src_candidates.append(v)
+    self.PossibleSources = self.available_source_vols(src_candidates)
     #if self.opt.win32:
     #  self.PossibleSources = [d for d in self.PossibleSources \
     #         if win32file.GetDriveType(d)==win32file.DRIVE_REMOVABLE]
