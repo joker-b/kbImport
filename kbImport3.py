@@ -1,6 +1,6 @@
 # /usr/bin/python
 
-"""
+r"""
 # My quick "one size fits all" import and archive script.
 #       THIS VERSION: 28 MARCH 2012
 #       NO WARRANTIES EXPRESSED OR IMPLIED. THIS WORKS FOR ME. I AM JUST SHARING INFO.
@@ -19,7 +19,7 @@
 #
 # Converts some files types (RW2) to DNG if the DNG converter is available
 #
-# Individual archive folders with names based on the FILE date will 
+# Individual archive folders with names based on the FILE date will
 #    be created within those archive directories. The optional [jobname] maybe be
 #       appended to the date, e.g. for jobname "NightSkate":
 #           R:\Vid\2009\2009-09-Sep\2009_09_27_NightSkate\AVCHD\BDMV\STREAM\02332.MTS
@@ -59,6 +59,9 @@ Volumes()
 
 import sys
 import argparse
+if sys.version_info < (3,):
+  print('Sorry, python3 required')
+  exit()
 sys.path.append('classes')
 # pylint: disable=C0413
 from AppOptions import AppOptions
@@ -71,8 +74,8 @@ options.version = "kbImport - 21apr2020 - (c)2004-2020 K Bjorke"
 options.win32 = True
 
 try:
-# pylint: disable=E0401
 # this "error" is more informative than platform.uname()
+# pylint: disable=E0401
   import win32api
   # import win32file
 except ModuleNotFoundError:
