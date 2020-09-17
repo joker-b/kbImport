@@ -71,15 +71,7 @@ options = AppOptions()
 options.verbose = False
 options.testing = False
 options.version = "kbImport - 21apr2020 - (c)2004-2020 K Bjorke"
-options.win32 = True
-
-try:
-# this "error" is more informative than platform.uname()
-# pylint: disable=E0401
-  import win32api
-  # import win32file
-except ModuleNotFoundError:
-  options.win32 = False
+options.win32 = sys.platform.startswith('win32')
 
 #############################################################
 ### MAIN ACTION #############################################

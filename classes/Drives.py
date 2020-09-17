@@ -5,6 +5,7 @@ import os
 import platform
 import re
 import glob
+import subprocess 
 from AppOptions import AppOptions
 
 #pylint: disable=too-many-instance-attributes
@@ -18,6 +19,10 @@ class Drives(object):
   PossibleSources = []
   # in GB - hack to not scan hard drives as source media
   largestSource = 130 * 1024*1024*1024
+
+  @classmethod
+  def getDriveName(cls, driveletter):
+    return subprocess.check_output(["cmd","/c vol "+driveletter]).decode().split("\r\n")[0].split(" ").pop()
 
   def __init__(self, Options=AppOptions()):
     """blah"""
@@ -174,10 +179,10 @@ class Drives(object):
     if not self.opt.win32:
       return Path
     try:
-      name = win32api.GetVolumeInformation(Path)
+      name = Drives.getDriveName(Path)
       return '"{}" ({})'.format(name[0], Path)
     except:
-      pass # print("Can't get volume info for '{}'".format(Path))
+      print("Can't get volume info for '{}'".format(Path))
     return Path
 
   def acceptable_source_vol(self, Path):

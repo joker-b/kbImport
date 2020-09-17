@@ -72,6 +72,8 @@ _Most measured with an 11.63GB collection comprised of 423 JPG and RAW files._
 * To External SSD: 2.44 minutes, 81.394 Mb/s
 * **Win 10 desktop** with IOGear SD reader
 * To External SSD: 5.29 minutes, 37.547 Mb/s
+* **Win10 Galaxy Flex Book** with OWC Travel Dock
+* To UFS card: ~52MB/sec
 * **Macbook Pro 2018**
 * On Satechi external reader to SSD: 2:30, 79.29 Mb/sec
 * **Raspberry Pi 4** with *UGreen* USB-3 external:
