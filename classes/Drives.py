@@ -22,7 +22,10 @@ class Drives(object):
 
   @classmethod
   def getDriveName(cls, driveletter):
-    return subprocess.check_output(["cmd","/c vol "+driveletter]).decode().split("\r\n")[0].split(" ").pop()
+    q = subprocess.check_output(["cmd","/c vol "+driveletter]).decode()
+    if 'has no' in q:
+      return driveletter
+    return q.split("\r\n")[0].split(" ").pop()
 
   def __init__(self, Options=AppOptions()):
     """blah"""
@@ -43,6 +46,9 @@ class Drives(object):
     self.process_options()
 
   def process_options(self):
+    if self.opt.force_local:
+      self.PrimaryArchiveList = []
+      return
     if self.opt.archive is not None:
       self.PrimaryArchiveList = [self.opt.archive]
       if self.host == 'windows':
@@ -74,7 +80,8 @@ class Drives(object):
     else:
       mk = '/mnt'
     archDrives = [d for d in knownDrives if os.path.exists(os.path.join(mk,d))]
-    self.PrimaryArchiveList = [os.path.join(mk, d, 'kbImport') for d in archDrives]
+    if not self.opt.force_local:
+      self.PrimaryArchiveList = [os.path.join(mk, d, 'kbImport') for d in archDrives]
     # TODO(kevin): choose a better local default?
     self.LocalArchiveList = [os.path.join(os.environ['HOME'], 'pix', 'kbImport')]
     self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
@@ -102,7 +109,8 @@ class Drives(object):
     self.host = 'mac'
     #self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
     Vols = os.path.sep+'Volumes'
-    self.PrimaryArchiveList = [os.path.join(Vols, D) for D in
+    if not self.opt.force_local:
+      self.PrimaryArchiveList = [os.path.join(Vols, D) for D in
                                [os.path.join('pix20s', 'kbImport'),
                                os.path.join('KBWIFI', 'kbImport'),
                                'pix20', 'pix18', 'pix15',
@@ -131,12 +139,13 @@ class Drives(object):
     self.host = 'windows'
     self.PrimaryArchiveList = []
     self.ForbiddenSources = []
-    for ltr in [chr(a)+':' for a in range(68,76)]:
-      v = os.path.join(ltr,'kbImport')
-      if os.path.exists(v):
-        self.PrimaryArchiveList.append(v)
-        self.ForbiddenSources.append(ltr)
-        self.ForbiddenSources.append(v)
+    if not self.opt.force_local:
+      for ltr in [chr(a)+':' for a in range(68,76)]:
+        v = os.path.join(ltr,'kbImport')
+        if os.path.exists(v):
+          self.PrimaryArchiveList.append(v)
+          self.ForbiddenSources.append(ltr)
+          self.ForbiddenSources.append(v)
     self.LocalArchiveList = [r'C:\Users\kevin\Google Drive\kbImport'] # TODO(kevin) fix this!
     self.ForbiddenSources = self.ForbiddenSources + self.LocalArchiveList
     src_candidates = []
@@ -179,7 +188,7 @@ class Drives(object):
     if not self.opt.win32:
       return Path
     try:
-      name = Drives.getDriveName(Path)
+      name = Drives.getDriveName(Path[:2])
       return '"{}" ({})'.format(name[0], Path)
     except:
       print("Can't get volume info for '{}'".format(Path))
@@ -221,6 +230,8 @@ class Drives(object):
 
   def found_primary_archive_drive(self):
     "find prefered destination"
+    if self.opt.force_local:
+      return False
     if self.opt.verbose:
       print("Primary Archive Candidates:\n\t{}".format('\n\t'.join(self.PrimaryArchiveList)))
     for arch in self.PrimaryArchiveList:

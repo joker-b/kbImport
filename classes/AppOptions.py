@@ -1,15 +1,17 @@
 #! /usr/bin/python3
 
 import argparse
+import sys
 
 class AppOptions(object):
   "bundle of globally goodness"
   def __init__(self, pargs=None):
     self.verbose = False
-    self.win32 = False
+    self.win32 = sys.platform.startswith('win32')
     self.testing = False
     self.use_dng = False
     self.force_copies = False
+    self.force_local = False
     self.rename = False
     self.version = "kbImport Default Options"
     if pargs is None:
@@ -29,7 +31,8 @@ class AppOptions(object):
     self.numerate = bool(pargs.numerate)
     self.source = pargs.source
     self.archive = pargs.archive
-    self.rename = pargs.rename
+    self.rename = bool(pargs.rename)
+    self.force_local = bool(pargs.local)
     self.init_prefix = '' if pargs.prefix is None else "{}_".format(pargs.prefix)
     self.use_job_prefix = bool(pargs.jobpref)
     self.unify = bool(pargs.unify)
@@ -62,6 +65,7 @@ class AppOptions(object):
     args.archive = None
     args.unify = False
     args.rename = False
+    args.local = False
     args.test = True
     args.verbose = False
     args.numerate = False

@@ -95,6 +95,9 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--test',
                         help='test mode: list but do not copy',
                         action="store_true")
+    parser.add_argument('-l', '--local',
+                        help='local archive only',
+                        action="store_true")
     parser.add_argument('-v', '--verbose',
                         help='noisy output', action="store_true")
     parser.add_argument('-s', '--source',
