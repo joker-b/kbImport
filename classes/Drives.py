@@ -67,6 +67,8 @@ class Drives(object):
     """
     # mk = '/media/kevin'
     self.host = 'linux'
+    self.ForbiddenSources = []
+    self.LocalArchiveList = []
     chrRoot = '/mnt/chromeos'
     ubuRoot = os.path.join('/media/', os.environ['USER'])
     knownDrives = ['pix20s','KBWIFI','pix20']
@@ -77,14 +79,25 @@ class Drives(object):
     elif os.path.exists(ubuRoot):
       self.host = 'ubuntu'
       mk = ubuRoot
+    elif os.path.exists('/mnt/'):
+      self.host = 'WSL'
+      mk = '/mnt'
+      # knownDrives += [chr(a) for a in range(100,108)]
+      knownDrives.append('d')
+      self.ForbiddenSources.append('/mnt/c')
+      self.ForbiddenSources.append('/mnt/d')
+      self.LocalArchiveList.append('/mnt/c/Users/kevin/Google Drive/kbImport')
     else:
       mk = '/mnt'
     archDrives = [d for d in knownDrives if os.path.exists(os.path.join(mk,d))]
     if not self.opt.force_local:
-      self.PrimaryArchiveList = [os.path.join(mk, d, 'kbImport') for d in archDrives]
+      for d in [os.path.join(mk, d, 'kbImport') for d in archDrives]:
+        if os.path.exists(d):
+          self.PrimaryArchiveList.append(d)
     # TODO(kevin): choose a better local default?
-    self.LocalArchiveList = [os.path.join(os.environ['HOME'], 'pix', 'kbImport')]
-    self.ForbiddenSources = self.PrimaryArchiveList + self.LocalArchiveList
+    self.LocalArchiveList += [os.path.join(os.environ['HOME'], 'pix', 'kbImport')]
+    self.ForbiddenSources += self.PrimaryArchiveList
+    self.ForbiddenSources += self.LocalArchiveList
     self.ForbiddenSources.append(os.path.join(mk, 'Legacy20'))
     self.ForbiddenSources.append(os.path.join(mk, 'KBWIFI', 'kbImport'))
     self.ForbiddenSources.append("Storage")
@@ -162,6 +175,8 @@ class Drives(object):
     #         if win32file.GetDriveType(d)==win32file.DRIVE_REMOVABLE]
 
   def available_source_vols(self, Vols=[]):
+    if self.opt.verbose:
+      print("Searching {} for source data".format(Vols))
     return [a for a in Vols if self.acceptable_source_vol(a)]
 
   def seekWDBackups(self):
