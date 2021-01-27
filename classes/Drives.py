@@ -91,6 +91,8 @@ class Drives(object):
       mk = '/mnt'
     archDrives = [d for d in knownDrives if os.path.exists(os.path.join(mk,d))]
     if not self.opt.force_local:
+      if self.opt.force_cloud:
+        print('Sorry -c option not supported on this platform')
       for d in [os.path.join(mk, d, 'kbImport') for d in archDrives]:
         if os.path.exists(d):
           self.PrimaryArchiveList.append(d)
@@ -123,7 +125,10 @@ class Drives(object):
     #self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
     Vols = os.path.sep+'Volumes'
     if not self.opt.force_local:
-      self.PrimaryArchiveList = [os.path.join(Vols, D) for D in
+      if self.opt.force_cloud:
+        self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
+      else:
+        self.PrimaryArchiveList = [os.path.join(Vols, D) for D in
                                [os.path.join('pix20s', 'kbImport'),
                                os.path.join('KBWIFI', 'kbImport'),
                                'pix20', 'pix18', 'pix15',
@@ -153,12 +158,18 @@ class Drives(object):
     self.PrimaryArchiveList = []
     self.ForbiddenSources = []
     if not self.opt.force_local:
-      for ltr in [chr(a)+':' for a in range(68,76)]:
-        v = os.path.join(ltr,'kbImport')
-        if os.path.exists(v):
-          self.PrimaryArchiveList.append(v)
-          self.ForbiddenSources.append(ltr)
-          self.ForbiddenSources.append(v)
+      if self.opt.force_cloud:
+          v = os.path.join(os.environ['HOMEPATH'],'Google Drive', 'kbImport')
+          if os.path.exists(v):
+            self.PrimaryArchiveList.append(v)
+            self.ForbiddenSources.append('C:')
+      else:
+        for ltr in [chr(a)+':' for a in range(68,76)]:
+          v = os.path.join(ltr,'kbImport')
+          if os.path.exists(v):
+            self.PrimaryArchiveList.append(v)
+            self.ForbiddenSources.append(ltr)
+            self.ForbiddenSources.append(v)
     self.LocalArchiveList = [r'C:\Users\kevin\Google Drive\kbImport'] # TODO(kevin) fix this!
     self.ForbiddenSources = self.ForbiddenSources + self.LocalArchiveList
     src_candidates = []

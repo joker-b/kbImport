@@ -12,6 +12,7 @@ class AppOptions(object):
     self.use_dng = False
     self.force_copies = False
     self.force_local = False
+    self.force_cloud = False
     self.rename = False
     self.version = "kbImport Default Options"
     if pargs is None:
@@ -33,6 +34,7 @@ class AppOptions(object):
     self.archive = pargs.archive
     self.rename = bool(pargs.rename)
     self.force_local = bool(pargs.local)
+    self.force_cloud = bool(pargs.cloud)
     self.init_prefix = '' if pargs.prefix is None else "{}_".format(pargs.prefix)
     self.use_job_prefix = bool(pargs.jobpref)
     self.unify = bool(pargs.unify)
@@ -66,6 +68,7 @@ class AppOptions(object):
     args.unify = False
     args.rename = False
     args.local = False
+    args.cloud = False
     args.test = True
     args.verbose = False
     args.numerate = False
