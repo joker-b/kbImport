@@ -215,7 +215,7 @@ class Drives(object):
       return Path
     try:
       name = Drives.getDriveName(Path[:2])
-      return '"{}" ({})'.format(name[0], Path)
+      return '"{}" ({})'.format(name, Path) # was: name[0]
     except:
       print("Can't get volume info for '{}'".format(Path))
     return Path
