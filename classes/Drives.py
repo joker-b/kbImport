@@ -28,7 +28,9 @@ class Drives(object):
     return q.split("\r\n")[0].split(" ").pop()
 
   def __init__(self, Options=AppOptions()):
-    """blah"""
+    """
+    TODO - subclass this instead of depending on tests for windows-ness, linux-ness, etc.
+    """
     self.opt = Options
     self.archiveDrive = ""
     self.pixDestDir = ""
@@ -170,7 +172,17 @@ class Drives(object):
             self.PrimaryArchiveList.append(v)
             self.ForbiddenSources.append(ltr)
             self.ForbiddenSources.append(v)
+          else:
+            v = os.path.join(ltr,'Pix')
+            if os.path.exists(v):
+              self.PrimaryArchiveList.append(ltr)
+              self.ForbiddenSources.append(ltr)
+              self.ForbiddenSources.append(ltr)
     self.LocalArchiveList = [r'C:\Users\kevin\Google Drive\kbImport'] # TODO(kevin) fix this!
+    if self.opt.verbose:
+      print("Primary archive: {} options available:".format(
+          len(self.PrimaryArchiveList)))
+      print("  " + "\n  ".join(self.PrimaryArchiveList))
     self.ForbiddenSources = self.ForbiddenSources + self.LocalArchiveList
     src_candidates = []
     for ltr in [chr(a)+':' for a in range(68,76)]:
