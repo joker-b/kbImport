@@ -143,6 +143,7 @@ class Drives(object):
                               'pix20s',
                               'Legacy20',
                               'KBWIFI',
+                              '.timemachine',
                               'Storage',
                               'Recovery',
                               'My Passport for Mac']]
