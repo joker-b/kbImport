@@ -144,6 +144,9 @@ class Drives(object):
                               'Legacy20',
                               'KBWIFI',
                               '.timemachine',
+                              'Pix',
+                              'lazyback',
+                              'backchiefback',
                               'Storage',
                               'Recovery',
                               'My Passport for Mac']]
