@@ -11,6 +11,9 @@ from AppOptions import AppOptions
 #pylint: disable=too-many-instance-attributes
 # Nine is reasonable in this case.
 
+# TODO: allow DIFFERENT targets for pix and videos,
+# so that 'kbPix' etc can work on the NAS
+
 class Drives(object):
   """Source Devices"""
   PrimaryArchiveList = []
@@ -94,7 +97,7 @@ class Drives(object):
     archDrives = [d for d in knownDrives if os.path.exists(os.path.join(mk,d))]
     if not self.opt.force_local:
       if self.opt.force_cloud:
-        print('Sorry -c option not supported on this platform')
+        print('Sorry -c option not yet supported on this platform')
       for d in [os.path.join(mk, d, 'kbImport') for d in archDrives]:
         if os.path.exists(d):
           self.PrimaryArchiveList.append(d)
@@ -128,10 +131,12 @@ class Drives(object):
     Vols = os.path.sep+'Volumes'
     if not self.opt.force_local:
       if self.opt.force_cloud:
-        self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
+        self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'SynologyDrive','kbImport')]
+        # self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
       else:
         self.PrimaryArchiveList = [os.path.join(Vols, D) for D in
-                               [os.path.join('pix20s', 'kbImport'),
+                               ['kbPix',
+                               os.path.join('pix20s', 'kbImport'),
                                os.path.join('KBWIFI', 'kbImport'),
                                'pix20', 'pix18', 'pix15',
                                 'CameraWork', 'Liq', 'Pix17', 'BJORKEBYTES',
@@ -143,6 +148,7 @@ class Drives(object):
                               'pix20s',
                               'Legacy20',
                               'KBWIFI',
+                              'kbPix',
                               '.timemachine',
                               'Pix',
                               'lazyback',
@@ -165,7 +171,8 @@ class Drives(object):
     self.ForbiddenSources = []
     if not self.opt.force_local:
       if self.opt.force_cloud:
-          v = os.path.join(os.environ['HOMEPATH'],'Google Drive', 'kbImport')
+          v = os.path.join(os.environ['HOMEPATH'],'SynologyDrive', 'kbImport')
+          # v = os.path.join(os.environ['HOMEPATH'],'Google Drive', 'kbImport')
           if os.path.exists(v):
             self.PrimaryArchiveList.append(v)
             self.ForbiddenSources.append('C:')
