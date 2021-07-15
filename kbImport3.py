@@ -106,7 +106,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--source',
                         help='Specify source removeable volume (otherwise will guess)')
     parser.add_argument('-a', '--archive',
-                        help='specify source archive directory (otherwise will use std names)')
+                        help='specify archive directory (otherwise will use std names)')
     parser.add_argument('-r', '--rename',
                         help='rename on the same drive, rather than copy',
                         action="store_true")
