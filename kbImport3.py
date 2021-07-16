@@ -70,7 +70,7 @@ import Volumes
 options = AppOptions()
 options.verbose = False
 options.testing = False
-options.version = "kbImport - 21apr2020 - (c)2004-2020 K Bjorke"
+options.version = "kbImport - 09july2021 - (c)2004-2020 K Bjorke"
 options.win32 = sys.platform.startswith('win32')
 
 #############################################################
@@ -98,6 +98,9 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--local',
                         help='local archive only',
                         action="store_true")
+    parser.add_argument('-x', '--pix_only',
+                        help='pictures only',
+                        action="store_true")
     parser.add_argument('-c', '--cloud',
                         help='cloud share archive if available',
                         action="store_true")
@@ -106,7 +109,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--source',
                         help='Specify source removeable volume (otherwise will guess)')
     parser.add_argument('-a', '--archive',
-                        help='specify source archive directory (otherwise will use std names)')
+                        help='specify archive directory (otherwise will use std names)')
     parser.add_argument('-r', '--rename',
                         help='rename on the same drive, rather than copy',
                         action="store_true")

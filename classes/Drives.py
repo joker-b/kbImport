@@ -11,6 +11,9 @@ from AppOptions import AppOptions
 #pylint: disable=too-many-instance-attributes
 # Nine is reasonable in this case.
 
+# TODO: allow DIFFERENT targets for pix and videos,
+# so that 'kbPix' etc can work on the NAS
+
 class Drives(object):
   """Source Devices"""
   PrimaryArchiveList = []
@@ -94,7 +97,7 @@ class Drives(object):
     archDrives = [d for d in knownDrives if os.path.exists(os.path.join(mk,d))]
     if not self.opt.force_local:
       if self.opt.force_cloud:
-        print('Sorry -c option not supported on this platform')
+        print('Sorry -c option not yet supported on this platform')
       for d in [os.path.join(mk, d, 'kbImport') for d in archDrives]:
         if os.path.exists(d):
           self.PrimaryArchiveList.append(d)
@@ -128,10 +131,11 @@ class Drives(object):
     Vols = os.path.sep+'Volumes'
     if not self.opt.force_local:
       if self.opt.force_cloud:
-        self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
+        self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'SynologyDrive','kbImport')]
+        # self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
       else:
         self.PrimaryArchiveList = [os.path.join(Vols, D) for D in
-                               ['pix20',
+                               ['kbPix',
                                os.path.join('pix20s', 'kbImport'),
                                os.path.join('KBWIFI', 'kbImport'),
                                'pix18', 'pix15',
@@ -145,6 +149,11 @@ class Drives(object):
                               'pix20s',
                               'Legacy20',
                               'KBWIFI',
+                              'kbPix',
+                              '.timemachine',
+                              'Pix',
+                              'lazyback',
+                              'backchiefback',
                               'Storage',
                               'Recovery',
                               'My Passport for Mac']]
@@ -163,23 +172,33 @@ class Drives(object):
     self.ForbiddenSources = []
     if not self.opt.force_local:
       if self.opt.force_cloud:
-          v = os.path.join(os.environ['HOMEPATH'],'Google Drive', 'kbImport')
+          v = os.path.join(os.environ['HOMEPATH'],'SynologyDrive', 'kbImport')
+          # v = os.path.join(os.environ['HOMEPATH'],'Google Drive', 'kbImport')
           if os.path.exists(v):
             self.PrimaryArchiveList.append(v)
             self.ForbiddenSources.append('C:')
       else:
         for ltr in [chr(a)+':' for a in range(68,76)]:
-          v = os.path.join(ltr,'kbImport')
+          v = os.path.join(ltr,'kbPix')  # TODO(kevin): really want `\\\\Bank65\\kbPix` etc
           if os.path.exists(v):
+            if not self.opt.pix_only:
+              print("Archiving photos only")
+            self.opt.pix_only = True
             self.PrimaryArchiveList.append(v)
             self.ForbiddenSources.append(ltr)
             self.ForbiddenSources.append(v)
           else:
-            v = os.path.join(ltr,'Pix')
+            v = os.path.join(ltr,'kbImport')
             if os.path.exists(v):
-              self.PrimaryArchiveList.append(ltr)
+              self.PrimaryArchiveList.append(v)
               self.ForbiddenSources.append(ltr)
-              self.ForbiddenSources.append(ltr)
+              self.ForbiddenSources.append(v)
+            else:
+              v = os.path.join(ltr,'Pix')
+              if os.path.exists(v):
+                self.PrimaryArchiveList.append(ltr)
+                self.ForbiddenSources.append(ltr)
+                self.ForbiddenSources.append(ltr)
     self.LocalArchiveList = [r'C:\Users\kevin\Google Drive\kbImport'] # TODO(kevin) fix this!
     if self.opt.verbose:
       print("Primary archive: {} options available:".format(
@@ -277,6 +296,12 @@ class Drives(object):
     for arch in self.PrimaryArchiveList:
       if os.path.exists(arch):
         self.archiveDrive = arch
+        if arch[-3:] == 'Pix':
+          if not self.opt.pix_only:
+            print('archiving photos only')
+          self.opt.pix_only = True
+          self.pixDestDir = arch
+          self.vidDestDir = self.audioDestDir = None
         if arch[-1] == ':':       # windows
           arch = arch+os.path.sep
         self.pixDestDir = os.path.join(arch, "Pix")

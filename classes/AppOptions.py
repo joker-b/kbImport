@@ -10,6 +10,7 @@ class AppOptions(object):
     self.win32 = sys.platform.startswith('win32')
     self.testing = False
     self.use_dng = False
+    self.pix_only = False
     self.force_copies = False
     self.force_local = False
     self.force_cloud = False
@@ -33,6 +34,7 @@ class AppOptions(object):
     self.source = pargs.source
     self.archive = pargs.archive
     self.rename = bool(pargs.rename)
+    self.pix_only = bool(pargs.pix_only)
     self.force_local = bool(pargs.local)
     self.force_cloud = bool(pargs.cloud)
     self.init_prefix = '' if pargs.prefix is None else "{}_".format(pargs.prefix)
@@ -67,6 +69,7 @@ class AppOptions(object):
     args.archive = None
     args.unify = False
     args.rename = False
+    args.pix_only = False
     args.local = False
     args.cloud = False
     args.test = True

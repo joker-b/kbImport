@@ -37,6 +37,8 @@ class Store(object):
     Returns Dir or None
     When testing is True, still return name of the (non-existent) directory!
     """
+    if Dir is None:
+      return
     report = PrettierName or Dir
     if self.encountered.get(Dir): # no need to call stat()
       return Dir
