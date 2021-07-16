@@ -2,11 +2,12 @@
 
 import sys
 import os
-import platform
 import re
 import glob
 import subprocess 
-from AppOptions import AppOptions
+from AppOptions import AppOptions, Platform
+
+# TODO: split OS variations
 
 #pylint: disable=too-many-instance-attributes
 # Nine is reasonable in this case.
@@ -39,15 +40,14 @@ class Drives(object):
     self.pixDestDir = ""
     self.vidDestDir = ""
     self.audioDestDir = ""
-    if os.name == 'posix': # mac?
-      if platform.uname()[0] == 'Linux':
+    # TODO: simplify as subclasses....
+    print(type(self.opt.platform))
+    if self.opt.platform == Platform['LINUX']:
         self.init_drives_linux()
-      else: # mac
-        self.init_drives_mac()
-    elif os.name == "nt" or self.opt.win32:
+    elif self.opt.platform == Platform['WINDOWS']:
       self.init_drives_windows()
     else:
-      print("Sorry no initialization for OS '{}' yet!".format(os.name))
+        self.init_drives_mac()
     self.process_options()
 
   def process_options(self):
