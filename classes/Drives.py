@@ -73,7 +73,7 @@ class Drives(object):
     self.LocalArchiveList = []
     chrRoot = '/mnt/chromeos'
     ubuRoot = os.path.join('/media/', os.environ['USER'])
-    knownDrives = ['pix20s','KBWIFI','pix20']
+    knownDrives = ['pix20','KBWIFI','pix20s']
     if os.path.exists(chrRoot):
       self.host = 'crostini'
       mk = os.path.join(chrRoot, "removable")
@@ -131,15 +131,17 @@ class Drives(object):
         self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
       else:
         self.PrimaryArchiveList = [os.path.join(Vols, D) for D in
-                               [os.path.join('pix20s', 'kbImport'),
+                               ['pix20',
+                               os.path.join('pix20s', 'kbImport'),
                                os.path.join('KBWIFI', 'kbImport'),
-                               'pix20', 'pix18', 'pix15',
+                               'pix18', 'pix15',
                                 'CameraWork', 'Liq', 'Pix17', 'BJORKEBYTES',
                                 'T3', 'Sept2013']]
     self.LocalArchiveList = [os.path.join(os.environ['HOME'], 'Pictures', 'kbImport')]
     self.ForbiddenSources = [os.path.join(Vols, D) for D in
                              ['Macintosh HD',
                               'MobileBackups',
+                              'pix20',
                               'pix20s',
                               'Legacy20',
                               'KBWIFI',
