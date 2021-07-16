@@ -98,6 +98,9 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--local',
                         help='local archive only',
                         action="store_true")
+    parser.add_argument('-x', '--pix_only',
+                        help='pictures only',
+                        action="store_true")
     parser.add_argument('-c', '--cloud',
                         help='cloud share archive if available',
                         action="store_true")

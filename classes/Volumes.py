@@ -191,6 +191,8 @@ class Volumes(object):
 
   def archive_audio_tracks(self, FromDir, ArchDir):
     "Archive audio tracks"
+    if self.opt.pix_only:
+      return
     # first validate our inputs
     if self.audioPrefix != "":
       print("NEED Filenames {}XXXX.MP3 etc".format(self.audioPrefix))
@@ -243,9 +245,10 @@ class Volumes(object):
       print(" verify_image_archive_dir({}): not a directory".format(PixArchDir))
       if not self.opt.testing:
         return False
-    if VidArchDir is not None and not os.path.exists(self.drives.vidDestDir):
-      print("verify_image_archive_dir({}) Video archive is vapor, Ignoring".format(VidArchDir))
-      VidArchDir = None # TODO(kevin): what?
+    if not self.opt.pix_only:
+      if VidArchDir is not None and not os.path.exists(self.drives.vidDestDir):
+        print("verify_image_archive_dir({}) Video archive is vapor, Ignoring".format(VidArchDir))
+        VidArchDir = None # TODO(kevin): what?
     if not os.path.exists(FromDir):
       print("Hey, image source '{}' is vapor!".format(FromDir))
       if not self.opt.testing:
@@ -269,14 +272,15 @@ class Volumes(object):
     self.avchd.type = "JPG" # blah
     upcaseName = Filename.upper()
     info.destName = self.add_prefix(Filename)  # renaming allowed here
-    m = Avchd.filetype_search(upcaseName)
-    if m:
-      isAVCHD = True
-      self.avchd.type = m.group(1)
-    isSimpleVideo = Video.has_filetype(upcaseName)
+    if not self.opt.pix_only:
+      m = Avchd.filetype_search(upcaseName)
+      if m:
+        isAVCHD = True
+        self.avchd.type = m.group(1)
+      isSimpleVideo = Video.has_filetype(upcaseName)
     info.dng_check(self.dng.active)
     m = Volumes.regexJPG.search(upcaseName)
-    if m:
+    if m and not self.opt.pix_only:
       # keep an eye open for special thumbnail JPGs....
       if Avchd.valid_source_dir(FromDir):
         isAVCHD = True
@@ -298,7 +302,7 @@ class Volumes(object):
       info.destPath = destinationPath
       self.images.append(info)
       return 1
-    print("Unable to archive media to {}".format(destinationPath))
+    print("Unable to archive media to {}".format(destinationPath)) # TODO(kevin): more graceful for pix_only?
     return 0
 
   def seek_files_in(self, FromDir):

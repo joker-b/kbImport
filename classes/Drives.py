@@ -178,17 +178,26 @@ class Drives(object):
             self.ForbiddenSources.append('C:')
       else:
         for ltr in [chr(a)+':' for a in range(68,76)]:
-          v = os.path.join(ltr,'kbImport')
+          v = os.path.join(ltr,'kbPix')
           if os.path.exists(v):
+            if not self.opt.pix_only:
+              print("Archiving photos only")
+            self.opt.pix_only = True
             self.PrimaryArchiveList.append(v)
             self.ForbiddenSources.append(ltr)
             self.ForbiddenSources.append(v)
           else:
-            v = os.path.join(ltr,'Pix')
+            v = os.path.join(ltr,'kbImport')
             if os.path.exists(v):
-              self.PrimaryArchiveList.append(ltr)
+              self.PrimaryArchiveList.append(v)
               self.ForbiddenSources.append(ltr)
-              self.ForbiddenSources.append(ltr)
+              self.ForbiddenSources.append(v)
+            else:
+              v = os.path.join(ltr,'Pix')
+              if os.path.exists(v):
+                self.PrimaryArchiveList.append(ltr)
+                self.ForbiddenSources.append(ltr)
+                self.ForbiddenSources.append(ltr)
     self.LocalArchiveList = [r'C:\Users\kevin\Google Drive\kbImport'] # TODO(kevin) fix this!
     if self.opt.verbose:
       print("Primary archive: {} options available:".format(
@@ -286,6 +295,12 @@ class Drives(object):
     for arch in self.PrimaryArchiveList:
       if os.path.exists(arch):
         self.archiveDrive = arch
+        if arch[-3:] == 'Pix':
+          if not self.opt.pix_only:
+            print('archiving photos only')
+          self.opt.pix_only = True
+          self.pixDestDir = arch
+          self.vidDestDir = self.audioDestDir = None
         if arch[-1] == ':':       # windows
           arch = arch+os.path.sep
         self.pixDestDir = os.path.join(arch, "Pix")
