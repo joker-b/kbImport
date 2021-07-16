@@ -178,7 +178,7 @@ class Drives(object):
             self.ForbiddenSources.append('C:')
       else:
         for ltr in [chr(a)+':' for a in range(68,76)]:
-          v = os.path.join(ltr,'kbPix')
+          v = os.path.join(ltr,'kbPix')  # TODO(kevin): really want `\\\\Bank65\\kbPix` etc
           if os.path.exists(v):
             if not self.opt.pix_only:
               print("Archiving photos only")
