@@ -6,6 +6,8 @@ The various config and OS-specific handling data/methods for Drives
 It's hoped that all OS-specific stuff goes in here as a clean abstraction
 
 TODO: watch out for any Cloud Drive, ensure it's never a source
+
+TODO: split build_primary_archive_list (side effect: forbidden sources)
 """
 
 import sys
@@ -370,7 +372,7 @@ class WindowDrives(Drives):
                 self.PrimaryArchiveList.append(ltr)
                 self.ForbiddenSources.append(ltr)
                 self.ForbiddenSources.append(ltr)
-    self.LocalArchiveList = [r'C:\Users\kevin\Google Drive\kbImport'] # TODO(kevin) fix this!
+    self.LocalArchiveList = [r'C:\Users\kevin\SynologyDrive\kbImport'] # TODO(kevin) fix this!
     if self.opt.verbose:
       print("Primary archive: {} options available:".format(
           len(self.PrimaryArchiveList)))
