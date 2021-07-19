@@ -1,5 +1,8 @@
 #! /bin/python
 
+"""
+TODO: beware win32-specific clauses
+"""
 import os
 import re
 from AppOptions import AppOptions

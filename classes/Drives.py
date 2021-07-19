@@ -27,6 +27,10 @@ class Drives(object):
   LocalArchiveList = []
   ForbiddenSources = []
   PossibleSources = []
+  archiveDrive = ""
+  pixDestDir = ""
+  vidDestDir = ""
+  audioDestDir = ""
   # in GB - hack to not scan hard drives as source media
   largestSource = 130 * 1024*1024*1024
 
@@ -42,15 +46,14 @@ class Drives(object):
     "Options" is an "AppOptions" object
     """
     self.opt = Options
-    self.archiveDrive = ""
-    self.pixDestDir = ""
-    self.vidDestDir = ""
-    self.audioDestDir = ""
 
   def init_drives(self):
     print("Error on initialization: no platform handler for {}".format(self.opt.platform))
 
   def process_options(self):
+    '''
+    TODO: this is messy and order-dependent
+    '''
     if self.opt.force_local:
       self.PrimaryArchiveList = []
       return
@@ -63,15 +66,15 @@ class Drives(object):
     print('Forbidden: ', self.ForbiddenSources)
     print('Removable: ', self.PossibleSources)
 
-
-
-
   def available_source_vols(self, Vols=[]):
     if self.opt.verbose:
       print("Searching {} for source data".format(Vols))
     return [a for a in Vols if self.acceptable_source_vol(a)]
 
   def seekWDBackups(self):
+    '''
+    Look for backup volumes on a WD Wireless Drive (which are arranged according to WD's rules)
+    '''
     backupLocations = []
     for srcDevice in self.PossibleSources:
       wdBackup = os.path.join(srcDevice, "SD Card Imports")
@@ -92,13 +95,6 @@ class Drives(object):
     self.PossibleSources = backupLocations + self.PossibleSources
 
   def pretty(self, Path):
-    if not self.opt.win32:
-      return Path
-    try:
-      name = Drives.getDriveName(Path[:2])
-      return '"{}" ({})'.format(name, Path) # was: name[0]
-    except:
-      print("Can't get volume info for '{}'".format(Path))
     return Path
 
   def acceptable_source_vol(self, Path):
@@ -307,6 +303,14 @@ class WindowDrives(Drives):
     #if self.opt.win32:
     #  self.PossibleSources = [d for d in self.PossibleSources \
     #         if win32file.GetDriveType(d)==win32file.DRIVE_REMOVABLE]
+
+  def pretty(self, Path):
+    try:
+      name = Drives.getDriveName(Path[:2])
+      return '"{}" ({})'.format(name, Path) # was: name[0]
+    except:
+      print("Can't get volume info for '{}'".format(Path))
+    return Path
 
   def process_options(self):
     if self.opt.force_local:
