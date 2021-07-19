@@ -38,7 +38,7 @@ class Volumes(object):
   def __init__(self, Options=AppOptions()):
     self.perfmon = PerfMon()
     self.opt = Options
-    self.drives = Drives.Drives(Options)
+    self.drives = Drives.DriveBuilder(Options)
     self.storage = Store.Store(Options)
     self.dng = DNGConverter(Options)
     ImgInfo.set_options(Options)
