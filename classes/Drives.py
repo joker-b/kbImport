@@ -36,13 +36,6 @@ class Drives(object):
   # in GB - hack to not scan hard drives as source media
   largestSource = 130 * 1024*1024*1024
 
-  @classmethod
-  def getDriveName(cls, driveletter):
-    q = subprocess.check_output(["cmd","/c vol "+driveletter]).decode()
-    if 'has no' in q:
-      return driveletter
-    return q.split("\r\n")[0].split(" ").pop()
-
   def __init__(self, Options):
     """
     "Options" is an "AppOptions" object
@@ -338,6 +331,13 @@ class WSLDrives(Drives):
 ###########################################################
 
 class WindowDrives(Drives):
+  @classmethod
+  def getDriveName(cls, driveletter):
+    q = subprocess.check_output(["cmd","/c vol "+driveletter]).decode()
+    if 'has no' in q:
+      return driveletter
+    return q.split("\r\n")[0].split(" ").pop()
+
   def init_drives(self):
     # 2020 approach: iterate through drive names, looking for for /kbImport/
     #    if not found, look for Pix & Vid
