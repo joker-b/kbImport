@@ -1,5 +1,9 @@
 #! /usr/bin/python3
 
+"""
+Could have been caleld "config.py" but it's not
+"""
+
 import argparse
 import sys
 import os
@@ -10,6 +14,24 @@ class Platform(Enum):
   MAC = 1
   WINDOWS = 2
   LINUX = 3
+  CROSTINI = 4 # variants of linux, ya ya
+  WLS = 5
+  UBUNTU = 6
+
+def identify_platform():
+  if os.name == 'posix': # mac?
+    if platform.uname()[0] == 'Linux':
+      if os.path.exists('/mnt/chromeos'):
+        return Platform.CROSTINI
+      if os.path.exists(os.path.join('/media/', os.environ['USER'])):
+        return Platform.UBUNTU
+      if os.path.exists('/mnt/c'): # TODO: is there a better test than this?
+        return Platform.WSL
+      return Platform.LINUX
+  elif os.name == "nt" or self.opt.win32:
+    return Platform.WINDOWS
+  return Platform.MAC # TODO: catch unknowns?
+
 class AppOptions(object):
   "bundle of globally goodness"
   def __init__(self, pargs=None):
@@ -23,16 +45,11 @@ class AppOptions(object):
     self.force_cloud = False
     self.rename = False
     self.version = "kbImport Default Options"
-    self.platform = Platform.MAC
     if pargs is None:
       self.user_args(self.default_arguments())
     else:
       self.user_args(pargs)
-    if os.name == 'posix': # mac?
-      if platform.uname()[0] == 'Linux':
-        self.platform = Platform.LINUX
-    elif os.name == "nt" or self.opt.win32:
-      self.platform = Platform.WINDOWS
+    self.platform = identify_platform()
 
   def __str__(self):
     if self.verbose:

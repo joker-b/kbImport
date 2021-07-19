@@ -66,7 +66,7 @@ class Volumes(object):
     print(self.opt.version)
     if not self.media_are_ready():
       print("No '{}' media found, please connect it to this {} computer".format(
-          self.opt.jobname, self.drives.host))
+          self.opt.jobname, self.opt.platform))
       if not self.opt.testing:
         sys.exit()
     self.announce()

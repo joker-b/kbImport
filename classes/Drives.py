@@ -4,6 +4,8 @@
 The various config and OS-specific handling data/methods for Drives
 
 It's hoped that all OS-specific stuff goes in here as a clean abstraction
+
+TODO: watch out for any Cloud Drive, ensure it's never a source
 """
 
 import sys
@@ -12,8 +14,6 @@ import re
 import glob
 import subprocess 
 from AppOptions import AppOptions, Platform
-
-# TODO: get rid of .host that's a config item
 
 #pylint: disable=too-many-instance-attributes
 # Nine is reasonable in this case.
@@ -192,29 +192,117 @@ class LinuxDrives(Drives):
     TODO: modify for Raspberry (done?)
     """
     # mk = '/media/kevin'
-    self.host = 'linux'
-    self.ForbiddenSources = []
-    self.LocalArchiveList = []
-    chrRoot = '/mnt/chromeos'
-    ubuRoot = os.path.join('/media/', os.environ['USER'])
     knownDrives = ['pix20','KBWIFI','pix20s']
-    if os.path.exists(chrRoot):
-      self.host = 'crostini'
-      mk = os.path.join(chrRoot, "removable")
-      knownDrives.append('evo256')
-    elif os.path.exists(ubuRoot):
-      self.host = 'ubuntu'
-      mk = ubuRoot
-    elif os.path.exists('/mnt/'):
-      self.host = 'WSL'
-      mk = '/mnt'
-      # knownDrives += [chr(a) for a in range(100,108)]
-      knownDrives.append('d')
-      self.ForbiddenSources.append('/mnt/c')
-      self.ForbiddenSources.append('/mnt/d')
-      self.LocalArchiveList.append('/mnt/c/Users/kevin/Google Drive/kbImport')
+    mk = '/mnt'
+    archDrives = [d for d in knownDrives if os.path.exists(os.path.join(mk,d))]
+    if not self.opt.force_local:
+      if self.opt.force_cloud:
+        print('Sorry -c option not yet supported on this platform')
+      for d in [os.path.join(mk, d, 'kbImport') for d in archDrives]:
+        if os.path.exists(d):
+          self.PrimaryArchiveList.append(d)
+    # TODO(kevin): choose a better local default?
+    self.LocalArchiveList += [os.path.join(os.environ['HOME'], 'pix', 'kbImport')]
+    self.ForbiddenSources += self.PrimaryArchiveList
+    self.ForbiddenSources += self.LocalArchiveList
+    self.ForbiddenSources.append(os.path.join(mk, 'Legacy20'))
+    self.ForbiddenSources.append(os.path.join(mk, 'KBWIFI', 'kbImport'))
+    self.ForbiddenSources.append("Storage")
+    self.PossibleSources = self.available_source_vols(
+        [os.path.join(mk, a) for a in os.listdir(mk) if not knownDrives.__contains__(a) and (len(a) <= 8)]) if \
+            os.path.exists(mk) else []
+    if self.opt.rename:
+      # look for some known locations of unformatted backups
+      wdBkp = os.path.join(mk,'KBWIFI','SD Card Imports/')
+      bkpDirs = glob.glob(wdBkp+'*/*/*')
+      bkpDirs.append(os.path.join(mk,'evo256','pix'))
+      bkpDirs.append("/home/kevinbjorke/pix/Drag_SD_Data_Here")
+      self.PossibleSources = bkpDirs + self.PossibleSources
     else:
-      mk = '/mnt'
+      self.ForbiddenSources.append(os.path.join("Storage", "SD Card Imports"))
+    # self.show_drives()
+
+#################################################################
+
+class ChromebookDrives(Drives):
+  def init_drives(self):
+    knownDrives = ['pix20','KBWIFI','pix20s']
+    mk = os.path.join('/mnt/chromeos', "removable")
+    knownDrives.append('evo256') # very Samsung chromebook-specific
+    archDrives = [d for d in knownDrives if os.path.exists(os.path.join(mk,d))]
+    if not self.opt.force_local:
+      if self.opt.force_cloud:
+        print('Sorry -c option not yet supported on this platform')
+      for d in [os.path.join(mk, d, 'kbImport') for d in archDrives]:
+        if os.path.exists(d):
+          self.PrimaryArchiveList.append(d)
+    # TODO(kevin): choose a better local default?
+    self.LocalArchiveList += [os.path.join(os.environ['HOME'], 'pix', 'kbImport')]
+    self.ForbiddenSources += self.PrimaryArchiveList
+    self.ForbiddenSources += self.LocalArchiveList
+    self.ForbiddenSources.append(os.path.join(mk, 'Legacy20'))
+    self.ForbiddenSources.append(os.path.join(mk, 'KBWIFI', 'kbImport'))
+    self.ForbiddenSources.append("Storage")
+    self.PossibleSources = self.available_source_vols(
+        [os.path.join(mk, a) for a in os.listdir(mk) if not knownDrives.__contains__(a) and (len(a) <= 8)]) if \
+            os.path.exists(mk) else []
+    if self.opt.rename:
+      # look for some known locations of unformatted backups
+      wdBkp = os.path.join(mk,'KBWIFI','SD Card Imports/')
+      bkpDirs = glob.glob(wdBkp+'*/*/*')
+      bkpDirs.append(os.path.join(mk,'evo256','pix'))
+      bkpDirs.append("/home/kevinbjorke/pix/Drag_SD_Data_Here")
+      self.PossibleSources = bkpDirs + self.PossibleSources
+    else:
+      self.ForbiddenSources.append(os.path.join("Storage", "SD Card Imports"))
+    # self.show_drives()
+
+class UbuntuDrives(Drives):
+  def init_drives(self):
+    """
+    TODO: modify for Raspberry (done?)
+    """
+    # mk = '/media/kevin'
+    knownDrives = ['pix20','KBWIFI','pix20s']
+    mk = os.path.join('/media/', os.environ['USER'])
+    archDrives = [d for d in knownDrives if os.path.exists(os.path.join(mk,d))]
+    if not self.opt.force_local:
+      if self.opt.force_cloud:
+        print('Sorry -c option not yet supported on this platform')
+      for d in [os.path.join(mk, d, 'kbImport') for d in archDrives]:
+        if os.path.exists(d):
+          self.PrimaryArchiveList.append(d)
+    # TODO(kevin): choose a better local default?
+    self.LocalArchiveList += [os.path.join(os.environ['HOME'], 'pix', 'kbImport')]
+    self.ForbiddenSources += self.PrimaryArchiveList
+    self.ForbiddenSources += self.LocalArchiveList
+    self.ForbiddenSources.append(os.path.join(mk, 'Legacy20'))
+    self.ForbiddenSources.append(os.path.join(mk, 'KBWIFI', 'kbImport'))
+    self.ForbiddenSources.append("Storage")
+    self.PossibleSources = self.available_source_vols(
+        [os.path.join(mk, a) for a in os.listdir(mk) if not knownDrives.__contains__(a) and (len(a) <= 8)]) if \
+            os.path.exists(mk) else []
+    if self.opt.rename:
+      # look for some known locations of unformatted backups
+      wdBkp = os.path.join(mk,'KBWIFI','SD Card Imports/')
+      bkpDirs = glob.glob(wdBkp+'*/*/*')
+      bkpDirs.append(os.path.join(mk,'evo256','pix'))
+      bkpDirs.append("/home/kevinbjorke/pix/Drag_SD_Data_Here")
+      self.PossibleSources = bkpDirs + self.PossibleSources
+    else:
+      self.ForbiddenSources.append(os.path.join("Storage", "SD Card Imports"))
+    # self.show_drives()
+
+class WSLDrives(Drives):
+  def init_drives(self):
+    # mk = '/media/kevin'
+    knownDrives = ['pix20','KBWIFI','pix20s']
+    mk = '/mnt'
+    # knownDrives += [chr(a) for a in range(100,108)]
+    knownDrives.append('d')
+    self.ForbiddenSources.append('/mnt/c')
+    self.ForbiddenSources.append('/mnt/d')
+    self.LocalArchiveList.append('/mnt/c/Users/kevin/Google Drive/kbImport')
     archDrives = [d for d in knownDrives if os.path.exists(os.path.join(mk,d))]
     if not self.opt.force_local:
       if self.opt.force_cloud:
@@ -253,9 +341,6 @@ class WindowDrives(Drives):
     #    if not found, look for Pix & Vid
     #    if not found, fall back on local drive
     # then go through sources again looking for DCIM. Don't delve deeply.
-    self.host = 'windows'
-    self.PrimaryArchiveList = []
-    self.ForbiddenSources = []
     if not self.opt.force_local:
       if self.opt.force_cloud:
           v = os.path.join(os.environ['HOMEPATH'],'SynologyDrive', 'kbImport')
@@ -336,7 +421,6 @@ class MacDrives(Drives):
     """
     seek source and archive locations for mac
     """
-    self.host = 'mac'
     #self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
     Vols = os.path.sep+'Volumes'
     if not self.opt.force_local:
@@ -379,6 +463,8 @@ class MacDrives(Drives):
 def DriveBuilder(Options=AppOptions()):
   if Options.platform == Platform['LINUX']:
     d =  WindowsDrives(Options)
+  elif Options.platform == Platform['CROSTINI']:
+    d = ChromebookDrives(Options)
   elif Options.platform == Platform['WINDOWS']:
     d = LinuxDrives(Options)
   elif Options.platform == Platform['MAC']:
