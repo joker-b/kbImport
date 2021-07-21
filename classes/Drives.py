@@ -51,16 +51,18 @@ class Drives(object):
     # do nothing else to PrimaryArchive
     return MountPoint
 
-  def available_archives(self):
+  def available_archives(self, MountPoint, MoreDrives=[]):
     '''
     working methods initialize the Primary Archives list, and 
       also make sure those drives (labelled appropriately) are in the ForbiddenSources list
     '''
-    if self.opt.force_cloud:
-      self.cloud_archive()
-    else:
-      self.primary_archives()
-    self.ForbiddenSources += self.PrimaryArchiveList # always true? TODO
+    if not self.opt.force_local:
+      if self.opt.force_cloud:
+        self.cloud_archive()
+      else:
+        self.primary_archives(MountPoint, MoreDrives)
+    self.ForbiddenSources += self.PrimaryArchiveList # always true? TODO - maybe wrong for cloud...
+    return MountPoint
 
   def init_drives(self):
     self.available_archives()
@@ -208,8 +210,6 @@ class LinuxDrives(Drives):
     knownDrives = ['pix20','KBWIFI','pix20s'] + MoreDrives
     archDrives = [d for d in knownDrives if os.path.exists(os.path.join(MountPoint, d))]
     if not self.opt.force_local:
-      if self.opt.force_cloud:
-        print('Sorry -c option not yet supported on this platform')
       for d in [os.path.join(MountPoint, d, 'kbImport') for d in archDrives]:
         if os.path.exists(d):
           self.PrimaryArchiveList.append(d)
@@ -423,26 +423,29 @@ class WindowDrives(Drives):
 ###########################################################
 
 class MacDrives(Drives):
-  def init_drives(self):
-    """
-    seek source and archive locations for mac
-    """
-    #self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
-    Vols = os.path.sep+'Volumes'
-    if not self.opt.force_local:
-      if self.opt.force_cloud:
-        self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'SynologyDrive','kbImport')]
-        # self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
-      else:
-        self.PrimaryArchiveList = [os.path.join(Vols, D) for D in
+  def cloud_archive(self):
+      self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'SynologyDrive','kbImport')]
+  
+  def primary_archives(self, MountPoint, MoreDrives=[]):
+    # ignore Moredrives
+    self.PrimaryArchiveList = [os.path.join(MountPoint, D) for D in
                                ['kbPix',
                                os.path.join('pix20s', 'kbImport'),
                                os.path.join('KBWIFI', 'kbImport'),
                                'pix18', 'pix15',
                                 'CameraWork', 'Liq', 'Pix17', 'BJORKEBYTES',
                                 'T3', 'Sept2013']]
+    self.ForbiddenSources += self.PrimaryArchiveList
+    return MountPoint
+
+  def init_drives(self):
+    """
+    seek source and archive locations for mac
+    """
+    #self.PrimaryArchiveList = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
+    Vols = self.primary_archives(os.path.sep+'Volumes')
     self.LocalArchiveList = [os.path.join(os.environ['HOME'], 'Pictures', 'kbImport')]
-    self.ForbiddenSources = [os.path.join(Vols, D) for D in
+    self.ForbiddenSources += [os.path.join(Vols, D) for D in
                              ['Macintosh HD',
                               'MobileBackups',
                               'pix20',
@@ -457,7 +460,7 @@ class MacDrives(Drives):
                               'Storage',
                               'Recovery',
                               'My Passport for Mac']]
-    self.ForbiddenSources = self.ForbiddenSources + self.PrimaryArchiveList + self.LocalArchiveList
+    self.ForbiddenSources = self.ForbiddenSources + self.LocalArchiveList
     self.PossibleSources = self.available_source_vols(
         [os.path.join('/Volumes', a) for a in os.listdir('/Volumes')])
     self.seekWDBackups()
