@@ -15,7 +15,7 @@ class Platform(Enum):
   WINDOWS = 2
   LINUX = 3
   CROSTINI = 4 # variants of linux, ya ya
-  WLS = 5
+  WSL = 5
   UBUNTU = 6
 
 def identify_platform():

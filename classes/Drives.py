@@ -5,6 +5,8 @@ The various config and OS-specific handling data/methods for Drives
 
 It's hoped that all OS-specific stuff goes in here as a clean abstraction
 
+TODO: blah, worry less about "clean abstraction" and more about clear code and data
+
 TODO: watch out for any Cloud Drive, ensure it's never a source
 
 TODO: split build_primary_archive_list (side effect: forbidden sources)
@@ -334,7 +336,7 @@ class WSLDrives(LinuxDrives):
 ###########################################################
 ###########################################################
 
-class WindowDrives(Drives):
+class WindowsDrives(Drives):
   @classmethod
   def getDriveName(cls, driveletter):
     q = subprocess.check_output(["cmd","/c vol "+driveletter]).decode()
@@ -472,10 +474,14 @@ class MacDrives(Drives):
 def DriveBuilder(Options=AppOptions()):
   if Options.platform == Platform['LINUX']:
     d =  WindowsDrives(Options)
+  elif Options.platform == Platform['UBUNTU']:
+    d = UbutuDrives(Options)
+  elif Options.platform == Platform['WSL']:
+    d = WSLDrives(Options)
   elif Options.platform == Platform['CROSTINI']:
     d = ChromebookDrives(Options)
   elif Options.platform == Platform['WINDOWS']:
-    d = LinuxDrives(Options)
+    d = WindowsDrives(Options)
   elif Options.platform == Platform['MAC']:
     d =  MacDrives(Options)
   else:
