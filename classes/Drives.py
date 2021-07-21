@@ -51,12 +51,19 @@ class Drives(object):
 
   def cloud_archive(self):
     print("cloud_archive(): no platform handler for {}".format(self.opt.platform))
-    # do nothing else to PrimaryArchive
+    # do nothing else to ExternalArchives
 
-  def primary_archives(self, MountPoint, MoreDrives=[]):
-    print("primary_archives({}): no platform handler for {}".format(MountPoint, self.opt.platform))
-    # do nothing else to PrimaryArchive
+  def identify_external_archives(self, MountPoint, MoreDrives=[]):
+    print("identify_external_archives({}): no platform handler for {}".format(MountPoint, self.opt.platform))
+    # do nothing else to ExternalArchives
     return MountPoint
+  
+  def identify_local_archives(self, Extra=None):
+    self.LocalArchiveLocations += [os.path.join(os.environ['HOME'], 'pix', 'kbImport')]
+    if Extra is not None:
+      self.LocalArchiveLocations += Extra
+    self.ForbiddenSources += self.LocalArchiveLocations
+
 
   def available_archives(self, MountPoint, MoreDrives=[]):
     '''
@@ -68,7 +75,7 @@ class Drives(object):
       if self.opt.force_cloud:
         self.cloud_archive()
       else:
-        self.primary_archives(MountPoint, MoreDrives)
+        self.identify_external_archives(MountPoint, MoreDrives)
     self.ForbiddenSources += self.ExternalArchives # always true? TODO - maybe wrong for cloud...
     return MountPoint
 
@@ -213,7 +220,7 @@ class Drives(object):
 ###########################################################
 
 class LinuxDrives(Drives):
-  def primary_archives(self, MountPoint, MoreDrives=[]):
+  def identify_external_archives(self, MountPoint, MoreDrives=[]):
     # mk = '/media/kevin'
     knownDrives = ['pix20','KBWIFI','pix20s'] + MoreDrives
     archDrives = [d for d in knownDrives if os.path.exists(os.path.join(MountPoint, d))]
@@ -229,9 +236,8 @@ class LinuxDrives(Drives):
     TODO: modify for Raspberry (done?)
     """
     mk = self.available_archives('/mnt')
+    self.identify_local_archives()
     # TODO(kevin): choose a better local default?
-    self.LocalArchiveLocations += [os.path.join(os.environ['HOME'], 'pix', 'kbImport')]
-    self.ForbiddenSources += self.LocalArchiveLocations
     self.ForbiddenSources.append(os.path.join(mk, 'Legacy20'))
     self.ForbiddenSources.append(os.path.join(mk, 'KBWIFI', 'kbImport'))
     self.ForbiddenSources.append("Storage")
@@ -256,8 +262,7 @@ class ChromebookDrives(LinuxDrives):
   def init_drives(self):
     mk = self.available_archives(os.path.join('/mnt/chromeos', "removable"), ['evo256'])
     # TODO(kevin): choose a better local default?
-    self.LocalArchiveLocations += [os.path.join(os.environ['HOME'], 'pix', 'kbImport')]
-    self.ForbiddenSources += self.LocalArchiveLocations
+    self.identify_local_archives()
     self.ForbiddenSources.append(os.path.join(mk, 'Legacy20'))
     self.ForbiddenSources.append(os.path.join(mk, 'KBWIFI', 'kbImport'))
     self.ForbiddenSources.append("Storage")
@@ -281,10 +286,8 @@ class UbuntuDrives(LinuxDrives):
     """
     TODO: modify for Raspberry (done?)
     """
-    mk = self.primary_archives(os.path.join('/media/', os.environ['USER']))
-    # TODO(kevin): choose a better local default?
-    self.LocalArchiveLocations += [os.path.join(os.environ['HOME'], 'pix', 'kbImport')]
-    self.ForbiddenSources += self.LocalArchiveLocations
+    mk = self.identify_external_archives(os.path.join('/media/', os.environ['USER']))
+    self.identify_local_archives()
     self.ForbiddenSources.append(os.path.join(mk, 'Legacy20'))
     self.ForbiddenSources.append(os.path.join(mk, 'KBWIFI', 'kbImport'))
     self.ForbiddenSources.append("Storage")
@@ -305,11 +308,11 @@ class UbuntuDrives(LinuxDrives):
 
 class WSLDrives(LinuxDrives):
   def init_drives(self):
-    mk = self.primary_archives('/mnt', ['d'])
-    # knownDrives += [chr(a) for a in range(100,108)]
+    mk = '/mnt'
+    externalExtras = ['d']
     self.ForbiddenSources.append('/mnt/c')
     self.ForbiddenSources.append('/mnt/d')
-    self.LocalArchiveLocations.append('/mnt/c/Users/kevin/Google Drive/kbImport')
+    # TODO: review all this convoluted stuff
     knownDrives = ['pix20','KBWIFI','pix20s', 'd']
     archDrives = [d for d in knownDrives if os.path.exists(os.path.join(mk,d))]
     if not self.opt.force_local:
@@ -317,10 +320,9 @@ class WSLDrives(LinuxDrives):
         print('Sorry -c option not yet supported on this platform')
       for d in [os.path.join(mk, d, 'kbImport') for d in archDrives]:
         if os.path.exists(d):
-          self.ExternalArchives.append(d)
-    # TODO(kevin): choose a better local default?
-    self.LocalArchiveLocations += [os.path.join(os.environ['HOME'], 'pix', 'kbImport')]
-    self.ForbiddenSources += self.LocalArchiveLocations
+          externalExtras.append(d)
+    self.identify_external_archives('/mnt', externalExtras)
+    self.identify_local_archives(['/mnt/c/Users/kevin/Google Drive/kbImport'])
     self.ForbiddenSources.append(os.path.join(mk, 'Legacy20'))
     self.ForbiddenSources.append(os.path.join(mk, 'KBWIFI', 'kbImport'))
     self.ForbiddenSources.append("Storage")
@@ -355,6 +357,7 @@ class WindowsDrives(Drives):
     #    if not found, look for Pix & Vid
     #    if not found, fall back on local drive
     # then go through sources again looking for DCIM. Don't delve deeply.
+    # TODO: this hasn't been fleshed-out for windcows at all
     if not self.opt.force_local:
       if self.opt.force_cloud:
           v = os.path.join(os.environ['HOMEPATH'],'SynologyDrive', 'kbImport')
@@ -434,7 +437,7 @@ class MacDrives(Drives):
   def cloud_archive(self):
       self.ExternalArchives = [os.path.join(os.environ['HOME'],'SynologyDrive','kbImport')]
   
-  def primary_archives(self, MountPoint, MoreDrives=[]):
+  def identify_external_archives(self, MountPoint, MoreDrives=[]):
     # ignore Moredrives
     self.ExternalArchives = [os.path.join(MountPoint, D) for D in
                                ['kbPix',
@@ -451,8 +454,9 @@ class MacDrives(Drives):
     seek source and archive locations for mac
     """
     #self.ExternalArchives = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
-    Vols = self.primary_archives(os.path.sep+'Volumes')
-    self.LocalArchiveLocations = [os.path.join(os.environ['HOME'], 'Pictures', 'kbImport')]
+    Vols = self.identify_external_archives(os.path.sep+'Volumes')
+    self.identify_local_archives()
+    # TODO: big list, should these just be last-choice external archive locations?
     self.ForbiddenSources += [os.path.join(Vols, D) for D in
                              ['Macintosh HD',
                               'MobileBackups',
@@ -468,7 +472,6 @@ class MacDrives(Drives):
                               'Storage',
                               'Recovery',
                               'My Passport for Mac']]
-    self.ForbiddenSources = self.ForbiddenSources + self.LocalArchiveLocations
     self.PossibleSources = self.available_source_vols(
         [os.path.join('/Volumes', a) for a in os.listdir('/Volumes')])
     self.seekWDBackups()
