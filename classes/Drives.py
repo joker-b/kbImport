@@ -158,11 +158,16 @@ class Drives(object):
     "find an archive destination"
     if self.found_primary_archive_drive():
       return True
+    if self.opt.force_cloud:
+      print("Unable to find cloud archive")
+      return
     return self.found_local_archive_drive()
 
   def found_primary_archive_drive(self):
     "find prefered destination"
     if self.opt.force_local:
+      if self.opt.verbose:
+        print("No need to find archive if we've forced a local destination")
       return False
     if self.opt.verbose:
       print("Primary Archive Candidates:\n\t{}".format('\n\t'.join(self.ExternalArchives)))
@@ -454,7 +459,7 @@ class MacDrives(Drives):
     seek source and archive locations for mac
     """
     #self.ExternalArchives = [os.path.join(os.environ['HOME'],'Google Drive','kbImport')]
-    Vols = self.identify_external_archives(os.path.sep+'Volumes')
+    Vols = self.available_archives(os.path.sep+'Volumes')
     self.identify_local_archives()
     # TODO: big list, should these just be last-choice external archive locations?
     self.ForbiddenSources += [os.path.join(Vols, D) for D in
