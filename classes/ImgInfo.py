@@ -150,7 +150,8 @@ class ImgInfo(object):
       return True # always "work"
     try:
       shutil.copyfile(self.srcPath, DestPath)
-    except OSErr:
+    except OSError(e):
+      print(f"OSErr: {e}")
       print("OSErr, bad copy for {}".format(p, self.srcPath, DestPath))
       ImgInfo.failedCopies.append(DestPath)
       return False

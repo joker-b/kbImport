@@ -113,6 +113,9 @@ class Volumes(object):
     except FileNotFoundError:
       print('No such path: seek_named_source({})'.format(ParentDir))
       return None
+    except KeyboardInterrupt:
+      print('USER_INTERUPT: seek_named_source({})'.format(ParentDir))
+      exit()
     except:
       print("seek_named_source_dir({}) error: {}".format(ParentDir, sys.exc_info()[0]))
       return None

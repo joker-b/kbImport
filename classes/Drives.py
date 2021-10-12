@@ -174,12 +174,14 @@ class Drives(object):
     for arch in self.ExternalArchives:
       if os.path.exists(arch):
         self.archiveDrive = arch
+        '''
         if arch[-3:] == 'Pix':
           if not self.opt.pix_only:
             print('archiving photos only')
           self.opt.pix_only = True
           self.pixDestDir = arch
           self.vidDestDir = self.audioDestDir = None
+        '''
         if arch[-1] == ':':       # windows
           arch = arch+os.path.sep
         self.pixDestDir = os.path.join(arch, "Pix")
@@ -470,6 +472,7 @@ class MacDrives(Drives):
                               'Legacy20',
                               'KBWIFI',
                               'kbPix',
+                              'GoogleDrive',
                               '.timemachine',
                               'Pix',
                               'lazyback',
