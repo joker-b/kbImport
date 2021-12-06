@@ -102,6 +102,8 @@ class Volumes(object):
     Don't dig more than MaxLevels deep.
        ONLY called by find_src_image_media()
     """
+    if "GoogleDrive" in ParentDir:
+      return None
     if Level >= MaxLevels or not os.path.exists(ParentDir):
       return None
     try:
