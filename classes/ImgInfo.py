@@ -89,13 +89,13 @@ class ImgInfo(object):
       else:
         os.mkdir(self.destPath)
         if not os.path.exists(self.destPath):
-          print('dest_mkdir("{}") failed')
+          print('dest_mkdir("{}") FAIL')
           return None
-        print("** dest_mkdir({}) succeeded **".format(self.destPath))
+        print("** dest_mkdir({})".format(self.destPath))
         ImgInfo.createdDirs.append(Prefix+os.path.split(self.destPath)[1])
         return self.destPath
     elif not os.path.isdir(self.destPath):
-      print("dest_mkdir() error: {} exists but not a directory!".format(self.destPath))
+      print("dest_mkdir() ERROR: {} exists but not a directory!".format(self.destPath))
       return None
     return self.destPath
 
