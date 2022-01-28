@@ -39,6 +39,7 @@ class Store(object):
     """
     if Dir is None:
       return
+    Dir = Dir.replace('kbPix/Pix','Pix')   # hacky, I know -- 2022
     report = PrettierName or Dir
     if self.encountered.get(Dir): # no need to call stat()
       return Dir

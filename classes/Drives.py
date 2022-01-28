@@ -185,6 +185,7 @@ class Drives(object):
         if arch[-1] == ':':       # windows
           arch = arch+os.path.sep
         self.pixDestDir = os.path.join(arch, "Pix")
+        self.pixDestDir = self.pixDestDir.replace('kbPix/Pix', 'kbPix')
         self.vidDestDir = os.path.join(arch, "Vid")
         self.audioDestDir = os.path.join(arch, "Audio")
         return True
@@ -206,6 +207,7 @@ class Drives(object):
         if self.opt.verbose:
           print("Using local archive {}".format(arch))
         self.pixDestDir = os.path.join(arch, "Pix")
+        self.pixDestDir = self.pixDestDir.replace('kbPix/Pix', 'kbPix')
         self.vidDestDir = os.path.join(arch, "Vid")
         self.audioDestDir = os.path.join(arch, "Audio")
         return True
@@ -216,6 +218,7 @@ class Drives(object):
 
   def verify_archive_locations(self, store):
     "double-check existence of the archive sub_directories"
+    self.pixDestDir.replace('kbPix/Pix', 'kbPix')  # 2022 hack!
     for d in [self.pixDestDir, self.vidDestDir, self.audioDestDir]:
       if store.safe_mkdir(d) is None:
         print("Error, cannot verify archive {}".format(d))
@@ -367,14 +370,15 @@ class WindowsDrives(Drives):
     # TODO: this hasn't been fleshed-out for windcows at all
     if not self.opt.force_local:
       if self.opt.force_cloud:
-          v = os.path.join(os.environ['HOMEPATH'],'SynologyDrive', 'kbImport')
-          # v = os.path.join(os.environ['HOMEPATH'],'Google Drive', 'kbImport')
-          if os.path.exists(v):
-            self.ExternalArchives.append(v)
-            self.ForbiddenSources.append('C:')
+          for v in [os.path.join(os.environ['HOMEPATH'],'SynologyDrive', 'kbImport'), \
+                    os.path.join(os.environ['HOMEPATH'],'Google Drive', 'kbImport') ]:
+            if os.path.exists(v):
+              self.ExternalArchives.append(v)
+              self.ForbiddenSources.append('C:')
+            break
       else:
         for ltr in [chr(a)+':' for a in range(68,76)]:
-          v = os.path.join(ltr,'kbPix')  # TODO(kevin): really want `\\\\Bank65\\kbPix` etc
+          v = os.path.join(ltr,'kbPix')  # TODO(kevin): really want `\\\\Bank65\\kbPix` etc?
           if os.path.exists(v):
             if not self.opt.pix_only:
               print("Archiving photos only")
