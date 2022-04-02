@@ -80,6 +80,8 @@ class Drives(object):
     return MountPoint
 
   def init_drives(self):
+    if self.opt.verbose:
+      print(f"init_drives({self.opt.platform})")
     self.available_archives()
     print("init_drives(): no platform handler for {}".format(self.opt.platform))
 
@@ -477,6 +479,7 @@ class MacDrives(Drives):
                               'KBWIFI',
                               'kbPix',
                               'GoogleDrive',
+                              'Google Drive',
                               '.timemachine',
                               'Pix',
                               'lazyback',
