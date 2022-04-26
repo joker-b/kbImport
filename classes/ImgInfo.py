@@ -150,7 +150,8 @@ class ImgInfo(object):
       return True # always "work"
     try:
       shutil.copyfile(self.srcPath, DestPath)
-    except OSError(e):
+    except OSError as e:
+      # get here often because the NAS is spinning up....
       print(f"OSErr: {e}")
       print("OSErr, bad copy for {}".format(p, self.srcPath, DestPath))
       ImgInfo.failedCopies.append(DestPath)
