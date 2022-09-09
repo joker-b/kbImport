@@ -2,6 +2,7 @@
 # misc sketches etc
 scratch
 logs
+*.log
 # pickle data
 *.pkl
 
