@@ -87,7 +87,11 @@ class ImgInfo(object):
           print("Need to dest_mkdir({}) **".format(self.destPath))
           ImgInfo.testLog[self.destPath] = 1
       else:
-        os.mkdir(self.destPath)
+        try:
+          os.mkdir(self.destPath)
+        except FileNotFoundError:
+          print("dest_mkdir('{}') no file - NAS Slow?".format(self.destPath))
+          return None
         if not os.path.exists(self.destPath):
           print('dest_mkdir("{}") FAIL')
           return None
