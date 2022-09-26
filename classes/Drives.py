@@ -453,13 +453,14 @@ class MacDrives(Drives):
   def identify_external_archives(self, MountPoint, MoreDrives=[]):
     # ignore Moredrives
     self.ExternalArchives = [os.path.join(MountPoint, D) for D in
-                               ['kbPix',
-                               os.path.join('pix20s', 'kbImport'),
+                               ['kbPix', 'pix20s',
                                os.path.join('KBWIFI', 'kbImport'),
                                'pix18', 'pix15',
                                 'CameraWork', 'Liq', 'Pix17', 'BJORKEBYTES',
                                 'T3', 'Sept2013']]
     self.ForbiddenSources += self.ExternalArchives
+    # TODO: get *anything* with "TimeMachine" in the title?
+    self.ForbiddenSources.append('/Volumes/com.apple.TimeMachine.localsnapshot')
     return MountPoint
 
   def init_drives(self):
@@ -481,6 +482,7 @@ class MacDrives(Drives):
                               'GoogleDrive',
                               'Google Drive',
                               '.timemachine',
+                              '.TimeMachine',
                               'Pix',
                               'lazyback',
                               'backchiefback',

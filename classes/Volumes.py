@@ -104,6 +104,8 @@ class Volumes(object):
     """
     if "GoogleDrive" in ParentDir:
       return None
+    if "TimeMachine" in ParentDir:
+      return None
     if Level >= MaxLevels or not os.path.exists(ParentDir):
       return None
     try:
@@ -122,9 +124,17 @@ class Volumes(object):
       print("seek_named_source_dir({}) error: {}".format(ParentDir, sys.exc_info()[0]))
       return None
     for subdir in allSubs:
+      if "GoogleDrive" in subdir:
+        next
+      if "TimeMachine" in subdir:
+        next
       if subdir == FindDir:
         return os.path.join(ParentDir, subdir)
     for subdir in allSubs:
+      if "GoogleDrive" in subdir:
+        next
+      if "TimeMachine" in subdir:
+        next
       fullpath = os.path.join(ParentDir, subdir)
       if os.path.isdir(fullpath):
         sr = self.seek_named_source_dir(fullpath, FindDir, Level+1, MaxLevels) # recurse
