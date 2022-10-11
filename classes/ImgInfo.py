@@ -157,7 +157,7 @@ class ImgInfo(object):
     except OSError as e:
       # get here often because the NAS is spinning up....
       print(f"OSErr: {e}")
-      print("OSErr, bad copy for {}".format(p, self.srcPath, DestPath))
+      print("OSErr, bad copy for {} to {}".format(self.srcPath, DestPath))
       ImgInfo.failedCopies.append(DestPath)
       return False
     except:
