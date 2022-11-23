@@ -499,7 +499,7 @@ def DriveBuilder(Options=AppOptions()):
   if Options.platform == Platform['LINUX']:
     d =  WindowsDrives(Options)
   elif Options.platform == Platform['UBUNTU']:
-    d = UbutuDrives(Options)
+    d = UbuntuDrives(Options)
   elif Options.platform == Platform['WSL']:
     d = WSLDrives(Options)
   elif Options.platform == Platform['CROSTINI']:
