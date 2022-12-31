@@ -357,6 +357,7 @@ class WSLDrives(LinuxDrives):
 ###########################################################
 
 class WindowsDrives(Drives):
+  # TODO: how to get this sorted when suprocess bombs?
   @classmethod
   def getDriveName(cls, driveletter):
     q = subprocess.check_output(["cmd","/c vol "+driveletter]).decode()

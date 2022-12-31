@@ -372,12 +372,14 @@ class Volumes(object):
     print('JOB NAME: "{}"'.format(self.opt.jobname))
 
   def report(self):
+    # TODO: add explict log FILE option
     self.storage.print_report(self.drives.pixDestDir)
     if len(self.newDirList) > 0:
       print("Created {} Extra Directories:".format(len(self.newDirList)))
       print('\n'.join(self.newDirList))
     print("{} Files, Total MB: {}".format(self.nFiles, self.nBytes/(1024*1024)))
     if self.nSkipped:
+      # TODO: improve skip and doppel handling/logging
       print("Skipped {} files".format(self.nSkipped))
       print("  with {} doppelgangs".format(len(ImgInfo.doppelFiles)))
     self.perfmon.halt()
