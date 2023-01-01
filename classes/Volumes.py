@@ -136,7 +136,8 @@ class Volumes(object):
     "TODO(kevin): this might go into the Drives class"
     self.srcMedia = []
     if len(self.drives.PossibleSources) < 1:
-      print("Yikes, no source media")
+      if self.opt.verbose:
+        print("Yikes, no source media")
       return
     archiveDeviceID = os.stat(self.drives.archiveDrive).st_dev
     for srcDevice in self.drives.PossibleSources:
