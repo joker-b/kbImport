@@ -380,9 +380,8 @@ class Volumes(object):
       print('\n'.join(self.newDirList))
     print("{} Files, Total MB: {}".format(self.nFiles, self.nBytes/(1024*1024)))
     if self.nSkipped:
-      # TODO: improve skip and doppel handling/logging
       print("Skipped {} files".format(self.nSkipped))
-      print("  with {} doppelgangs".format(len(ImgInfo.doppelFiles)))
+      ImgInfo.report()
     self.perfmon.halt()
     self.perfmon.report_elapsed()
     if self.nBytes > long(0):

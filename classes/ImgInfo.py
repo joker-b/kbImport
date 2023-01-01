@@ -35,6 +35,14 @@ class ImgInfo(object):
       cls.set_options()
     cls.dng = DNG
 
+  @classmethod
+  def report(cls):
+    nd = len(cls.doppelFiles)
+    if nd < 1:
+      print(" No doppelgang files found")
+      return
+    print(f" Found {nd} doppelgangers")      
+
   def __init__(self, Name, Path):
     "basic data about each image to be archived"
     self.srcName = Name
@@ -46,7 +54,7 @@ class ImgInfo(object):
       print("Caution: Class wasn't initialized for image '{},' using defaults".format(self.srcName))
       ImgInfo.set_dng_converter()
     self.nBytes = long(0)
-
+  
   def has_doppelganger(self):
     "figure out if there is a copy of this file in a neighboring archive"
     name = ImgInfo.doppelFiles.get(self.srcName)
