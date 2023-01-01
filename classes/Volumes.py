@@ -183,9 +183,10 @@ class Volumes(object):
       return
     if self.opt.verbose:
       print("Found These valid image source directories:")
-      print("  {}".format(", ".join(self.imgDirs)))
+      readable = [self.drives.pretty(id) for id in self.imgDirs]
+      print("  {}".format(", ".join(readable)))
     for srcDir in self.imgDirs:
-      print("Archiving Images from '{}'".format(srcDir))
+      print("Archiving Images from '{}'".format(self.drives.pretty(srcDir)))
       self.seek_files_in(srcDir)
       self.archive_found_image_data()
 
@@ -328,7 +329,7 @@ class Volumes(object):
       files = []
     nFiles = len([f for f in files if not os.path.isdir(os.path.join(FromDir, f))])
     if self.opt.verbose:
-      print("Archiving {} files (from {} entries) from\n    {}".format(nFiles, len(files), FromDir))
+      print("Archiving {} files (from {} entries) from\n    {}".format(nFiles, len(files), self.drives.pretty(FromDir)))
     for filename in files:
       if Volumes.is_any_dot_file(filename):
         if self.opt.verbose:

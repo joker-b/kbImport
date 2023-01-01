@@ -73,6 +73,13 @@ options.testing = False
 options.version = "kbImport - 09july2021 - (c)2004-2020 K Bjorke"
 options.win32 = sys.platform.startswith('win32')
 
+try:
+  import win32api
+except:
+  if options.win32:
+    print('win32api not found, try "pip install pywin32"')
+    exit()
+
 #############################################################
 ### MAIN ACTION #############################################
 #############################################################

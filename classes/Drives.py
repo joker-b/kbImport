@@ -19,6 +19,11 @@ import glob
 import subprocess 
 from AppOptions import AppOptions, Platform
 
+try:
+  import win32api
+except:
+  pass
+
 #pylint: disable=too-many-instance-attributes
 # Nine is reasonable in this case.
 
@@ -359,11 +364,15 @@ class WSLDrives(LinuxDrives):
 class WindowsDrives(Drives):
   # TODO: how to get this sorted when suprocess bombs?
   @classmethod
-  def getDriveName(cls, driveletter):
-    q = subprocess.check_output(["cmd","/c vol "+driveletter]).decode()
-    if 'has no' in q:
-      return driveletter
-    return q.split("\r\n")[0].split(" ").pop()
+  def getDriveName(cls, driveletter, verbose=False):
+    dn = win32api.GetVolumeInformation(driveletter)[0]
+    if verbose:
+      print(f'Checking name for "{driveletter}", got "{dn}"')
+    return dn
+    #q = subprocess.check_output(["cmd","/c vol "+driveletter]).decode()
+    #if 'has no' in q:
+    #  return driveletter
+    #return q.split("\r\n")[0].split(" ").pop()
 
   def init_drives(self):
     # 2020 approach: iterate through drive names, looking for for /kbImport/
@@ -422,10 +431,10 @@ class WindowsDrives(Drives):
 
   def pretty(self, Path):
     try:
-      name = Drives.getDriveName(Path[:2])
+      name = WindowsDrives.getDriveName(Path[:2], self.opt.verbose)
       return '"{}" ({})'.format(name, Path) # was: name[0]
-    except:
-      print("Can't get volume info for '{}'".format(Path))
+    except Exception as err:
+      print("Can't get volume info for '{}', {err=}, {type(err)=}".format(Path))
     return Path
 
   def process_options(self):
