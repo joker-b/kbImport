@@ -47,6 +47,7 @@ class Volumes(object):
     self.nBytes = long(0)
     self.nFiles = long(0)
     self.nSkipped = long(0)
+    self.skipRun = long(0)
     self.nConversions = 0
     self.audioPrefix = "" # for edirol
     self.createdDirs = {}
@@ -354,8 +355,12 @@ class Volumes(object):
       if pic.archive():
         self.nFiles += 1
         self.nBytes += pic.nBytes
+        if self.skipRun > 0:
+          print(f"({self.skipRun} skipped)")
+          self.skipRun = long(0)
       else:
         self.nSkipped += 1
+        self.skipRun += 1
 
   #
   # reporting
@@ -381,6 +386,9 @@ class Volumes(object):
       print('\n'.join(self.newDirList))
     print("{} Files, Total MB: {}".format(self.nFiles, self.nBytes/(1024*1024)))
     if self.nSkipped:
+      if self.skipRun > 0:
+        print(f"({self.skipRun} skipped in final span)")
+        self.skipRun = long(0)
       print("Skipped {} files".format(self.nSkipped))
       ImgInfo.report()
     self.perfmon.halt()
