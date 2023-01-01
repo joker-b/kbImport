@@ -70,7 +70,7 @@ import Volumes
 options = AppOptions()
 options.verbose = False
 options.testing = False
-options.version = "kbImport - 09july2021 - (c)2004-2020 K Bjorke"
+options.version = "kbImport - 01jjan2023 - (c)2004-2023 K Bjorke"
 options.win32 = sys.platform.startswith('win32')
 
 try:
@@ -94,8 +94,8 @@ if __name__ == '__main__':
     parser.add_argument('-u', '--unify',
                         help='Unify imports to a single directory (indexed TODAY)',
                         action="store_true")
-    parser.add_argument('-p', '--prefix',
-                        help='include string in filename as prefix')
+    parser.add_argument('-p', '--prefix', default='bjorke',
+                        help='add this prefix to the filename')
     parser.add_argument('-j', '--jobpref',
                         help='toggle to include jobname in prefix',
                         action="store_true")
