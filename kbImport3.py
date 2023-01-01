@@ -70,7 +70,7 @@ import Volumes
 options = AppOptions()
 options.verbose = False
 options.testing = False
-options.version = "kbImport - 01jjan2023 - (c)2004-2023 K Bjorke"
+options.version = "kbImport - 01/jan/2023 - (c)2004-2023 K Bjorke"
 options.win32 = sys.platform.startswith('win32')
 
 try:
