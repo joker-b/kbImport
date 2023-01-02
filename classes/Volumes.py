@@ -356,7 +356,7 @@ class Volumes(object):
         self.nFiles += 1
         self.nBytes += pic.nBytes
         if self.skipRun > 0:
-          print(f"({self.skipRun} skipped)")
+          print(f"({self.skipRun} skipped prior to this file TODO)")
           self.skipRun = long(0)
       else:
         self.nSkipped += 1
