@@ -310,6 +310,16 @@ class Volumes(object):
     print("Unable to archive media to {}".format(destinationPath)) # TODO(kevin): more graceful for pix_only?
     return 0
 
+  def filtered_name(self, name):
+    if self.opt.filter is None:
+      return True
+    if self.opt.filter.search(name):
+      return True
+    if self.opt.verbose:
+      print("Filtered out {}".format(name))
+    return False
+
+
   def seek_files_in(self, FromDir):
     "Archive images and video - recursively if needed"
     # first make sure all inputs are valid
@@ -339,7 +349,7 @@ class Volumes(object):
         if self.opt.verbose:
           print("  down to {}".format(fullPath))
         self.seek_files_in(fullPath)   # recurse
-      else:
+      elif self.filtered_name(filename):
         localItemCount += self.build_image_data(filename, FromDir, fullPath, files)
     if self.opt.verbose:
       print("Found {} items in {}".format(localItemCount, FromDir))

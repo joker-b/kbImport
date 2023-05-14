@@ -46,7 +46,7 @@ class ImgInfo(object):
       print("Caution: Class wasn't initialized for image '{},' using defaults".format(self.srcName))
       ImgInfo.set_dng_converter()
     self.nBytes = long(0)
-
+  
   def has_doppelganger(self):
     "figure out if there is a copy of this file in a neighboring archive"
     name = ImgInfo.doppelFiles.get(self.srcName)

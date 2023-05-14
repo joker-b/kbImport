@@ -88,13 +88,15 @@ if __name__ == '__main__':
                         help='Unify imports to a single directory (indexed TODAY)',
                         action="store_true")
     parser.add_argument('-p', '--prefix', default="bjorke",
-                        help='include string in filename as prefix')
+                        help='out filename prefix (use "none" to disable)')
     parser.add_argument('-j', '--jobpref',
                         help='toggle to include jobname in prefix',
                         action="store_true")
     parser.add_argument('-t', '--test',
                         help='test mode: list but do not copy',
                         action="store_true")
+    parser.add_argument('-f', '--filter',
+                        help='match regex string for import names')
     parser.add_argument('-l', '--local',
                         help='local archive only',
                         action="store_true")
