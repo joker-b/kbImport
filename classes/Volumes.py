@@ -319,6 +319,25 @@ class Volumes(object):
       print("Filtered out {}".format(name))
     return False
 
+  def fresh_file(self, filename, filepath):
+    if self.opt.age <= 0:
+      return True
+    try:
+      s = os.stat(filepath)
+    except FileNotFoundError:
+      print('fresh_file("{}") not found'.format(filepath))
+      return False
+    except:
+      print('fresh_file stat error: {}'.format(sys.exc_info()[0]))
+      return False
+    if s.st_ctime < self.opt.age:
+      if self.opt.verbose:
+        hours = (self.opt.age - s.st_ctime)/3600
+        print("Stale: {} {} v {} {} hrs".format(filename, s.st_ctime, self.opt.age, hours))
+        return False
+    if self.opt.verbose:
+      print("Fresh: {}".format(filename))
+    return True
 
   def seek_files_in(self, FromDir):
     "Archive images and video - recursively if needed"
@@ -350,7 +369,8 @@ class Volumes(object):
           print("  down to {}".format(fullPath))
         self.seek_files_in(fullPath)   # recurse
       elif self.filtered_name(filename):
-        localItemCount += self.build_image_data(filename, FromDir, fullPath, files)
+        if self.fresh_file(filename, fullPath):
+          localItemCount += self.build_image_data(filename, FromDir, fullPath, files)
     if self.opt.verbose:
       print("Found {} items in {}".format(localItemCount, FromDir))
 

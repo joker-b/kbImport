@@ -9,6 +9,7 @@ import sys
 import os
 import platform
 import re
+import time
 from enum import Enum
 
 class Platform(Enum):
@@ -46,6 +47,7 @@ class AppOptions(object):
     self.force_cloud = False
     self.rename = False
     self.version = "kbImport Default Options"
+    self.now = time.time()
     if pargs is None:
       self.user_args(self.default_arguments())
     else:
@@ -68,6 +70,11 @@ class AppOptions(object):
       self.filter = re.compile(pargs.filter)
     else:
       self.filter = None
+    self.age = max(0, int(pargs.age))
+    if self.age > 0:
+      if self.verbose:
+        print("Max Age is {} days ago".format(self.age+0.5))
+      self.age = self.now - (self.age + 0.5) * (24 * 60 * 60)
     self.rename = bool(pargs.rename)
     self.pix_only = bool(pargs.pix_only)
     self.force_local = bool(pargs.local)
@@ -105,6 +112,7 @@ class AppOptions(object):
     args.archive = None
     args.unify = False
     args.filter = None
+    args.age = True
     args.rename = False
     args.pix_only = False
     args.local = False

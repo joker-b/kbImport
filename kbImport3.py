@@ -97,6 +97,8 @@ if __name__ == '__main__':
                         action="store_true")
     parser.add_argument('-f', '--filter',
                         help='match regex string for import names')
+    parser.add_argument('-d', '--age', type=int, default=0,
+                        help='max days old')
     parser.add_argument('-l', '--local',
                         help='local archive only',
                         action="store_true")
