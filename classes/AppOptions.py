@@ -67,7 +67,8 @@ class AppOptions(object):
     self.pix_only = bool(pargs.pix_only)
     self.force_local = bool(pargs.local)
     self.force_cloud = bool(pargs.cloud)
-    self.init_prefix = '' if pargs.prefix is None else "{}_".format(pargs.prefix)
+    self.init_prefix = '' if pargs.prefix is None or pargs.prefix == 'None' or pargs.prefix == 'none' \
+                                else "{}_".format(pargs.prefix)
     self.use_job_prefix = bool(pargs.jobpref)
     self.unify = bool(pargs.unify)
     self.set_jobname(pargs.jobname)

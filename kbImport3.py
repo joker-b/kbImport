@@ -87,7 +87,7 @@ if __name__ == '__main__':
     parser.add_argument('-u', '--unify',
                         help='Unify imports to a single directory (indexed TODAY)',
                         action="store_true")
-    parser.add_argument('-p', '--prefix',
+    parser.add_argument('-p', '--prefix', default="bjorke",
                         help='include string in filename as prefix')
     parser.add_argument('-j', '--jobpref',
                         help='toggle to include jobname in prefix',
