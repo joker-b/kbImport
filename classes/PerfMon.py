@@ -30,6 +30,7 @@ class PerfMon(object):
       print("{} minutes elapsed".format(self.elapsed/60))
     else:
       print("{} seconds elapsed".format(self.elapsed))
+    print(time.asctime(time.localtime(self.endTime)))
 
   def report_throughput(self, nBytes=long(0)):
     throughput = nBytes / self.elapsed
