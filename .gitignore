@@ -46,3 +46,6 @@ nosetests.xml
 .pydevproject
 .ipynb_checkpoints/kbImport3-checkpoint.ipynb
 
+# VSCode
+.vscode/settings.json
+.vscode/settings.json

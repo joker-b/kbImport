@@ -266,16 +266,33 @@ class Volumes(object):
 
   def add_prefix(self, OrigName):
     return self.opt.add_prefix(OrigName)
+  
+  def is_image_file(self, Filename):
+    """
+    is this a file we want to archive?
+    TODO: housekeeping, keep track of these, and respect opt.all (which doesn't exist yet)
+    """
+    upcaseName = Filename.upper()
+    suffix = os.path.splitext(upcaseName)[1][1:]
+    for s in ['JPG', 'RW2', 'DNG', 'RAW', 'GIF', 'PNG', 'BMP', 'TIF', 'TIFF', 'MOV', 'M4V', 'MP4', '3GP']:
+      if suffix == s:
+        return True
+    if self.opt.verbose:
+      print(f"Skipping {Filename}: {suffix} isn't a known image format")
+    return False
 
   def build_image_data(self, Filename, FromDir, FullPath, files):
     "found a potential file, let's add it as a data record"
     # if .MOV or .M4V or .MP4 or .3GP it's a vid
     # if JPG, check to see if there's a matching vid
+    upcaseName = Filename.upper()
+    if not self.is_image_file(upcaseName):
+      print(f"build_image_data({Filename}) not an image file")
+      return 0
     info = ImgInfo(Filename, FullPath)
     isSimpleVideo = False
     isAVCHD = False
     self.avchd.type = "JPG" # blah
-    upcaseName = Filename.upper()
     info.destName = self.add_prefix(Filename)  # renaming allowed here
     if not self.opt.pix_only:
       m = Avchd.filetype_search(upcaseName)
