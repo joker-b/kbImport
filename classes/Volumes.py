@@ -274,7 +274,7 @@ class Volumes(object):
     """
     upcaseName = Filename.upper()
     suffix = os.path.splitext(upcaseName)[1][1:]
-    for s in ['JPG', 'RW2', 'DNG', 'RAW', 'GIF', 'PNG', 'BMP', 'TIF', 'TIFF', 'MOV', 'M4V', 'MP4', '3GP']:
+    for s in ['JPG', 'RW2', 'DNG', 'RAF', 'RAW', 'GIF', 'PNG', 'BMP', 'TIF', 'TIFF', 'MOV', 'M4V', 'MP4', '3GP']:
       if suffix == s:
         return True
     if self.opt.verbose:
