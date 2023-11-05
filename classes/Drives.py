@@ -481,6 +481,7 @@ class MacDrives(Drives):
                               'GoogleDrive',
                               'Google Drive',
                               '.timemachine',
+                              'com.apple.TimeMachine.localsnapshots',
                               'Pix',
                               'lazyback',
                               'backchiefback',
