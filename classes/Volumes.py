@@ -277,8 +277,8 @@ class Volumes(object):
     for s in ['JPG', 'RW2', 'DNG', 'RAF', 'RAW', 'GIF', 'PNG', 'BMP', 'TIF', 'TIFF', 'MOV', 'M4V', 'MP4', '3GP']:
       if suffix == s:
         return True
-    if self.opt.verbose:
-      print(f"Skipping {Filename}: {suffix} isn't a known image format")
+    #if self.opt.verbose:
+    #  print(f"Skipping {Filename}: {suffix} isn't a known image format")
     return False
 
   def build_image_data(self, Filename, FromDir, FullPath, files):
@@ -287,7 +287,7 @@ class Volumes(object):
     # if JPG, check to see if there's a matching vid
     upcaseName = Filename.upper()
     if not self.is_image_file(upcaseName):
-      print(f"build_image_data({Filename}) not an image file")
+      print(f'build_image_data("{Filename}"): not an image file, skipped')
       return 0
     info = ImgInfo(Filename, FullPath)
     isSimpleVideo = False
@@ -373,7 +373,7 @@ class Volumes(object):
     if files is None:
       files = []
     nFiles = len([f for f in files if not os.path.isdir(os.path.join(FromDir, f))])
-    if self.opt.verbose:
+    if self.opt.verbose and nFiles>0:
       print("Archiving {} files (from {} entries) from\n    {}".format(nFiles, len(files), FromDir))
     for filename in files:
       if Volumes.is_any_dot_file(filename):
@@ -382,8 +382,8 @@ class Volumes(object):
         continue
       fullPath = os.path.join(FromDir, filename)
       if os.path.isdir(fullPath):
-        if self.opt.verbose:
-          print("  down to {}".format(fullPath))
+        #if self.opt.verbose:
+        #  print("  down to {}".format(fullPath))
         self.seek_files_in(fullPath)   # recurse
       elif self.filtered_name(filename):
         if self.fresh_file(filename, fullPath):

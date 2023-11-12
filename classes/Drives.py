@@ -53,6 +53,10 @@ class Drives(object):
     print("cloud_archive(): no platform handler for {}".format(self.opt.platform))
     # do nothing else to ExternalArchives
 
+  def synology_archive(self):
+    print("synology_archive(): no platform handler for {}".format(self.opt.platform))
+    # do nothing else to ExternalArchives
+
   def identify_external_archives(self, MountPoint, MoreDrives=[]):
     print("identify_external_archives({}): no platform handler for {}".format(MountPoint, self.opt.platform))
     # do nothing else to ExternalArchives
@@ -102,9 +106,10 @@ class Drives(object):
     print('Removable: ', self.PossibleSources)
 
   def available_source_vols(self, Vols=[]):
+    acceptVols = [a for a in Vols if self.acceptable_source_vol(a)]
     if self.opt.verbose:
-      print("Searching {} for source data".format(Vols))
-    return [a for a in Vols if self.acceptable_source_vol(a)]
+      print("Searching {} for source data".format(acceptVols))
+    return acceptVols
 
   def seekWDBackups(self):
     '''
@@ -143,7 +148,7 @@ class Drives(object):
       return False
     if Path in self.ForbiddenSources:
       if self.opt.verbose:
-        print("{} forbidden as a source".format(printable))
+        print(" Dissallowed source: {}".format(printable))
       return False
     s = os.path.getsize(Path) # TODO: this is not how you get volume size!
     if s > Drives.largestSource:
@@ -372,8 +377,9 @@ class WindowsDrives(Drives):
     # TODO: this hasn't been fleshed-out for windcows at all
     if not self.opt.force_local:
       if self.opt.force_cloud:
-          for v in [os.path.join(os.environ['HOMEPATH'],'SynologyDrive', 'kbImport'), \
-                    os.path.join(os.environ['HOMEPATH'],'Google Drive', 'kbImport') ]:
+          vl = [os.path.join(os.environ['HOMEPATH'],'SynologyDrive', 'kbImport')]
+          vl.append(os.path.join(os.environ['HOMEPATH'],'Google Drive', 'kbImport'))
+          for v in vl:
             if os.path.exists(v):
               self.ExternalArchives.append(v)
               self.ForbiddenSources.append('C:')
@@ -449,14 +455,14 @@ class WindowsDrives(Drives):
 class MacDrives(Drives):
   def cloud_archive(self):
       self.ExternalArchives = [os.path.join(os.environ['HOME'],'SynologyDrive','kbImport')]
-  
+
   def identify_external_archives(self, MountPoint, MoreDrives=[]):
     # ignore Moredrives
     self.ExternalArchives = [os.path.join(MountPoint, D) for D in
                                ['kbPix',
                                os.path.join('pix20s', 'kbImport'),
                                os.path.join('KBWIFI', 'kbImport'),
-                               'pix18', 'pix15',
+                               'pix18', 'pix15', 'T2023',
                                 'CameraWork', 'Liq', 'Pix17', 'BJORKEBYTES',
                                 'T3', 'Sept2013']]
     self.ForbiddenSources += self.ExternalArchives
@@ -481,6 +487,7 @@ class MacDrives(Drives):
                               'GoogleDrive',
                               'Google Drive',
                               '.timemachine',
+                              'com.apple.TimeMachine.localsnapshots',
                               'Pix',
                               'lazyback',
                               'backchiefback',

@@ -44,6 +44,7 @@ class AppOptions(object):
     self.pix_only = False
     self.force_copies = False
     self.force_local = False
+    self.force_synology = False
     self.force_cloud = False
     self.rename = False
     self.version = "kbImport Default Options"
@@ -78,7 +79,13 @@ class AppOptions(object):
     self.rename = bool(pargs.rename)
     self.pix_only = bool(pargs.pix_only)
     self.force_local = bool(pargs.local)
-    self.force_cloud = bool(pargs.cloud)
+    self.force_synology = bool(pargs.syn)
+    if self.force_synology:
+      if self.archive is not None:
+        print(f"WARNING: --archive '{self.archive}' overrides --syn")
+      else:
+        self.archive = os.path.join(os.environ['HOME'],'SynologyDrive', 'kbImport')
+    self.force_cloud = False if self.force_synology else bool(pargs.cloud)
     self.init_prefix = '' if pargs.prefix is None or pargs.prefix == 'None' or pargs.prefix == 'none' \
                                 else "{}_".format(pargs.prefix)
     self.use_job_prefix = bool(pargs.jobpref)
@@ -116,6 +123,7 @@ class AppOptions(object):
     args.rename = False
     args.pix_only = False
     args.local = False
+    args.syn = False
     args.cloud = False
     args.test = True
     args.verbose = False

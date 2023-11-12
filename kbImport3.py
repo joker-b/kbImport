@@ -105,6 +105,9 @@ if __name__ == '__main__':
     parser.add_argument('-x', '--pix_only',
                         help='pictures only',
                         action="store_true")
+    parser.add_argument('-S', '--syn',
+                        help='Store to Synology if available (overrides -c)',
+                        action="store_true")
     parser.add_argument('-c', '--cloud',
                         help='cloud share archive if available',
                         action="store_true")
