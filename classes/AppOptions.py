@@ -67,6 +67,7 @@ class AppOptions(object):
     self.numerate = bool(pargs.numerate)
     self.source = pargs.source
     self.archive = pargs.archive
+    self.project = pargs.project
     if pargs.filter is not None:
       self.filter = re.compile(pargs.filter)
     else:
@@ -94,6 +95,8 @@ class AppOptions(object):
     # unique to storage
 
   def set_jobname(self, Job=None):
+    if self.project is not None:
+      self.jobname = self.project
     self.jobname = '' if Job is None else Job
     if self.use_job_prefix:
       if self.init_prefix is None:
@@ -115,6 +118,7 @@ class AppOptions(object):
     args.jobname = 'test'
     args.prefix = None
     args.jobpref = None
+    args.project = None
     args.source = None
     args.archive = None
     args.unify = False

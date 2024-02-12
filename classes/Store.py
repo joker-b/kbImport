@@ -12,7 +12,7 @@ from ImgInfo import ImgInfo
 #####################################################
 
 class Store(object):
-  """Storeage Operationns"""
+  """Storeage Operations"""
 
   def __init__(self, Options=AppOptions()):
     self.opt = Options
@@ -108,6 +108,12 @@ class Store(object):
     yearPath = os.path.join(ArchDir, yearStr)
     archivePath = ReportName+os.path.sep+yearStr
     self.safe_mkdir(yearPath, archivePath)
+    if self.opt.project is not None:
+      projDir = f'{yearStr}_{self.opt.project}'
+      unifiedName = os.path.join(ArchDir, projDir)
+      archivePath = ReportName+os.path.sep+projDir
+      self.safe_mkdir(unifiedName, archivePath)
+      return unifiedName
     monthStr = time.strftime("%Y-%m-%b", now)
     monthPath = os.path.join(yearPath, monthStr)
     archivePath = archivePath+os.path.sep+monthStr
@@ -129,7 +135,7 @@ class Store(object):
     Seek or create an archive directory based on the src file's origination date,
     unless 'unify' is active, in which case base it on today's date.
     """
-    if self.opt.unify:
+    if self.opt.unify or (self.opt.project is not None):
       return self.unified_dir_name(ArchDir, ReportName)
     try:
       s = os.stat(SrcFile)
