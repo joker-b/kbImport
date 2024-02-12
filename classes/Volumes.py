@@ -413,10 +413,10 @@ class Volumes(object):
       print('RENAMING INTO: {}'.format(self.drives.pretty(self.drives.archiveDrive)))
     else:
       if len(self.srcMedia) > 0:
-        print('SOURCE MEDIA:      {}'.format('\n\t'.join(
+        print('SOURCE MEDIA:      "{}"'.format('\n\t'.join(
             [self.drives.pretty(d) for d in self.srcMedia])))
-      print('DESTINATION DRIVE: {}'.format(self.drives.pretty(self.drives.archiveDrive)))
-    print('JOB NAME: "{}"'.format(self.opt.jobname))
+      print('DESTINATION DRIVE: "{}"'.format(self.drives.pretty(self.drives.archiveDrive)))
+    print('{} NAME: "{}"'.format('PROJECT' if self.opt.project else 'JOB', self.opt.jobname))
 
   def report(self):
     self.storage.print_report(self.drives.pixDestDir)

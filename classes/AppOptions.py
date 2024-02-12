@@ -95,8 +95,6 @@ class AppOptions(object):
     # unique to storage
 
   def set_jobname(self, Job=None):
-    if self.project is not None:
-      self.jobname = self.project
     self.jobname = '' if Job is None else Job
     if self.use_job_prefix:
       if self.init_prefix is None:
@@ -118,7 +116,7 @@ class AppOptions(object):
     args.jobname = 'test'
     args.prefix = None
     args.jobpref = None
-    args.project = None
+    args.project = False
     args.source = None
     args.archive = None
     args.unify = False

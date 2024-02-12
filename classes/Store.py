@@ -22,7 +22,8 @@ class Store(object):
     self.unifiedDir = None
 
   def print_report(self, TopDir='.'):
-    print("Out of {} directory requests:".format(len(self.encountered)))
+    if len(self.encountered) > 0:
+      print("Out of {} directory requests:".format(len(self.encountered)))
     allDirs = self.createdDirs + ImgInfo.createdDirs
     if len(allDirs) > 0:
       print("Created directories within {}:".format(TopDir))
@@ -108,8 +109,8 @@ class Store(object):
     yearPath = os.path.join(ArchDir, yearStr)
     archivePath = ReportName+os.path.sep+yearStr
     self.safe_mkdir(yearPath, archivePath)
-    if self.opt.project is not None:
-      projDir = f'{yearStr}_{self.opt.project}'
+    if self.opt.project:
+      projDir = f'{yearStr}_{self.opt.jobname}'
       unifiedName = os.path.join(ArchDir, projDir)
       archivePath = ReportName+os.path.sep+projDir
       self.safe_mkdir(unifiedName, archivePath)
@@ -135,7 +136,7 @@ class Store(object):
     Seek or create an archive directory based on the src file's origination date,
     unless 'unify' is active, in which case base it on today's date.
     """
-    if self.opt.unify or (self.opt.project is not None):
+    if self.opt.unify or self.opt.project:
       return self.unified_dir_name(ArchDir, ReportName)
     try:
       s = os.stat(SrcFile)

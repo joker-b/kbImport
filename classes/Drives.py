@@ -108,7 +108,10 @@ class Drives(object):
   def available_source_vols(self, Vols=[]):
     acceptVols = [a for a in Vols if self.acceptable_source_vol(a)]
     if self.opt.verbose:
-      print("Searching {} for source data".format(acceptVols))
+      if len(acceptVols) < 1:
+        print("No acceptable source volumes found")
+      else:
+        print("Searching {} for source data".format(acceptVols))
     return acceptVols
 
   def seekWDBackups(self):
@@ -176,8 +179,8 @@ class Drives(object):
       if self.opt.verbose:
         print("No need to find archive if we've forced a local destination")
       return False
-    if self.opt.verbose:
-      print("Primary Archive Candidates:\n\t{}".format('\n\t'.join(self.ExternalArchives)))
+    #if self.opt.verbose:
+    #  print("Primary Archive Candidates:\n\t{}".format('\n\t'.join(self.ExternalArchives)))
     for arch in self.ExternalArchives:
       if os.path.exists(arch):
         self.archiveDrive = arch
@@ -199,9 +202,9 @@ class Drives(object):
       elif self.opt.verbose:
         print("Primary candidate {} not present".format(arch))
     if self.opt.verbose:
-      print("Primary archive disk unavailable, from these {} options:".format(
+      print("Err: Primary archive disk unavailable, from all {} options.".format(
           len(self.ExternalArchives)))
-      print("  " + "\n  ".join(self.ExternalArchives))
+      # print("  " + "\n  ".join(self.ExternalArchives))
     return False
 
   def found_local_archive_drive(self):

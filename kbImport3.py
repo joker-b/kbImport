@@ -89,7 +89,7 @@ if __name__ == '__main__':
                         action="store_true")
     parser.add_argument('-p', '--prefix', default="bjorke",
                         help='out filename prefix (use "none" to disable)')
-    parser.add_argument('-P', '--project', default=None,
+    parser.add_argument('-P', '--project', action="store_true",
                         help='Project name overrides date')
     parser.add_argument('-j', '--jobpref',
                         help='toggle to include jobname in prefix',
