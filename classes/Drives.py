@@ -458,7 +458,7 @@ class MacDrives(Drives):
 
   def identify_external_archives(self, MountPoint, MoreDrives=[]):
     # ignore Moredrives
-    synHome = os.path.join(os.environ['HOME'],'Library/CloudStorage/SynologyDrive-chef')
+    synHome = os.path.join(os.environ['HOME'],'SynologyDrive')
     synDrives = [os.path.join(synHome,'kbImport')] if os.path.exists(synHome) else []
     self.ExternalArchives = [os.path.join(MountPoint, D) for D in
                                ['T2023']]  + synDrives + \
