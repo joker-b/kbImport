@@ -368,6 +368,13 @@ class WindowsDrives(Drives):
       return driveletter
     return q.split("\r\n")[0].split(" ").pop()
 
+  def synology_archive(self):
+    synD = os.path.join(os.environ['HOME'],'SynologyDrive')
+    if os.path.exists(synD):
+      return synD
+    print(f'No SynologyDrive found in {os.environ["HOME"]}')
+    return None
+
   def init_drives(self):
     # 2020 approach: iterate through drive names, looking for for /kbImport/
     #    if not found, look for Pix & Vid
