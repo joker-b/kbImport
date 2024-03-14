@@ -50,12 +50,11 @@ class Drives(object):
     self.opt = Options
 
   def cloud_archive(self):
-    print("cloud_archive(): no platform handler for {}".format(self.opt.platform))
-    # do nothing else to ExternalArchives
+      self.ExternalArchives = self.synology_archive()
 
   def synology_archive(self):
     print("synology_archive(): no platform handler for {}".format(self.opt.platform))
-    # do nothing else to ExternalArchives
+    return None
 
   def identify_external_archives(self, MountPoint, MoreDrives=[]):
     print("identify_external_archives({}): no platform handler for {}".format(MountPoint, self.opt.platform))
@@ -377,7 +376,9 @@ class WindowsDrives(Drives):
     # TODO: this hasn't been fleshed-out for windcows at all
     if not self.opt.force_local:
       if self.opt.force_cloud:
-          vl = [os.path.join(os.environ['HOMEPATH'],'SynologyDrive', 'kbImport')]
+          synD = self.synology_archive()
+          if synD is not None:
+            vl = [os.path.join(synD, 'kbImport')]
           vl.append(os.path.join(os.environ['HOMEPATH'],'Google Drive', 'kbImport'))
           for v in vl:
             if os.path.exists(v):
@@ -406,7 +407,8 @@ class WindowsDrives(Drives):
                 self.ExternalArchives.append(ltr)
                 self.ForbiddenSources.append(ltr)
                 self.ForbiddenSources.append(ltr)
-    self.LocalArchiveLocations = [r'C:\Users\kevin\SynologyDrive\kbImport'] # TODO(kevin) fix this!
+    synD = self.synology_archive()
+    self.LocalArchiveLocations = [synD] # TODO(kevin) fix this!
     if self.opt.verbose:
       print("Primary archive: {} options available:".format(
           len(self.ExternalArchives)))
@@ -453,12 +455,17 @@ class WindowsDrives(Drives):
 ###########################################################
 
 class MacDrives(Drives):
-  def cloud_archive(self):
-      self.ExternalArchives = [os.path.join(os.environ['HOME'],'SynologyDrive','kbImport')]
+  def synology_archive(self):
+    clouds = glob.glob( \
+      os.path.join(os.environ['HOME'],'Library', 'CloudStorage','SynologyDrive-cheffy*'))
+    if len(clouds) < 1:
+      print(f'No SynologyDrive found in {os.environ["HOME"]}')
+      return None
+    return clouds[0]
 
   def identify_external_archives(self, MountPoint, MoreDrives=[]):
     # ignore Moredrives
-    synHome = os.path.join(os.environ['HOME'],'SynologyDrive')
+    synHome = self.synology_archive()
     synDrives = [os.path.join(synHome,'kbImport')] if os.path.exists(synHome) else []
     self.ExternalArchives = [os.path.join(MountPoint, D) for D in
                                ['T2023']]  + synDrives + \
