@@ -463,10 +463,14 @@ class WindowsDrives(Drives):
 
 class MacDrives(Drives):
   def synology_archive(self):
-    clouds = glob.glob( \
-      os.path.join(os.environ['HOME'],'Library', 'CloudStorage','SynologyDrive-cheffy*'))
+    cloudBase = os.path.join(os.environ['HOME'],'Library', 'CloudStorage')
+    if os.path.exists(cloudBase):
+      clouds = glob.glob(os.path.join(cloudBase,'SynologyDrive-cheffy*')) + \
+                glob.glob(os.path.join(cloudBase,'SynologyDrive-moby*'))
+    else:
+      clouds = ()
     if len(clouds) < 1:
-      print(f'No SynologyDrive found in {os.environ["HOME"]}')
+      print(f'No active SynologyDrive found in {os.environ["HOME"]}')
       return None
     return clouds[0]
 

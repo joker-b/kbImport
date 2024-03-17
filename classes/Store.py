@@ -12,7 +12,7 @@ from ImgInfo import ImgInfo
 #####################################################
 
 class Store(object):
-  """Storeage Operationns"""
+  """Storage Operations"""
 
   def __init__(self, Options=AppOptions()):
     self.opt = Options
