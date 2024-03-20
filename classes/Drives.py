@@ -479,12 +479,11 @@ class MacDrives(Drives):
     synHome = self.synology_archive()
     synDrives = [os.path.join(synHome,'kbImport')] if os.path.exists(synHome) else []
     self.ExternalArchives = [os.path.join(MountPoint, D) for D in
-                               ['T2023']]  + synDrives + \
+                               ['T2023', 'kbPix']]  + synDrives + \
                     [os.path.join(MountPoint, D) for D in
-                               ['kbPix',
-                               os.path.join('pix20s', 'kbImport'),
-                               os.path.join('KBWIFI', 'kbImport'),
-                               'pix18', 'pix15', 
+                               [os.path.join('pix20s', 'kbImport'),
+                                os.path.join('KBWIFI', 'kbImport'),
+                                'pix18', 'pix15', 
                                 'CameraWork', 'Liq', 'Pix17', 'BJORKEBYTES',
                                 'T3', 'Sept2013']]
     self.ForbiddenSources += self.ExternalArchives
