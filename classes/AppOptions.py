@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 
 """
-Could have been caleld "config.py" but it's not
+Could have been called "config.py" but it's not
 """
 
 import argparse
@@ -83,8 +83,6 @@ class AppOptions(object):
     if self.force_synology:
       if self.archive is not None:
         print(f"WARNING: --archive '{self.archive}' overrides --syn")
-      else:
-        self.archive = os.path.join(os.environ['HOME'],'SynologyDrive', 'kbImport')
     self.force_cloud = False if self.force_synology else bool(pargs.cloud)
     self.init_prefix = '' if pargs.prefix is None or pargs.prefix == 'None' or pargs.prefix == 'none' \
                                 else "{}_".format(pargs.prefix)

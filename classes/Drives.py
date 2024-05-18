@@ -50,7 +50,7 @@ class Drives(object):
     self.opt = Options
 
   def cloud_archive(self):
-      self.ExternalArchives = self.synology_archive()
+      self.ExternalArchives = [self.synology_archive()]
 
   def synology_archive(self):
     print("synology_archive(): no platform handler for {}".format(self.opt.platform))
@@ -381,6 +381,11 @@ class WindowsDrives(Drives):
     #    if not found, fall back on local drive
     # then go through sources again looking for DCIM. Don't delve deeply.
     # TODO: this hasn't been fleshed-out for windcows at all
+    if self.opt.syn:
+      self.ExternalArchives = [self.synology_archive()]
+      if self.ExternalArchives[0] is None:
+        print("No SynologyDrive found")
+        return # failed
     if not self.opt.force_local:
       if self.opt.force_cloud:
           synD = self.synology_archive()
@@ -472,13 +477,20 @@ class MacDrives(Drives):
     if len(clouds) < 1:
       print(f'No active SynologyDrive found in {os.environ["HOME"]}')
       return None
+    if self.opt.verbose:
+      print(f"SynologyDrive found: {clouds[0]}")
     return clouds[0]
 
   def identify_external_archives(self, MountPoint, MoreDrives=[]):
     # ignore Moredrives
     synHome = self.synology_archive()
     synDrives = [os.path.join(synHome,'kbImport')] if os.path.exists(synHome) else []
-    self.ExternalArchives = [os.path.join(MountPoint, D) for D in
+    if self.opt.verbose:
+      print(f'OPTS {self.opt}')
+    if self.opt.force_synology:
+      self.ExternalArchives = synDrives
+    else:
+      self.ExternalArchives = [os.path.join(MountPoint, D) for D in
                                ['T2023', 'kbPix']]  + synDrives + \
                     [os.path.join(MountPoint, D) for D in
                                [os.path.join('pix20s', 'kbImport'),
