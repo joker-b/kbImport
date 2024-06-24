@@ -322,6 +322,32 @@ class UbuntuDrives(LinuxDrives):
       self.ForbiddenSources.append(os.path.join("Storage", "SD Card Imports"))
     # self.show_drives()
 
+class AlpineDrives(LinuxDrives):
+  def identify_external_archives(self, MountPoint, MoreDrives=[]):
+    if not os.path.exists(MountPoint): # this will be the user-specified archive root
+      print(f"User-specified Archive root {MountPoint} not found")
+      exit(1)
+    for subdir in ['kbmport', 'Pix', 'kbPix']:
+      t = os.path.join(MountPoint, subdir)
+      if os.path.exists(t):
+        self.ExternalArchives.append(t)
+    self.ExternalArchives.append(MountPoint)
+    self.ForbiddenSources += self.ExternalArchives
+    return MountPoint
+
+  def init_drives(self):
+    """
+    Alpine is simpler, there must be explcit specifications for source and archive
+    """
+    if self.opt.archive is None:
+      print("The -a and -s options are required for Alpine/iPadOS")
+      sys.exit(1)
+    if self.opt.source is None:
+      print("The -s and -a options are required for Alpine/iPadOS")
+      sys.exit(1)
+    mk = self.identify_external_archives(self.opt.archive)
+    self.PossibleSources = self.available_source_vols([self.opt.source])
+
 class WSLDrives(LinuxDrives):
   def init_drives(self):
     mk = '/mnt'
@@ -540,6 +566,8 @@ def DriveBuilder(Options=AppOptions()):
     d =  WindowsDrives(Options)
   elif Options.platform == Platform['UBUNTU']:
     d = UbuntuDrives(Options)
+  elif Options.platform == Platform['ALPINE']:
+    d = AlpineDrives(Options)
   elif Options.platform == Platform['WSL']:
     d = WSLDrives(Options)
   elif Options.platform == Platform['CROSTINI']:
