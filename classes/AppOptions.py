@@ -19,8 +19,22 @@ class Platform(Enum):
   CROSTINI = 4 # variants of linux, ya ya
   WSL = 5
   UBUNTU = 6
+  ALPINE = 7
 
 def identify_platform():
+  os_release = os.path.join('/', 'etc', 'os-release')
+  if os.path.exists(os_release):
+    # we know it's linux, but what kind?
+    with open(os_release, 'r') as f:
+      for line in f:
+        if line.startswith('ID='):
+          if 'ubuntu' in line:
+            return Platform.UBUNTU
+          if 'chromeos' in line:
+            return Platform.CROSTINI
+          if 'alpine' in line:
+            return Platform.ALPINE
+          print(f"CAUTION: Uncertain Linux Distro: {line}")
   if os.name == 'posix': # mac?
     if platform.uname()[0] == 'Linux':
       if os.path.exists('/mnt/chromeos'):
@@ -28,7 +42,7 @@ def identify_platform():
       if os.path.exists(os.path.join('/media/', os.environ['USER'])):
         return Platform.UBUNTU
       if os.path.exists('/mnt/c'): # TODO: is there a better test than this?
-        return Platform.WSL
+        return Platform.WSL # WSL should always have had a "normal" distro...
       return Platform.LINUX
   elif os.name == "nt" or self.opt.win32:
     return Platform.WINDOWS
