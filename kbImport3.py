@@ -88,7 +88,7 @@ if __name__ == '__main__':
                         help='Unify imports to a single directory (indexed TODAY)',
                         action="store_true")
     parser.add_argument('-p', '--prefix', default="bjorke",
-                        help='out filename prefix (use "none" to disable)')
+                        help='output filename prefix (use "none" to disable)')
     parser.add_argument('-j', '--jobpref',
                         help='toggle to include jobname in prefix',
                         action="store_true")

@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 
 """
-Could have been caleld "config.py" but it's not
+Could have been called "config.py" but it's not
 """
 
 import argparse
@@ -19,8 +19,22 @@ class Platform(Enum):
   CROSTINI = 4 # variants of linux, ya ya
   WSL = 5
   UBUNTU = 6
+  ALPINE = 7
 
 def identify_platform():
+  os_release = os.path.join('/', 'etc', 'os-release')
+  if os.path.exists(os_release):
+    # we know it's linux, but what kind?
+    with open(os_release, 'r') as f:
+      for line in f:
+        if line.startswith('ID='):
+          if 'ubuntu' in line:
+            return Platform.UBUNTU
+          if 'chromeos' in line:
+            return Platform.CROSTINI
+          if 'alpine' in line:
+            return Platform.ALPINE
+          print(f"CAUTION: Uncertain Linux Distro: {line}")
   if os.name == 'posix': # mac?
     if platform.uname()[0] == 'Linux':
       if os.path.exists('/mnt/chromeos'):
@@ -28,7 +42,7 @@ def identify_platform():
       if os.path.exists(os.path.join('/media/', os.environ['USER'])):
         return Platform.UBUNTU
       if os.path.exists('/mnt/c'): # TODO: is there a better test than this?
-        return Platform.WSL
+        return Platform.WSL # WSL should always have had a "normal" distro...
       return Platform.LINUX
   elif os.name == "nt" or self.opt.win32:
     return Platform.WINDOWS
@@ -83,8 +97,6 @@ class AppOptions(object):
     if self.force_synology:
       if self.archive is not None:
         print(f"WARNING: --archive '{self.archive}' overrides --syn")
-      else:
-        self.archive = os.path.join(os.environ['HOME'],'SynologyDrive', 'kbImport')
     self.force_cloud = False if self.force_synology else bool(pargs.cloud)
     self.init_prefix = '' if pargs.prefix is None or pargs.prefix == 'None' or pargs.prefix == 'none' \
                                 else "{}_".format(pargs.prefix)
