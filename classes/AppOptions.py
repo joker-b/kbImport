@@ -34,6 +34,8 @@ def identify_platform():
             return Platform.CROSTINI
           if 'alpine' in line:
             return Platform.ALPINE
+          if 'debian' in line:
+            return Platform.CROSTINI
           print(f"CAUTION: Uncertain Linux Distro: {line}")
   if os.name == 'posix': # mac?
     if platform.uname()[0] == 'Linux':
