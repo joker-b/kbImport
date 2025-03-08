@@ -99,10 +99,11 @@ class Drives(object):
       self.ExternalArchives = [self.opt.archive]
 
   def show_drives(self):
-    print('Primary: ', self.ExternalArchives)
-    print('Local: ', self.LocalArchiveLocations)
-    print('Forbidden: ', self.ForbiddenSources)
-    print('Removable: ', self.PossibleSources)
+    print('AVAILABLE VOLUMES:')
+    print(' Primary Archive:   ', self.ExternalArchives)
+    print(' Local Archive:     ', self.LocalArchiveLocations)
+    print(' Forbidden Sources: ', self.ForbiddenSources)
+    print(' Removable Sources: ', self.PossibleSources)
 
   def available_source_vols(self, Vols=[]):
     acceptVols = [a for a in Vols if self.acceptable_source_vol(a)]
@@ -276,16 +277,28 @@ class LinuxDrives(Drives):
 
 class ChromebookDrives(LinuxDrives):
   def init_drives(self):
-    mk = self.available_archives(os.path.join('/mnt/chromeos', "removable"), ['evo256'])
+    mk = '/mnt/chromeos/removable'
+    # mk = self.available_archives(os.path.join('/mnt/chromeos', "removable"), ['evo256'])
     # TODO(kevin): choose a better local default?
     self.identify_local_archives()
     self.ForbiddenSources.append(os.path.join(mk, 'Legacy20'))
+    self.ForbiddenSources.append(os.path.join(mk, 'T2023'))
     self.ForbiddenSources.append(os.path.join(mk, 'KBWIFI', 'kbImport'))
     self.ForbiddenSources.append("Storage")
-    knownDrives = ['pix20','KBWIFI','pix20s']
-    self.PossibleSources = self.available_source_vols(
-        [os.path.join(mk, a) for a in os.listdir(mk) if not knownDrives.__contains__(a) and (len(a) <= 8)]) if \
-            os.path.exists(mk) else []
+    # knownDrives = ['Leica M', 'Leica SL', 'pix20','KBWIFI','pix20s']
+    mkFiles = os.listdir(mk)
+    print(f'  > from {mkFiles}')
+    self.PossibleSources = self.available_source_vols([os.path.join(mk, a) for a in mkFiles])
+    #self.PossibleSources = self.available_source_vols(
+    #    [os.path.join(mk, a) for a in mkFiles if not knownDrives.__contains__(a) and (len(a) <= 8)]) if \
+    #        os.path.exists(mk) else []
+    knownDrives = ['T2023/kbPix', 'T2023', 'pix20','KBWIFI','pix20s']
+    for subdir in knownDrives:
+      t = os.path.join(mk, subdir)
+      if os.path.exists(t):
+        self.ExternalArchives.append(t)
+    '''
+    # deprecated?
     if self.opt.rename:
       # look for some known locations of unformatted backups
       wdBkp = os.path.join(mk,'KBWIFI','SD Card Imports/')
@@ -295,7 +308,14 @@ class ChromebookDrives(LinuxDrives):
       self.PossibleSources = bkpDirs + self.PossibleSources
     else:
       self.ForbiddenSources.append(os.path.join("Storage", "SD Card Imports"))
-    # self.show_drives()
+    '''
+    if self.opt.verbose:
+      self.show_drives()
+    if len(self.PossibleSources) < 1:
+      print(f'''For Crostini Linux ~2025, you need to first share drives
+      iw/Linux via the ChromeOS "Files" app -- they will then appear within
+      the {mk} directory.
+''')
 
 class UbuntuDrives(LinuxDrives):
   def init_drives(self):
@@ -305,9 +325,10 @@ class UbuntuDrives(LinuxDrives):
     mk = self.identify_external_archives(os.path.join('/media/', os.environ['USER']))
     self.identify_local_archives()
     self.ForbiddenSources.append(os.path.join(mk, 'Legacy20'))
+    self.ForbiddenSources.append(os.path.join(mk, 'T2023'))
     self.ForbiddenSources.append(os.path.join(mk, 'KBWIFI', 'kbImport'))
     self.ForbiddenSources.append("Storage")
-    knownDrives = ['pix20','KBWIFI','pix20s']
+    knownDrives = ['Leica M', 'Leica SL', 'pix20','KBWIFI','pix20s']
     self.PossibleSources = self.available_source_vols(
         [os.path.join(mk, a) for a in os.listdir(mk) if not knownDrives.__contains__(a) and (len(a) <= 8)]) if \
             os.path.exists(mk) else []
