@@ -33,6 +33,14 @@ class Drives(object):
   LocalArchiveLocations = []
   ForbiddenSources = []
   PossibleSources = []
+  preferredArchiveDrives = ['T2025',
+                            os.path.join('T2023','kbPix'),'T2023', 'pix20','KBWIFI','pix20s', \
+                            os.path.join('pix20s', 'kbImport'), \
+                            os.path.join('KBWIFI', 'kbImport'), \
+                            'Legacy20', 'KBWIFI', "Storage", 'kbImport', \
+                            'pix18', 'pix15', \
+                            'CameraWork', 'Liq', 'Pix17', 'BJORKEBYTES', \
+                            'T3', 'Sept2013'] # favorites first
   # results: destinations for data to be archived
   archiveDrive = ""
   # under "archiveDrive"
@@ -281,9 +289,8 @@ class ChromebookDrives(LinuxDrives):
     # mk = self.available_archives(os.path.join('/mnt/chromeos', "removable"), ['evo256'])
     # TODO(kevin): choose a better local default?
     self.identify_local_archives()
-    self.ForbiddenSources.append(os.path.join(mk, 'Legacy20'))
-    self.ForbiddenSources.append(os.path.join(mk, 'T2023'))
-    self.ForbiddenSources.append(os.path.join(mk, 'KBWIFI', 'kbImport'))
+    for d in self.preferredArchiveDrives:
+      self.ForbiddenSources.append(os.path.join(mk, d))
     self.ForbiddenSources.append("Storage")
     # knownDrives = ['Leica M', 'Leica SL', 'pix20','KBWIFI','pix20s']
     mkFiles = os.listdir(mk)
@@ -292,8 +299,7 @@ class ChromebookDrives(LinuxDrives):
     #self.PossibleSources = self.available_source_vols(
     #    [os.path.join(mk, a) for a in mkFiles if not knownDrives.__contains__(a) and (len(a) <= 8)]) if \
     #        os.path.exists(mk) else []
-    knownDrives = ['T2023/kbPix', 'T2023', 'pix20','KBWIFI','pix20s']
-    for subdir in knownDrives:
+    for subdir in self.preferredArchiveDrives:
       t = os.path.join(mk, subdir)
       if os.path.exists(t):
         self.ExternalArchives.append(t)
@@ -324,9 +330,8 @@ class UbuntuDrives(LinuxDrives):
     """
     mk = self.identify_external_archives(os.path.join('/media/', os.environ['USER']))
     self.identify_local_archives()
-    self.ForbiddenSources.append(os.path.join(mk, 'Legacy20'))
-    self.ForbiddenSources.append(os.path.join(mk, 'T2023'))
-    self.ForbiddenSources.append(os.path.join(mk, 'KBWIFI', 'kbImport'))
+    for d in self.preferredArchiveDrives:
+      self.ForbiddenSources.append(os.path.join(mk, d))
     self.ForbiddenSources.append("Storage")
     knownDrives = ['Leica M', 'Leica SL', 'pix20','KBWIFI','pix20s']
     self.PossibleSources = self.available_source_vols(
@@ -537,14 +542,7 @@ class MacDrives(Drives):
     if self.opt.force_synology:
       self.ExternalArchives = synDrives
     else:
-      self.ExternalArchives = [os.path.join(MountPoint, D) for D in
-                               ['T2023', 'kbPix']]  + synDrives + \
-                    [os.path.join(MountPoint, D) for D in
-                               [os.path.join('pix20s', 'kbImport'),
-                                os.path.join('KBWIFI', 'kbImport'),
-                                'pix18', 'pix15', 
-                                'CameraWork', 'Liq', 'Pix17', 'BJORKEBYTES',
-                                'T3', 'Sept2013']]
+      self.ExternalArchives = [os.path.join(MountPoint, D) for D in self.preferredArchiveDrives]  + synDrives
     self.ForbiddenSources += self.ExternalArchives
     return MountPoint
 
