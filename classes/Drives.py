@@ -536,7 +536,7 @@ class MacDrives(Drives):
   def identify_external_archives(self, MountPoint, MoreDrives=[]):
     # ignore Moredrives
     synHome = self.synology_archive()
-    synDrives = [os.path.join(synHome,'kbImport')] if os.path.exists(synHome) else []
+    synDrives = [os.path.join(synHome,'kbImport')] if synHome and os.path.exists(synHome) else []
     if self.opt.verbose:
       print(f'OPTS {self.opt}')
     if self.opt.force_synology:
