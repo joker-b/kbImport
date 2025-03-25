@@ -58,7 +58,12 @@ class ImgInfo(object):
       print("doppelhunting in {}".format(monthPath))
     if not os.path.exists(monthPath):
         return False
-    for d in os.listdir(monthPath):
+    try:
+      monthDirs = os.listdir(monthPath)
+    except:
+      print("doppelganger search: cannot list {}".format(monthPath))
+      return False
+    for d in monthDirs:
       name = ImgInfo.doppelPaths.get(d)
       if name:
         # already checked
