@@ -17,6 +17,7 @@ class ImgInfo(object):
   """Data About Images"""
   doppelFiles = {}
   doppelPaths = {}
+  doppelPathMissing = {}
   createdDirs = []
   failedCopies = []
   testLog = {}
@@ -57,6 +58,10 @@ class ImgInfo(object):
     if self.opt.unify:
       print("doppelhunting in {}".format(monthPath))
     if not os.path.exists(monthPath):
+        mm = ImgInfo.doppelPathMissing.get(monthPath)
+        if not mm:
+          print(f'has_doppelganger() Cannot resolve month path "{monthPath}"')
+        ImgInfo.doppelPathMissing[monthPath] = True # only mention once
         return False
     try:
       monthDirs = os.listdir(monthPath)
@@ -77,6 +82,8 @@ class ImgInfo(object):
         if m:
           theMatch = m.group(0)
           ImgInfo.doppelFiles[theMatch] = 1
+    if ImgInfo.opt.verbose:
+      print(f'has_doppelganger: paths serched')
     return ImgInfo.doppelFiles.get(self.srcName) is not None
 
   def dest_mkdir(self, Prefix='   '):
@@ -89,7 +96,7 @@ class ImgInfo(object):
       if ImgInfo.opt.testing:
         dp = ImgInfo.testLog.get(self.destPath)
         if not dp:
-          print("Need to dest_mkdir({}) **".format(self.destPath))
+          print("Need to dest_mkdir('{}') **".format(self.destPath))
           ImgInfo.testLog[self.destPath] = 1
       else:
         try:
@@ -126,7 +133,7 @@ class ImgInfo(object):
           FullDestPath = os.path.join(m.group(1), "...", self.srcName)
     else:
       reportPath = os.path.join('...', os.path.split(self.destPath)[-1], self.destName)
-      opDescription += ("{} -> {}".format(self.srcName, reportPath))
+      opDescription += ("ImgInfo.archove: {} -> {}".format(self.srcName, reportPath))
       self.incr(self.srcPath)
     if protected:
       return False
@@ -144,7 +151,7 @@ class ImgInfo(object):
     try:
       s = os.stat(FullSrcPath)
     except FileNotFoundError:
-      print("incr('{}') no file".format(FullSrcPath))
+      print("ImgInfo.incr('{}') no file '{}'".format(FullSrcPath,self.srcName))
       return False
     except:
       print("incr('{}') cannot stat source".format(FullSrcPath))
@@ -222,3 +229,8 @@ if __name__ == '__main__':
   ai = ImgInfo('test.jpg', '/home/kevinbjorke/pix')
   ai.dng_check(ImgInfo.opt.use_dng)
   ai.archive()
+  # add .has_doppelganger() tests
+  ImgInfo.opt.verbose = True
+  d1 = ImgInfo('bjorke_NY_LKEV2024.jpg','/Volumes/T2025/Pix/2025/2025_12_13_NY')
+  print(d1.has_doppelganger())
+  print(d1)
