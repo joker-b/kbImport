@@ -56,6 +56,10 @@ class Drives(object):
     "Options" is an "AppOptions" object
     """
     self.opt = Options
+    if self.opt.unit_test:
+      self.preferredArchiveDrives = [os.path.join(os.getcwd(),
+                                'mockdata','Pix')] 
+      print(f'Drives unit testing: {self.preferredArchiveDrives}')
 
   def cloud_archive(self):
       self.ExternalArchives = [self.synology_archive()]
@@ -538,7 +542,7 @@ class MacDrives(Drives):
     synHome = self.synology_archive()
     synDrives = [os.path.join(synHome,'kbImport')] if synHome and os.path.exists(synHome) else []
     if self.opt.verbose:
-      print(f'OPTS {self.opt}')
+      print(f'Drive OPTS {self.opt}')
     if self.opt.force_synology:
       self.ExternalArchives = synDrives
     else:

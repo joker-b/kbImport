@@ -390,6 +390,7 @@ class Volumes(object):
           localItemCount += self.build_image_data(filename, FromDir, fullPath, files)
     if self.opt.verbose:
       print("Found {} items in {}".format(localItemCount, FromDir))
+      print(f"ImgInfo doppel checks: {ImgInfo.nDoppelChecks}")
 
   def archive_found_image_data(self):
     if self.opt.testing:

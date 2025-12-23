@@ -120,6 +120,9 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--rename',
                         help='rename on the same drive, rather than copy',
                         action="store_true")
+    parser.add_argument('-U', '--unit_test',
+                        help='used for doppel testing',
+                        action="store_true")
     parser.add_argument('-n', '--numerate',
                         help='number images as an animation sequence',
                         action="store_true")

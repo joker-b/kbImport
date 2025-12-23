@@ -18,6 +18,7 @@ class ImgInfo(object):
   doppelFiles = {}
   doppelPaths = {}
   doppelPathMissing = {}
+  nDoppelChecks = 0
   createdDirs = []
   failedCopies = []
   testLog = {}
@@ -50,6 +51,7 @@ class ImgInfo(object):
   
   def has_doppelganger(self):
     "figure out if there is a copy of this file in a neighboring archive"
+    ImgInfo.nDoppelChecks += 1
     name = ImgInfo.doppelFiles.get(self.srcName)
     if name:
       return True
@@ -162,6 +164,10 @@ class ImgInfo(object):
 
   def safe_copy(self, DestPath):
     "Copy file, unless we are testing"
+    if ImgInfo.opt.unit_test:
+      if ImgInfo.opt.verbose:
+        print(f' mock copy of {self.srcPath}')
+      return True
     if ImgInfo.opt.testing:  # TODO - Volume data
       return True # always "work"
     try:
@@ -226,11 +232,15 @@ if __name__ == '__main__':
   opt.testing = True
   opt.set_jobname('InfoTest')
   ImgInfo.set_options(opt)
-  ai = ImgInfo('test.jpg', '/home/kevinbjorke/pix')
+  p = os.path.join(os.getcwd(),'..','mockdata',
+               'Pix','2025','2025-12-Dec','2025_12_16_GZ')
+  pe = os.path.exists(p)
+  print(f'using {pe} mock path {p}')
+  ImgInfo.opt.verbose = True
+  ai = ImgInfo('bjorke_GZ_KEV00368.JPG',p)
+  # ai = ImgInfo('test.jpg', p)
   ai.dng_check(ImgInfo.opt.use_dng)
   ai.archive()
   # add .has_doppelganger() tests
-  ImgInfo.opt.verbose = True
-  d1 = ImgInfo('bjorke_NY_LKEV2024.jpg','/Volumes/T2025/Pix/2025/2025_12_13_NY')
-  print(d1.has_doppelganger())
-  print(d1)
+  print(ai.has_doppelganger())
+  print(ai)
