@@ -48,7 +48,11 @@ class ImgInfo(object):
       print("Caution: Class wasn't initialized for image '{},' using defaults".format(self.srcName))
       ImgInfo.set_dng_converter()
     self.nBytes = long(0)
-  
+
+  def __str__(self):
+    return (f'ImgInfo {self.srcName}\n' +
+      f'   at {self.srcPath}\n')
+   
   def has_doppelganger(self):
     "figure out if there is a copy of this file in a neighboring archive"
     ImgInfo.nDoppelChecks += 1
@@ -63,7 +67,8 @@ class ImgInfo(object):
         mm = ImgInfo.doppelPathMissing.get(monthPath)
         if not mm:
           print(f'has_doppelganger() Cannot resolve month path "{monthPath}"')
-        ImgInfo.doppelPathMissing[monthPath] = True # only mention once
+        else:
+          ImgInfo.doppelPathMissing[monthPath] = True # only mention once
         return False
     try:
       monthDirs = os.listdir(monthPath)
@@ -135,7 +140,7 @@ class ImgInfo(object):
           FullDestPath = os.path.join(m.group(1), "...", self.srcName)
     else:
       reportPath = os.path.join('...', os.path.split(self.destPath)[-1], self.destName)
-      opDescription += ("ImgInfo.archove: {} -> {}".format(self.srcName, reportPath))
+      opDescription += ("ImgInfo.archive: {} -> {}".format(self.srcName, reportPath))
       self.incr(self.srcPath)
     if protected:
       return False
@@ -227,20 +232,23 @@ class ImgInfo(object):
       print("running kbImport again may catch the missing files after cleanup")
 
 if __name__ == '__main__':
-  print("testing time")
+  print("ImgInfo Unit Tests")
   opt = AppOptions()
   opt.testing = True
+  opt.verbose = True
   opt.set_jobname('InfoTest')
   ImgInfo.set_options(opt)
-  p = os.path.join(os.getcwd(),'..','mockdata',
-               'Pix','2025','2025-12-Dec','2025_12_16_GZ')
-  pe = os.path.exists(p)
-  print(f'using {pe} mock path {p}')
-  ImgInfo.opt.verbose = True
-  ai = ImgInfo('bjorke_GZ_KEV00368.JPG',p)
+  p = os.path.join(os.getcwd(),'..','mockdata','mocksrc')
+  #p = os.path.join(os.getcwd(),'..','mockdata',
+  #             'Pix','2025','2025-12-Dec','2025_12_16_GZ')
+  print(f'mock path "{p}" exists: {os.path.exists(p)}')
+  pfn = 'bjorke_GZ_KEV00368.JPG'
+  pf = os.path.join(p, pfn)
+  print(f'mock file "{pfn}" exists: {os.path.exists(pf)}')
+  ai = ImgInfo(pfn, p)
   # ai = ImgInfo('test.jpg', p)
   ai.dng_check(ImgInfo.opt.use_dng)
   ai.archive()
   # add .has_doppelganger() tests
-  print(ai.has_doppelganger())
+  print(f'doppel: {ai.has_doppelganger()}')
   print(ai)
