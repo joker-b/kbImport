@@ -52,3 +52,6 @@ nosetests.xml
 
 #Synology
 Syn-Log-*.txt
+
+# Manual testing
+*[tT]est*.txt
