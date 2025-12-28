@@ -36,6 +36,10 @@ class ImgInfo(object):
     if cls.opt is None:
       cls.set_options()
     cls.dng = DNG
+  
+  @classmethod
+  def count_doppels(cls):
+    return len(cls.doppelFiles)
 
   def __init__(self, Name, Path):
     "basic data about each image to be archived"
@@ -90,7 +94,7 @@ class ImgInfo(object):
           theMatch = m.group(0)
           ImgInfo.doppelFiles[theMatch] = 1
     if ImgInfo.opt.verbose:
-      print(f'has_doppelganger: paths serched')
+      print(f'has_doppelganger: paths searched')
     return ImgInfo.doppelFiles.get(self.srcName) is not None
 
   def dest_mkdir(self, Prefix='   '):

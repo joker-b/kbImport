@@ -427,7 +427,7 @@ class Volumes(object):
     print("{} Files, Total MB: {}".format(self.nFiles, self.nBytes/(1024*1024)))
     if self.nSkipped:
       print("Skipped {} files".format(self.nSkipped))
-      print("  with {} doppelgangs".format(len(ImgInfo.doppelFiles)))
+      print("  with {} doppelgangs".format(ImgInfo.count_doppels()))
     self.perfmon.halt()
     self.perfmon.report_elapsed()
     if self.nBytes > long(0):
