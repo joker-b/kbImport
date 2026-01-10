@@ -33,8 +33,8 @@ class Drives(object):
   LocalArchiveLocations = []
   ForbiddenSources = []
   PossibleSources = []
-  preferredArchiveDrives = ['T7W', 'T7B', 'T2025',
-                            os.path.join('T2023','kbPix'),'T2023', 'pix20','KBWIFI','pix20s', \
+  preferredArchiveDrives = ['T7W', 'T7B', 'pond', 'T2025',
+                            os.path.join('T2023','kbPix'), 'T2023', 'pix20','KBWIFI','pix20s', \
                             os.path.join('pix20s', 'kbImport'), \
                             os.path.join('KBWIFI', 'kbImport'), \
                             'Legacy20', 'KBWIFI', "Storage", 'kbImport', \
