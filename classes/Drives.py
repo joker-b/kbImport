@@ -561,6 +561,7 @@ class MacDrives(Drives):
                               'pix20s',
                               'Legacy20',
                               'KBWIFI',
+                              'ePix',
                               'kbPix',
                               'GoogleDrive',
                               'Google Drive',
