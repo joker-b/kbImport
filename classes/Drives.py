@@ -561,7 +561,8 @@ class MacDrives(Drives):
     self.ForbiddenSources += [os.path.join(Vols, D) for D in
                              ['Macintosh HD',
                               'MobileBackups',
-                              'ePix'
+                              'ePix',
+                              'pond',
                               'pix20',
                               'pix20s',
                               'Legacy20',
