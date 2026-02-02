@@ -23,7 +23,7 @@ class ImgInfo(object):
   failedCopies = []
   testLog = {}
   regexDotAvchd = re.compile('(.*).AVCHD')
-  regexPic = re.compile(r'([A-Z_][A-Z[0-9]_][A-Z0-9_][A-Z0-9_]\d\d\d\d)\.(JPG|RAF|RW2|RAW|DNG)')
+  regexPic = re.compile(r'([A-Z_][A-Z0-9_][A-Z0-9_][A-Z0-9_]\d\d\d\d)\.(JPG|RAF|RW2|RAW|DNG)')
   dng = None
   opt = None
 
