@@ -63,6 +63,7 @@ class AppOptions(object):
     self.force_synology = False
     self.force_cloud = False
     self.rename = False
+    self.unit_test = False
     self.version = "kbImport Default Options"
     self.now = time.time()
     if pargs is None:
@@ -87,6 +88,8 @@ class AppOptions(object):
       self.filter = re.compile(pargs.filter)
     else:
       self.filter = None
+    if pargs.unit_test is not None:
+      self.unit_test = pargs.unit_test
     self.age = max(0, int(pargs.age))
     if self.age > 0:
       if self.verbose:
@@ -134,6 +137,7 @@ class AppOptions(object):
     args.unify = False
     args.filter = None
     args.age = True
+    args.unit_test = False
     args.rename = False
     args.pix_only = False
     args.local = False
