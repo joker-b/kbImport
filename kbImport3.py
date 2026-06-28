@@ -1,4 +1,4 @@
-# /usr/bin/python
+#!/usr/bin/env python3
 
 r"""
 # My quick "one size fits all" import and archive script.
